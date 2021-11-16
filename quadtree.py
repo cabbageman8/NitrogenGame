@@ -54,12 +54,11 @@ class root_node():
                 result = self.children[2].get_data(x, y, -self.size, self.size, self.size)
             else:
                 result = self.children[0].get_data(x, y, -self.size, -self.size, self.size)
-        if len(self.cache) > 2**16:
-            self.cache = {}
         self.cache_data(x, y, result)
         return result
     def cache_data(self, x, y, data):
         if len(self.cache) > 2**16:
+            print("cleared cache")
             self.cache = {}
         self.cache.update({(int(x), int(y)): data})
     def set_data(self, x, y, data):
