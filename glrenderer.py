@@ -22,7 +22,7 @@ out vec2 v_text;
 void main() {
     vec2 packsize = vec2(textureSize(texpack, 0).xy);
     
-    gl_Position = vec4(pos.x+vert.x*size.x-1.0, 1.0-pos.y+vert.y*size.y, 1.0/(texnum+2.0), 1.0);
+    gl_Position = vec4(pos.x+vert.x*size.x-1.0, 1.0-pos.y+vert.y*size.y, texnum/1000.0, 1.0);
     v_text = vec2(in_text.x*(packsize.y/packsize.x)+texnum*(packsize.y/packsize.x), in_text.y);
 }
 ''',
@@ -47,7 +47,7 @@ void main() {
             texpack.get_size(), 4,
             pygame.image.tostring(texpack, "RGBA", 1))
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
-        self.texpack_texture.swizzle = 'RGBA'
+        self.texpack_texture.swizzle = 'BGRA'
         self.overlay_texture = self.ctx.texture(
             overlay.get_size(), 4,
             pygame.image.tostring(overlay, "RGBA", 1))
@@ -85,8 +85,8 @@ void main() {
     def render(self):
         texture_data = self.overlay.get_view('1')
         self.overlay_texture.write(texture_data)
-        self.ctx.clear(0 / 255, 0 / 255, 0 / 255, 0 / 255)
-        self.ctx.enable(moderngl.DEPTH_TEST)
+        self.ctx.clear()
+        self.ctx.enable(moderngl.BLEND)
         self.texpack_texture.use(0)
         self.overlay_texture.use(1)
         self.instance_data_pos.write(b''.join(struct.pack(
@@ -103,5 +103,5 @@ void main() {
         ) for x, y, w, h, tex in self.vert_list))
         #print(len(self.vert_list),"instances")
         self.vao.render(instances=len(self.vert_list))
+        self.ctx.disable(moderngl.BLEND)
         self.vert_list = []
-        pygame.display.flip()

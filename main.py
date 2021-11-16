@@ -23,7 +23,7 @@ pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 
 materials = ["Dirt16", "Water", "Planks16", "Mud16", "Cabbage16"]
 materials_img = []
-sprites = ["selection", "foxchar", "Grass", "DeadTree", "LivingTree", "TreeStump"]
+sprites = ["selection", "foxchar", "Grass", "TreeStump", "DeadTree", "LivingTree"]
 sprites_img = []
 solids = {"Water", "DeadTree", "LivingTree"}
 def load_textures():
@@ -35,18 +35,18 @@ def load_textures():
         frame_list = []
         file = Image.open("data/" + mat + ".jpg")
         for i in range(file.height//file.width):
-            frame_list.append(pygame.image.fromstring(file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).tobytes(), [file.width, file.width], "RGB").convert_alpha())
+            frame_list.append(pygame.image.fromstring(file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGB").convert_alpha())
         materials_img.append(frame_list)
     for spr in sprites:
         file = Image.open("data/" + spr + ".png")
-        sprites_img.append(pygame.image.fromstring(file.tobytes(), [file.width, file.height], "RGBA").convert_alpha())
+        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGBA").convert_alpha())
 load_textures()
 
-texpack = pygame.Surface((16*(len(materials)+len(sprites_img)), 16)).convert_alpha()
+texpack = pygame.Surface((128*(len(materials)+len(sprites_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(materials_img):
-    texpack.blit(m[0], (16*i,0))
+    texpack.blit(m[0], (128*i,0))
 for i, s in enumerate(sprites_img):
-    texpack.blit(s, (16*len(materials)+16*i,0))
+    texpack.blit(s, (128*len(materials)+128*i,0))
 overlay = pygame.Surface(window_size).convert_alpha()
 Renderer = glrenderer(texpack, overlay)
 
@@ -98,18 +98,18 @@ def decorate(x, y, mat):
     if r < 0.7 and mat == 4:
         return 2
     if r < 0.001 and mat == 0:
-        return 3
-    if r > 0.98 and mat == 0:
         return 4
+    if r > 0.98 and mat == 0:
+        return 5
     return None
 
 def draw_tile(mat, x, y, screen_coords):
     # blits material texture using int tile coords relitive to the screen
-    content = ((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat)
+    content = ((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size * (y+1))/window_size[1]*2, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat)
     Renderer.vert_list.append(content)
 def draw_sprite(spr, x, y, w, h):
     # blits sprite texture using float pixel coords relitive to the screen
-    Renderer.vert_list.append((x/window_size[0]*2, y/window_size[1]*2, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
+    Renderer.vert_list.append((x/window_size[0]*2, (y+2*tile_size)/window_size[1]*2, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
 def draw_object(decor, x, y, w, h, screen_coords):
     # blits sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -119,8 +119,7 @@ def draw_object(decor, x, y, w, h, screen_coords):
         h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
 def draw_sprite_foreground(spr, x, y, w, h):
     # blits sprite texture using float pixel coords relitive to the screen
-    if Rect((0, 0), window_size).colliderect(Rect(x, y, w, h)):
-        pass#surf.blit(sprites_img[spr], (x+2.5*tile_size, y+2.5*tile_size))
+    Renderer.vert_list.append(((x+0.5*tile_size)/window_size[0]*2, (y+8.5*tile_size)/window_size[1]*2, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
 def draw_object_foreground(decor, x, y, w, h, screen_coords):
     # blits sprite texture using tile coords relitive to the world
     draw_sprite_foreground( decor,
@@ -235,12 +234,13 @@ def main():
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == 2:
                 draw_object(decor, tile_coords[0], tile_coords[1], 2, 2, screen_coords)
-            if decor == 3 or decor == 4:
+            if decor == 4 or decor == 5:
                 draw_object_foreground(decor, tile_coords[0], tile_coords[1], 8, 8, screen_coords)
-                draw_object(5, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
+                draw_object(3, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
     draw_sprite(1, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 2 * tile_size, 2 * tile_size)
     draw_object(0, selected_tile[0] + 1 - pos[0] % 1, selected_tile[1] + 1 - pos[1] % 1, 2, 2, screen_coords)
     Renderer.render()
+    pygame.display.flip()
     clock.tick(FPS)
 
 while running:
