@@ -17,7 +17,7 @@ clock = pygame.time.Clock()
 #window_size=(1000, 1000)
 #window_size=(1440, 1440)
 window_size=(2560, 1440)
-tile_size = 50
+tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 
@@ -105,28 +105,26 @@ def decorate(x, y, mat):
 
 def draw_tile(mat, x, y, screen_coords):
     # blits material texture using int tile coords relitive to the screen
-    content = ((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size * (y+1))/window_size[1]*2, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat)
-    Renderer.vert_list.append(content)
-def draw_sprite(spr, x, y, w, h):
+    Renderer.vert_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2, 0.0, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat))
+def draw_sprite(spr, x, y, z, w, h):
     # blits sprite texture using float pixel coords relitive to the screen
-    Renderer.vert_list.append((x/window_size[0]*2, (y+2*tile_size)/window_size[1]*2, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
+    Renderer.vert_list.append((x/window_size[0]*2, (y)/window_size[1]*2, z, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
 def draw_object(decor, x, y, w, h, screen_coords):
     # blits sprite texture using tile coords relitive to the world
     draw_sprite( decor,
         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
+        0.35+sin(curtime / 300 + x+y*y)/50,
         w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
-def draw_sprite_foreground(spr, x, y, w, h):
-    # blits sprite texture using float pixel coords relitive to the screen
-    Renderer.vert_list.append(((x+0.5*tile_size)/window_size[0]*2, (y+8.5*tile_size)/window_size[1]*2, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
 def draw_object_foreground(decor, x, y, w, h, screen_coords):
     # blits sprite texture using tile coords relitive to the world
-    draw_sprite_foreground( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
-        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
-        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
+    draw_sprite( decor,
+        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 10,
+        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 10,
+        1.0,
+        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 5),
+        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 5))
 
 velocity = [0, 0]
 acceleration = 1/1000
@@ -223,23 +221,31 @@ def main():
         map.set_data(selected_tile[0], selected_tile[1], 2)
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1, ceil(screen_coords[1] / tile_size) + y - 1]
+            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                           ceil(screen_coords[1] / tile_size) + y - 1]
             mat = get_mat(tile_coords[0], tile_coords[1])
             draw_tile(mat, x, y, screen_coords)
+    for y in range(2 + window_size[1] // tile_size):
+        for x in range(2 + window_size[0] // tile_size):
+            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                           ceil(screen_coords[1] / tile_size) + y - 1]
+            mat = get_mat(tile_coords[0], tile_coords[1])
+            decor = decorate(tile_coords[0], tile_coords[1], mat)
+            if decor == 2:
+                draw_object(decor, tile_coords[0], tile_coords[1], 2, 2, screen_coords)
+            if decor == 4 or decor == 5:
+                draw_object(3, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
+    draw_sprite(1, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
                            ceil(screen_coords[1] / tile_size) + y - 4]
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
-            if decor == 2:
-                draw_object(decor, tile_coords[0], tile_coords[1], 2, 2, screen_coords)
             if decor == 4 or decor == 5:
                 draw_object_foreground(decor, tile_coords[0], tile_coords[1], 8, 8, screen_coords)
-                draw_object(3, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
-    draw_sprite(1, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 2 * tile_size, 2 * tile_size)
     draw_object(0, selected_tile[0] + 1 - pos[0] % 1, selected_tile[1] + 1 - pos[1] % 1, 2, 2, screen_coords)
-    Renderer.render()
+    Renderer.render( curtime, (mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
     pygame.display.flip()
     clock.tick(FPS)
 
