@@ -1,8 +1,6 @@
 import struct
 import moderngl
-import numpy as np
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil
-from time import time_ns
 import pygame
 
 class glrenderer():
