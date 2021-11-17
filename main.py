@@ -5,7 +5,7 @@ from pygame.locals import *
 from PIL import Image
 import pickle
 import numpy as np
-from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil
+from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor
 import cProfile
 import random
 from quadtree import root_node
@@ -21,11 +21,11 @@ tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 
-materials = ["Dirt16", "Water", "Planks16", "Mud16", "Cabbage16"]
+materials = ["Dirt16", "Water", "tiles16", "dirt16", "Cabbage16"]
 materials_img = []
-sprites = ["selection", "foxchar", "Grass", "TreeStump", "DeadTree", "LivingTree"]
+sprites = ["selection", "charb32", "Grass", "TreeStump", "DeadTree", "treeb128"]
 sprites_img = []
-solids = {"Water", "DeadTree", "LivingTree"}
+solids = {"Water", "treeb128", "tree128"}
 def load_textures():
     global materials_img
     global sprites_img
@@ -33,13 +33,18 @@ def load_textures():
     sprites_img = []
     for mat in materials:
         frame_list = []
-        file = Image.open("data/" + mat + ".jpg")
+        file = Image.open("data/" + mat + ".png")
         for i in range(file.height//file.width):
             frame_list.append(pygame.image.fromstring(file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGB").convert_alpha())
         materials_img.append(frame_list)
     for spr in sprites:
         file = Image.open("data/" + spr + ".png")
         sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGBA").convert_alpha())
+    for i in range(4):
+        file = Image.open("data/char32.png")
+        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha())
+        file = Image.open("data/charb32.png")
+        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha())
 load_textures()
 
 texpack = pygame.Surface((128*(len(materials)+len(sprites_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
@@ -84,13 +89,13 @@ def get_mat(x, y):
         if (r < -.9):
             mat = 1
         elif (r < -.5):
-            mat = 4
+            mat = 0
         elif (r > 0.5):
-            mat = 4
+            mat = 0
         elif (abs(r) < 0.1):
             mat = 3
         else:
-            mat = 0
+            mat = 4
         map.cache_data(x, y, mat)
     return mat
 def decorate(x, y, mat):
@@ -158,6 +163,7 @@ def handle_keys():
 running=True
 frame = 0
 curtime = pygame.time.get_ticks()
+char_direction = 0
 
 def main():
     global frame
@@ -167,6 +173,7 @@ def main():
     global surf
     global Foreground_texture
     global screen
+    global char_direction
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -174,11 +181,23 @@ def main():
     handle_keys()
     if pygame.K_w in keydown_set:
         velocity[1] -= acceleration * dt
+        char_direction = 0
     if pygame.K_a in keydown_set:
+        char_direction = 2
+        if pygame.K_w in keydown_set:
+            char_direction = 3
         velocity[0] -= acceleration * dt
     if pygame.K_s in keydown_set:
+        char_direction = 4
+        if pygame.K_a in keydown_set:
+            char_direction = 5
         velocity[1] += acceleration * dt
     if pygame.K_d in keydown_set:
+        char_direction = 6
+        if pygame.K_w in keydown_set:
+            char_direction = 1
+        if pygame.K_s in keydown_set:
+            char_direction = 7
         velocity[0] += acceleration * dt
     if pygame.K_t in keydown_set:
         map.tree()
@@ -198,14 +217,14 @@ def main():
     velocity[0] -= velocity[0] / 10
     velocity[1] -= velocity[1] / 10
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
-    mat = get_mat(ceil(pos[0] - 1), ceil(pos[1]))
-    spr = decorate(ceil(pos[0] - 1), ceil(pos[1]), mat)
+    mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
+    spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
     if (materials[mat] in solids or spr != None and sprites[spr] in solids):
         pos[1] += 1
         velocity = [0, 0]
     else:
-        mat2 = get_mat(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] + velocity[1]))
-        spr2 = decorate(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] + velocity[1]), mat2)
+        mat2 = get_mat(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] - 1 + velocity[1]))
+        spr2 = decorate(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] - 1 + velocity[1]), mat2)
         if (materials[mat2] in solids or spr2 != None and sprites[spr2] in solids):
             velocity = [0, 0]
         else:
@@ -235,7 +254,7 @@ def main():
                 draw_object(decor, tile_coords[0], tile_coords[1], 2, 2, screen_coords)
             if decor == 4 or decor == 5:
                 draw_object(3, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
-    draw_sprite(1, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
+    draw_sprite(6+char_direction, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
