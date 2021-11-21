@@ -46,8 +46,7 @@ void main() {
     float mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
     float mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
     float seethrough = (screenpos.z == 1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0 ;
-    float watershine = (thetexnum == 1.0) ? abs(sin(screenpos.x+screenpos.y+time))/5.0 : 0.0 ;
-    f_color = vec4(incolour.r+watershine, incolour.g+watershine, incolour.b, min(incolour.a,max(0.3, incolour.a-(1.0-seethrough))));
+    f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3, incolour.a-(1.0-seethrough))));
 }
 ''')
         self.frag_texpack = self.prog['texpack']
@@ -57,6 +56,8 @@ void main() {
             texpack.get_size(), 4,
             pygame.image.tostring(texpack, "RGBA", 1))
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
+        self.texpack_texture.repeat_x = False
+        self.texpack_texture.repeat_y = False
         self.texpack_texture.swizzle = 'BGRA'
         self.overlay_texture = self.ctx.texture(
             overlay.get_size(), 4,
@@ -99,7 +100,7 @@ void main() {
         self.ctx.enable(moderngl.BLEND)
         self.texpack_texture.use(0)
         self.overlay_texture.use(1)
-        self.prog['time'].value = curtime/1000.0
+        #self.prog['time'].value = curtime/1000.0
         self.prog['mouse_pos'].value = mouse_pos
         self.instance_data_pos.write(b''.join(struct.pack(
             '3f',

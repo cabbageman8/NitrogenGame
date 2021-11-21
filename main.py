@@ -5,7 +5,7 @@ from pygame.locals import *
 from PIL import Image
 import pickle
 import numpy as np
-from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor
+from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder
 import cProfile
 import random
 from quadtree import root_node
@@ -21,37 +21,48 @@ tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 
-materials = ["Dirt16", "Water", "tiles16", "dirt16", "Cabbage16"]
-materials_img = []
-sprites = ["selection", "charb32", "Grass", "TreeStump", "DeadTree", "treeb128"]
-sprites_img = []
-solids = {"Water", "treeb128", "tree128"}
+textures = ["dirt", "water", "tiles", "cabbage", "selection", "grass", "deadtree", "tree", "treelog", "treestump"]
+textures_img = []
+texd = {}
 def load_textures():
-    global materials_img
-    global sprites_img
-    materials_img = []
-    sprites_img = []
-    for mat in materials:
+    global texd
+    global textures_img
+    textures_img = []
+    for mat in textures:
+        file = Image.open("data/" + mat + ".png").convert("RGBA")
         frame_list = []
-        file = Image.open("data/" + mat + ".png")
         for i in range(file.height//file.width):
-            frame_list.append(pygame.image.fromstring(file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGB").convert_alpha())
-        materials_img.append(frame_list)
-    for spr in sprites:
-        file = Image.open("data/" + spr + ".png")
-        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGBA").convert_alpha())
-    for i in range(4):
-        file = Image.open("data/char32.png")
-        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha())
-        file = Image.open("data/charb32.png")
-        sprites_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha())
-load_textures()
+            frame = pygame.image.fromstring( file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGBA").convert_alpha()
+            frame_list.append(len(textures_img))
+            textures_img.append(frame)
+        texd.update({mat : frame_list})
 
-texpack = pygame.Surface((128*(len(materials)+len(sprites_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
-for i, m in enumerate(materials_img):
-    texpack.blit(m[0], (128*i,0))
-for i, s in enumerate(sprites_img):
-    texpack.blit(s, (128*len(materials)+128*i,0))
+    file = Image.open("data/char32.png").convert("RGBA")
+    fileb = Image.open("data/charb32.png").convert("RGBA")
+    for i in range(4):
+        frame_list = []
+        for j in range(file.height // file.width):
+            frame = pygame.image.fromstring( file.crop(Rect(0, file.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
+            frame_list.append(len(textures_img))
+            textures_img.append(frame)
+        texd.update({"char"+str(i*2): frame_list})
+        frame_list = []
+        for j in range(fileb.height // fileb.width):
+            frame = pygame.image.fromstring( fileb.crop(Rect(0, fileb.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
+            frame_list.append(len(textures_img))
+            textures_img.append(frame)
+        texd.update({"char" + str(i*2+1): frame_list})
+
+        textures_img.append(pygame.image.fromstring(file.resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha())
+load_textures()
+def get_tex(name, index):
+    return texd[name][int(index)%len(texd[name])]
+
+solids = {"water", "deadtree", "tree"}
+
+texpack = pygame.Surface((128*(len(textures_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
+for i, m in enumerate(textures_img):
+    texpack.blit(m, (128*i,0))
 overlay = pygame.Surface(window_size).convert_alpha()
 Renderer = glrenderer(texpack, overlay)
 
@@ -80,50 +91,65 @@ except:
     sav.close()
     print('could not load, blank save loaded')
 
+def save_game():
+    print("saving game")
+    sav = open('quadtree.pickle', 'wb')
+    data = {'map': map, 'pos': pos}
+    pickle.dump(data, sav)
+    sav.close()
+
 def get_mat(x, y):
-    map_data = map.get_data(x, y)
+    map_data = map.get_data(int(x), int(y))
     if (map_data != None):
-        mat = map_data
+        mat = map_data[0]
     else:
         r = sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5)
         if (r < -.9):
-            mat = 1
+            mat = "water"
         elif (r < -.5):
-            mat = 0
+            mat = "dirt"
         elif (r > 0.5):
-            mat = 0
+            mat = "dirt"
         elif (abs(r) < 0.1):
-            mat = 3
+            mat = "cabbage"
         else:
-            mat = 4
-        map.cache_data(x, y, mat)
+            mat = "cabbage"
+        map.cache_data(int(x), int(y), (mat, -1))
     return mat
 def decorate(x, y, mat):
-    r = point_to_random(x, y)
-    if r < 0.7 and mat == 4:
-        return 2
-    if r < 0.001 and mat == 0:
-        return 4
-    if r > 0.98 and mat == 0:
-        return 5
-    return None
+    map_data = map.get_data(int(x), int(y))
+    dec = None
+    if (map_data != None and map_data[1] != -1):
+        dec = map_data[1]
+    else:
+        r = point_to_random(x, y)
+        if r < 0.7 and mat == "cabbage":
+            dec = "grass"
+        if r < 0.001 and mat == "dirt":
+            dec = "deadtree"
+        if r > 0.98 and mat == "dirt":
+            dec = "tree"
+        map.cache_data(int(x), int(y), (mat, dec))
+    return dec
 
 def draw_tile(mat, x, y, screen_coords):
-    # blits material texture using int tile coords relitive to the screen
-    Renderer.vert_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2, 0.0, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat))
+    # render material texture using int tile coords relitive to the screen
+    Renderer.vert_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2,
+                               (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2,
+                               0.0, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat))
 def draw_sprite(spr, x, y, z, w, h):
-    # blits sprite texture using float pixel coords relitive to the screen
-    Renderer.vert_list.append((x/window_size[0]*2, (y)/window_size[1]*2, z, w/window_size[0]*2, h/window_size[1]*2, len(materials)+spr))
-def draw_object(decor, x, y, w, h, screen_coords):
-    # blits sprite texture using tile coords relitive to the world
+    # render sprite texture using float pixel coords relitive to the screen
+    Renderer.vert_list.append((x/window_size[0]*2, (y)/window_size[1]*2, z, w/window_size[0]*2, h/window_size[1]*2, spr))
+def draw_object(decor, x, y, z, w, h, screen_coords):
+    # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
-        0.35+sin(curtime / 300 + x+y*y)/50,
+        z+sin(curtime / 300 + x+y*y)/50,
         w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
 def draw_object_foreground(decor, x, y, w, h, screen_coords):
-    # blits sprite texture using tile coords relitive to the world
+    # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 10,
         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 10,
@@ -132,7 +158,7 @@ def draw_object_foreground(decor, x, y, w, h, screen_coords):
         h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 5))
 
 velocity = [0, 0]
-acceleration = 1/1000
+acceleration = 1/20000
 
 keydown_set = set()
 mouse_pos = pygame.mouse.get_pos()
@@ -142,17 +168,16 @@ def handle_keys():
     mouse_pos = pygame.mouse.get_pos()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            save_game()
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                save_game()
                 running = False
             else:
                 keydown_set.add(event.key)
         elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_ESCAPE:
-                running = False
-            else:
-                keydown_set.remove(event.key)
+            keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             keydown_set.add("mouse"+str(event.button))
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -208,62 +233,65 @@ def main():
         if (tile_size < 10):
             tile_size = 10
     if "unclick1" in keydown_set:
-        print("pickling")
-        sav = open('quadtree.pickle', 'wb')
-        data = {'map': map, 'pos': pos}
-        pickle.dump(data, sav)
-        sav.close()
+        save_game()
         keydown_set.remove("unclick1")
     velocity[0] -= velocity[0] / 10
     velocity[1] -= velocity[1] / 10
-    screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
     spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
-    if (materials[mat] in solids or spr != None and sprites[spr] in solids):
+    if (mat in solids or spr != None and spr in solids):
         pos[1] += 1
         velocity = [0, 0]
     else:
-        mat2 = get_mat(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] - 1 + velocity[1]))
-        spr2 = decorate(ceil(pos[0] - 1 + velocity[0]), ceil(pos[1] - 1 + velocity[1]), mat2)
-        if (materials[mat2] in solids or spr2 != None and sprites[spr2] in solids):
+        mat2 = get_mat(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]))
+        spr2 = decorate(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]), mat2)
+        if (mat2 in solids or spr2 != None and spr2 in solids):
             velocity = [0, 0]
         else:
-            pos[0] += velocity[0]
-            pos[1] += velocity[1]
+            pos[0] += dt*velocity[0]
+            pos[1] += dt*velocity[1]
+    screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     selected_tile = [mouse_pos[0] + screen_coords[0] % tile_size,
                      mouse_pos[1] + screen_coords[1] % tile_size]
     selected_tile = [-screen_coords[0] % tile_size + tile_size * ceil(selected_tile[0] / tile_size) - window_size[0] // 2,
                      -screen_coords[1] % tile_size + tile_size * ceil(selected_tile[1] / tile_size) - window_size[1] // 2]
-    selected_tile = [pos[0] + ceil(selected_tile[0] / tile_size) - 3,
-                     pos[1] + ceil(selected_tile[1] / tile_size) - 3]
+    selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
+                     ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     if "mouse1" in keydown_set:
-        map.set_data(selected_tile[0], selected_tile[1], 2)
+        map.set_data(int(selected_tile[0]), int(selected_tile[1]), ("tiles", None))
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
             mat = get_mat(tile_coords[0], tile_coords[1])
-            draw_tile(mat, x, y, screen_coords)
+            draw_tile(get_tex(mat, curtime/200+tile_coords[0]+tile_coords[0]+tile_coords[1]), x, y, screen_coords)
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
-            if decor == 2:
-                draw_object(decor, tile_coords[0], tile_coords[1], 2, 2, screen_coords)
-            if decor == 4 or decor == 5:
-                draw_object(3, tile_coords[0], tile_coords[1], 1, 1, screen_coords)
-    draw_sprite(6+char_direction, window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
+            if decor == "grass":
+                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, 2, 2, screen_coords)
+            if decor == "tree":
+                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.35, 1, 1, screen_coords)
+            if decor == "deadtree":
+                treelog = get_tex("treelog", 0)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.45, 1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.66, 1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
+    draw_sprite(get_tex("char"+str(char_direction),curtime), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
                            ceil(screen_coords[1] / tile_size) + y - 4]
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
-            if decor == 4 or decor == 5:
-                draw_object_foreground(decor, tile_coords[0], tile_coords[1], 8, 8, screen_coords)
-    draw_object(0, selected_tile[0] + 1 - pos[0] % 1, selected_tile[1] + 1 - pos[1] % 1, 2, 2, screen_coords)
+            if decor == "tree" or decor == "deadtree":
+                draw_object_foreground(get_tex(decor, 0), tile_coords[0], tile_coords[1], 8, 8, screen_coords)
+    draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
     Renderer.render( curtime, (mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
     pygame.display.flip()
     clock.tick(FPS)
