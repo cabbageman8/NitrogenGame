@@ -1,5 +1,6 @@
 import struct
 import moderngl
+import glcontext
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil
 import pygame
 

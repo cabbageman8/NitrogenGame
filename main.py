@@ -7,6 +7,7 @@ import cProfile
 from quadtree import root_node
 from glrenderer import glrenderer
 import sys
+import os
 pygame.init()
 pygame.font.init()
 

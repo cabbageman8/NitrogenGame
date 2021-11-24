@@ -1,0 +1,89 @@
+[2021-11-24T13:23:39.647852 10448] === CCACHE 3.7.12 STARTED =========================================
+[2021-11-24T13:23:39.647852 10448] Config: (default) base_dir = 
+[2021-11-24T13:23:39.647852 10448] Config: (environment) cache_dir = C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache
+[2021-11-24T13:23:39.647852 10448] Config: (default) cache_dir_levels = 2
+[2021-11-24T13:23:39.647852 10448] Config: (default) compiler = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) compiler_check = mtime
+[2021-11-24T13:23:39.647852 10448] Config: (default) compression = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) compression_level = 6
+[2021-11-24T13:23:39.647852 10448] Config: (default) cpp_extension = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) debug = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) depend_mode = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) direct_mode = true
+[2021-11-24T13:23:39.647852 10448] Config: (default) disable = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) extra_files_to_hash = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) hard_link = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) hash_dir = true
+[2021-11-24T13:23:39.647852 10448] Config: (default) ignore_headers_in_manifest = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) keep_comments_cpp = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) limit_multiple = 0.8
+[2021-11-24T13:23:39.647852 10448] Config: (environment) log_file = C:\Users\Cabbageman\PycharmProjects\TopDownGame\main.onefile-build\ccache-12264.txt
+[2021-11-24T13:23:39.647852 10448] Config: (default) max_files = 0
+[2021-11-24T13:23:39.647852 10448] Config: (C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/ccache.conf) max_size = 5.0G
+[2021-11-24T13:23:39.647852 10448] Config: (default) path = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) pch_external_checksum = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) prefix_command = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) prefix_command_cpp = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) read_only = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) read_only_direct = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) recache = false
+[2021-11-24T13:23:39.647852 10448] Config: (default) run_second_cpp = true
+[2021-11-24T13:23:39.647852 10448] Config: (default) sloppiness = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) stats = true
+[2021-11-24T13:23:39.647852 10448] Config: (default) temporary_dir = 
+[2021-11-24T13:23:39.647852 10448] Config: (default) umask = 
+[2021-11-24T13:23:39.647852 10448] Command line: C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\ccache\v3.7.12\ccache.exe C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\gcc\x86_64\10.2.0-11.0.0-8.0.0-r5\mingw64\bin\gcc.exe -o static_src\OnefileBootstrap.o -c -std=c11 -fwrapv -fpartial-inlining -ftrack-macro-expansion=0 -Wno-deprecated-declarations -fno-var-tracking -O3 -pipe -D_WIN32_WINNT=0x0501 -D__NUITKA_NO_ASSERT__ -I. -IC:\Users\Cabbageman\AppData\Local\Programs\Python\Python39\lib\site-packages\nuitka\build\include -IC:\Users\Cabbageman\AppData\Local\Programs\Python\Python39\lib\site-packages\nuitka\build\static_src -IC:\Users\Cabbageman\AppData\Local\Programs\Python\Python39\lib\site-packages\nuitka\build\inline_copy\zstd static_src\OnefileBootstrap.c
+[2021-11-24T13:23:39.648951 10448] Hostname: CABBAGEPC
+[2021-11-24T13:23:39.648951 10448] Working directory: C:\Users\Cabbageman\PycharmProjects\TopDownGame\main.onefile-build
+[2021-11-24T13:23:39.648951 10448] Source file: static_src\OnefileBootstrap.c
+[2021-11-24T13:23:39.648951 10448] Object file: static_src\OnefileBootstrap.o
+[2021-11-24T13:23:39.648951 10448] Trying direct lookup
+[2021-11-24T13:23:39.648951 10448] Looking for object file hash in C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/5/e/62d9ba06afc7e6a7549361d97d7520-25441.manifest
+[2021-11-24T13:23:39.652953 10448] Did not find object file hash in manifest
+[2021-11-24T13:23:39.652953 10448] Running preprocessor
+[2021-11-24T13:23:40.435185 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.435185 10448] Disabling direct mode
+[2021-11-24T13:23:40.435185 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.435185 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.438185 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.438185 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.439186 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.442187 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.445188 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.445188 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.447188 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.447188 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.678239 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.681240 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.681240 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.681240 10448] Include file ./onefile_definitions.h too new
+[2021-11-24T13:23:40.682240 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.682240 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.684241 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.686241 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.689242 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.690242 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.694243 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.695243 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.697244 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.699245 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.701245 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.702245 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.702245 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.705246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.705246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.706246 10448] Include file static_src\\OnefileBootstrap.c too new
+[2021-11-24T13:23:40.707246 10448] Got object file hash from preprocessor
+[2021-11-24T13:23:40.707246 10448] Copying C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/0/2/e805ae01f0e7c30537ae23dd45f0a1-4997552.o to static_src\OnefileBootstrap.o (uncompressed)
+[2021-11-24T13:23:40.708246 10448] Created from cache: C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/0/2/e805ae01f0e7c30537ae23dd45f0a1-4997552.o -> static_src\OnefileBootstrap.o
+[2021-11-24T13:23:40.708246 10448] Succeeded getting cached result
+[2021-11-24T13:23:40.709246 10448] Result: cache hit (preprocessed)
+[2021-11-24T13:23:40.709246 10448] Acquired lock C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/0/stats.lock
+[2021-11-24T13:23:40.710248 10448] Releasing lock C:\Users\Cabbageman\AppData\Local\Nuitka\Nuitka\Cache\ccache/0/stats.lock
