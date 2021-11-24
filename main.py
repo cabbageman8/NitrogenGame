@@ -1,27 +1,24 @@
-import struct
-import moderngl
 import pygame
 from pygame.locals import *
 from PIL import Image
 import pickle
-import numpy as np
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder
 import cProfile
-import random
 from quadtree import root_node
 from glrenderer import glrenderer
+import sys
 pygame.init()
+pygame.font.init()
 
 FPS=60
 clock = pygame.time.Clock()
-#window_size=(1000, 1000)
-#window_size=(1440, 1440)
-window_size=(2560, 1440)
+window_size=(1000, 1000)
+#window_size=(1920, 1080)
 tile_size = 75
 
-pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
-
-textures = ["dirt", "water", "tiles", "cabbage", "selection", "grass", "deadtree", "tree", "treelog", "treestump"]
+pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
+silombol = pygame.font.Font("data/SilomBol.ttf", ceil(window_size[1]/32))
+textures = ["null", "selection", "water", "planks", "dirt", "tiles", "cabbage", "grass", "deadtree", "tree", "treelog", "treestump", "wall"]
 textures_img = []
 texd = {}
 def load_textures():
@@ -58,13 +55,33 @@ load_textures()
 def get_tex(name, index):
     return texd[name][int(index)%len(texd[name])]
 
-solids = {"water", "deadtree", "tree"}
+solids = {"water", "deadtree", "tree", "treelog", "treestump", "wall"}
 
 texpack = pygame.Surface((128*(len(textures_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(textures_img):
     texpack.blit(m, (128*i,0))
 overlay = pygame.Surface(window_size).convert_alpha()
+overlay.fill((255,255,255,155))
+text = ["CabbageGame Alpha", "wasd for movement", "up/down for zoom", "esc for save and quit", "F4 for fullscreen", "press h to start"]
+for i, t in enumerate(text):
+    overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer = glrenderer(texpack, overlay)
+
+Renderer.render((0, 0))
+pygame.display.flip()
+
+hotbar = [("null",None), ("water",None), ("planks",None), ("planks","tiles"), ("planks","wall"), ("dirt",None), ("cabbage","grass"), ("dirt","tree"), ("dirt","deadtree")]
+selected_item_slot = 0
+
+def construct_overlay():
+    overlay.fill((0, 0, 0, 0))
+    for i in range(9):
+        overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
+        overlay.blit(textures_img[texd["selection"][0]], (0, 110 * i - 110*4.5 + overlay.get_size()[1] / 2))
+        #overlay.blit(textures_img[1], (100*i-450+overlay.get_size()[0]/2, overlay.get_size()[1]-100))
+    overlay.blit(textures_img[texd["selection"][0]], (0, 110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2))
+    overlay.blit(silombol.render(str(curtime), True, (0, 0, 0)), (100, 100))
+    Renderer.update_overlay(overlay)
 
 def seeded_random(a):
     output = (41406202+14874235*a)%79493069
@@ -77,7 +94,7 @@ def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y)
 
 try:
-    sav = open('quadtree.pickle' , 'rb')
+    sav = open('data/savedata.pickle' , 'rb')
     data = pickle.load(sav)
     map = data['map']
     pos = data['pos']
@@ -85,7 +102,7 @@ try:
 except:
     map = root_node()
     pos = [0.5, 0.5]
-    sav = open('quadtree.pickle' , 'wb')
+    sav = open('data/savedata.pickle' , 'wb')
     data = {'map': map, 'pos': pos}
     pickle.dump(data, sav)
     sav.close()
@@ -93,7 +110,7 @@ except:
 
 def save_game():
     print("saving game")
-    sav = open('quadtree.pickle', 'wb')
+    sav = open('data/savedata.pickle', 'wb')
     data = {'map': map, 'pos': pos}
     pickle.dump(data, sav)
     sav.close()
@@ -107,13 +124,13 @@ def get_mat(x, y):
         if (r < -.9):
             mat = "water"
         elif (r < -.5):
-            mat = "dirt"
+            mat = "cabbage"
         elif (r > 0.5):
             mat = "dirt"
         elif (abs(r) < 0.1):
             mat = "cabbage"
         else:
-            mat = "cabbage"
+            mat = "dirt"
         map.cache_data(int(x), int(y), (mat, -1))
     return mat
 def decorate(x, y, mat):
@@ -151,14 +168,22 @@ def draw_object(decor, x, y, z, w, h, screen_coords):
 def draw_object_foreground(decor, x, y, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 10,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 10,
+        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
+        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
         1.0,
-        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 5),
-        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 5))
+        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
+        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
+def draw_structure(decor, x, y, z, w, h, screen_coords):
+    # render sprite texture using tile coords relitive to the world
+    draw_sprite( decor,
+        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size,
+        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size,
+        z,
+        w * tile_size,
+        h * tile_size)
 
 velocity = [0, 0]
-acceleration = 1/20000
+acceleration = 1/30000
 
 keydown_set = set()
 mouse_pos = pygame.mouse.get_pos()
@@ -176,7 +201,7 @@ def handle_keys():
                 running = False
             else:
                 keydown_set.add(event.key)
-        elif event.type == pygame.KEYUP:
+        elif event.type == pygame.KEYUP and event.key != pygame.K_F4:
             keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             keydown_set.add("mouse"+str(event.button))
@@ -195,10 +220,10 @@ def main():
     global velocity
     global curtime
     global tile_size
-    global surf
-    global Foreground_texture
-    global screen
     global char_direction
+    global overlay
+    global window_size
+    global selected_item_slot
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -230,11 +255,20 @@ def main():
         tile_size += 2
     if pygame.K_DOWN in keydown_set:
         tile_size -= 2
-        if (tile_size < 10):
-            tile_size = 10
+        if (tile_size < 75):
+            tile_size = 75
+    if pygame.K_h in keydown_set:
+        construct_overlay()
     if "unclick1" in keydown_set:
         save_game()
         keydown_set.remove("unclick1")
+    if pygame.K_F4 in keydown_set:
+        pygame.display.toggle_fullscreen()
+        window_size = pygame.display.get_window_size()
+        overlay = pygame.Surface(window_size).convert_alpha()
+        construct_overlay()
+        keydown_set.remove(pygame.K_F4)
+
     velocity[0] -= velocity[0] / 10
     velocity[1] -= velocity[1] / 10
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
@@ -258,13 +292,17 @@ def main():
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     if "mouse1" in keydown_set:
-        map.set_data(int(selected_tile[0]), int(selected_tile[1]), ("tiles", None))
+        if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
+            selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
+            construct_overlay()
+        else:
+            map.set_data(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)])
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
             mat = get_mat(tile_coords[0], tile_coords[1])
-            draw_tile(get_tex(mat, curtime/200+tile_coords[0]+tile_coords[0]+tile_coords[1]), x, y, screen_coords)
+            draw_tile(get_tex(mat, curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]), x, y, screen_coords)
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
@@ -272,17 +310,28 @@ def main():
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == "grass":
-                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, 2, 2, screen_coords)
-            if decor == "tree":
-                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.35, 1, 1, screen_coords)
-            if decor == "deadtree":
+                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
+                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
+            if decor == "tree" or decor == "treestump":
+                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+            if decor == "deadtree" or decor == "treelog":
                 treelog = get_tex("treelog", 0)
                 draw_object(treelog, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.45, 1, 1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.66, 1, 1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.45, -1, 1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.66, 1, -1, screen_coords)
+                draw_object(treelog, tile_coords[0], tile_coords[1], 0.8, -1, -1, screen_coords)
                 draw_object(treelog, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
-    draw_sprite(get_tex("char"+str(char_direction),curtime), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
+            if decor == "wall":
+                wall = get_tex("wall", 0)
+                draw_structure(wall, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                draw_structure(wall, tile_coords[0], tile_coords[1], 0.45, -1, 1, screen_coords)
+                draw_structure(wall, tile_coords[0], tile_coords[1], 0.66, 1, -1, screen_coords)
+                draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, -1, -1, screen_coords)
+                draw_structure(wall, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
+                draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
+            if decor == "tiles":
+                draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
+    draw_sprite(get_tex("char"+str(char_direction),(abs(velocity[0])+abs(velocity[1]) > 0.001)*curtime/200), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
@@ -292,7 +341,8 @@ def main():
             if decor == "tree" or decor == "deadtree":
                 draw_object_foreground(get_tex(decor, 0), tile_coords[0], tile_coords[1], 8, 8, screen_coords)
     draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
-    Renderer.render( curtime, (mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
+
+    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
     pygame.display.flip()
     clock.tick(FPS)
 
