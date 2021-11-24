@@ -18,7 +18,7 @@ window_size=(1000, 1000)
 tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
-silombol = pygame.font.Font("data/SilomBol.ttf", ceil(window_size[1]/32))
+silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
 textures = ["null", "selection", "water", "planks", "dirt", "tiles", "cabbage", "grass", "deadtree", "tree", "treelog", "treestump", "wall"]
 textures_img = []
 texd = {}
@@ -27,7 +27,7 @@ def load_textures():
     global textures_img
     textures_img = []
     for mat in textures:
-        file = Image.open("data/" + mat + ".png").convert("RGBA")
+        file = Image.open(os.path.join("data", mat + ".png")).convert("RGBA")
         frame_list = []
         for i in range(file.height//file.width):
             frame = pygame.image.fromstring( file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([128, 128], resample=Image.NEAREST).tobytes(), [128, 128], "RGBA").convert_alpha()
@@ -35,8 +35,8 @@ def load_textures():
             textures_img.append(frame)
         texd.update({mat : frame_list})
 
-    file = Image.open("data/char32.png").convert("RGBA")
-    fileb = Image.open("data/charb32.png").convert("RGBA")
+    file = Image.open(os.path.join("data", "char32.png")).convert("RGBA")
+    fileb = Image.open(os.path.join("data", "charb32.png")).convert("RGBA")
     for i in range(4):
         frame_list = []
         for j in range(file.height // file.width):
@@ -95,7 +95,7 @@ def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y)
 
 try:
-    sav = open('data/savedata.pickle' , 'rb')
+    sav = open(os.path.join("data", "savedata.pickle") , 'rb')
     data = pickle.load(sav)
     map = data['map']
     pos = data['pos']
@@ -103,7 +103,7 @@ try:
 except:
     map = root_node()
     pos = [0.5, 0.5]
-    sav = open('data/savedata.pickle' , 'wb')
+    sav = open(os.path.join("data", "savedata.pickle") , 'wb')
     data = {'map': map, 'pos': pos}
     pickle.dump(data, sav)
     sav.close()
@@ -111,7 +111,7 @@ except:
 
 def save_game():
     print("saving game")
-    sav = open('data/savedata.pickle', 'wb')
+    sav = open(os.path.join("data", "savedata.pickle"), 'wb')
     data = {'map': map, 'pos': pos}
     pickle.dump(data, sav)
     sav.close()
