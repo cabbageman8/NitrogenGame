@@ -13,8 +13,8 @@ pygame.font.init()
 
 FPS=60
 clock = pygame.time.Clock()
-window_size=(1000, 1000)
-#window_size=(1920, 1080)
+#window_size=(1000, 1000)
+window_size=(1920, 1080)
 tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
@@ -298,6 +298,11 @@ def main():
             construct_overlay()
         else:
             map.set_data(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)])
+    if "mouse4" in keydown_set:
+        selected_item_slot = (selected_item_slot+1)%9
+    if "mouse5" in keydown_set:
+        print("yes")
+        selected_item_slot = (selected_item_slot-1)%9
     for y in range(2 + window_size[1] // tile_size):
         for x in range(2 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
