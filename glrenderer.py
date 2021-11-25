@@ -48,7 +48,8 @@ out float thetexnum;
 out vec3 screenpos;
 void main() {
     vec2 packsize = vec2(textureSize(texpack, 0).xy);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+pos.z*(pos.z/5.0)), (1.0-pos.y-vert.y*size.y)*(1.0+pos.z*(pos.z/5.0)), -pos.z);
+    float zpos = (size.x==0.0) ? vert.x : ((size.y==0.0) ? vert.y : pos.z);
+    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*(zpos/5.0)), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*(zpos/5.0)), -zpos);
     thetexnum = texnum;
     
     gl_Position = vec4(screenpos, 1.0);

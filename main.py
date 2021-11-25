@@ -14,12 +14,13 @@ pygame.font.init()
 FPS=60
 clock = pygame.time.Clock()
 #window_size=(1000, 1000)
-window_size=(1920, 1080)
+#window_size=(1920, 1080)
+window_size=(2560, 1440)
 tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
-textures = ["null", "selection", "water", "planks", "dirt", "tiles", "cabbage", "grass", "deadtree", "tree", "treelog", "treestump", "wall"]
+textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "tree", "treelog", "treestump", "treetrunk", "wall", "block"]
 textures_img = []
 texd = {}
 def load_textures():
@@ -71,7 +72,7 @@ Renderer = glrenderer(texpack, overlay)
 Renderer.render((0, 0))
 pygame.display.flip()
 
-hotbar = [("null",None), ("water",None), ("planks",None), ("planks","tiles"), ("planks","wall"), ("dirt",None), ("cabbage","grass"), ("dirt","tree"), ("dirt","deadtree")]
+hotbar = [("null",None), ("water",None), ("planks",None), ("planks","tiles"), ("wall","wall"), ("dirt",None), ("weeds",None), ("dirt","tree"), ("dirt","deadtree")]
 selected_item_slot = 0
 
 def construct_overlay():
@@ -125,11 +126,11 @@ def get_mat(x, y):
         if (r < -.9):
             mat = "water"
         elif (r < -.5):
-            mat = "cabbage"
+            mat = "weeds"
         elif (r > 0.5):
             mat = "dirt"
         elif (abs(r) < 0.1):
-            mat = "cabbage"
+            mat = "weeds"
         else:
             mat = "dirt"
         map.cache_data(int(x), int(y), (mat, -1))
@@ -141,7 +142,7 @@ def decorate(x, y, mat):
         dec = map_data[1]
     else:
         r = point_to_random(x, y)
-        if r < 0.7 and mat == "cabbage":
+        if r < 0.7 and mat == "weeds":
             dec = "grass"
         if r < 0.001 and mat == "dirt":
             dec = "deadtree"
@@ -208,8 +209,8 @@ def handle_keys():
             keydown_set.add("mouse"+str(event.button))
         elif event.type == pygame.MOUSEBUTTONUP:
             keydown_set.remove("mouse"+str(event.button))
-            if (event.button == 1):
-                keydown_set.add("unclick1")
+            if (event.button in (1, 4, 5)):
+                keydown_set.add("unclick"+str(event.button))
 
 running=True
 frame = 0
@@ -256,8 +257,8 @@ def main():
         tile_size += 2
     if pygame.K_DOWN in keydown_set:
         tile_size -= 2
-        if (tile_size < 75):
-            tile_size = 75
+        if (tile_size < 30):
+            tile_size = 30
     if pygame.K_h in keydown_set:
         construct_overlay()
     if "unclick1" in keydown_set:
@@ -298,45 +299,54 @@ def main():
             construct_overlay()
         else:
             map.set_data(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)])
-    if "mouse4" in keydown_set:
-        selected_item_slot = (selected_item_slot+1)%9
-    if "mouse5" in keydown_set:
-        print("yes")
+    if "mouse2" in keydown_set:
+        hotbar[int(selected_item_slot)] = map.get_data(int(selected_tile[0]), int(selected_tile[1]))
+        construct_overlay()
+    if "unclick4" in keydown_set:
         selected_item_slot = (selected_item_slot-1)%9
-    for y in range(2 + window_size[1] // tile_size):
-        for x in range(2 + window_size[0] // tile_size):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                           ceil(screen_coords[1] / tile_size) + y - 1]
-            mat = get_mat(tile_coords[0], tile_coords[1])
-            draw_tile(get_tex(mat, curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]), x, y, screen_coords)
-    for y in range(2 + window_size[1] // tile_size):
-        for x in range(2 + window_size[0] // tile_size):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                           ceil(screen_coords[1] / tile_size) + y - 1]
-            mat = get_mat(tile_coords[0], tile_coords[1])
-            decor = decorate(tile_coords[0], tile_coords[1], mat)
-            if decor == "grass":
-                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
-                draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
-            if decor == "tree" or decor == "treestump":
-                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
-            if decor == "deadtree" or decor == "treelog":
-                treelog = get_tex("treelog", 0)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.45, -1, 1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.66, 1, -1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.8, -1, -1, screen_coords)
-                draw_object(treelog, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
-            if decor == "wall":
-                wall = get_tex("wall", 0)
-                draw_structure(wall, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
-                draw_structure(wall, tile_coords[0], tile_coords[1], 0.45, -1, 1, screen_coords)
-                draw_structure(wall, tile_coords[0], tile_coords[1], 0.66, 1, -1, screen_coords)
-                draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, -1, -1, screen_coords)
-                draw_structure(wall, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
-                draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
-            if decor == "tiles":
-                draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
+        construct_overlay()
+        keydown_set.remove("unclick4")
+    if "unclick5" in keydown_set:
+        selected_item_slot = (selected_item_slot+1)%9
+        construct_overlay()
+        keydown_set.remove("unclick5")
+    for i2, i in enumerate((1, -1)):
+        for y in range(ceil((2+i2+window_size[1] // tile_size) / 2)):
+            y2 = (y*i)%(window_size[1]//tile_size+2)
+            for j2, j in enumerate((1, -1)):
+                for x in range(ceil((2+j2+window_size[0] // tile_size)/2)):
+                    x2 = (x * j) % (window_size[0] // tile_size+2)
+                    tile_coords = [ceil(screen_coords[0] / tile_size) + x2 - 1,
+                                   ceil(screen_coords[1] / tile_size) + y2 - 1]
+                    mat = get_mat(tile_coords[0], tile_coords[1])
+                    if (mat == "water"):
+                        index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
+                    else:
+                        index = (tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)
+                    draw_tile(get_tex(mat, index), x2, y2, screen_coords)
+
+                    decor = decorate(tile_coords[0], tile_coords[1], mat)
+                    if decor == "grass":
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
+                    if decor == "tree" or decor == "treestump":
+                        draw_object(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 0.8, 0, -1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 0.8, 1, 0, screen_coords)
+                        draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
+                    if decor == "deadtree" or decor == "treelog":
+                        treelog = get_tex("treelog", 0)
+                        draw_object(treelog, tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 0.8, 0, -1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 0.8, 1, 0, screen_coords)
+                        draw_object(treelog, tile_coords[0], tile_coords[1], 0.9, 1, 1, screen_coords)
+                    if decor == "wall":
+                        wall = get_tex("wall", 0)
+                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.8, 1, 0, screen_coords)
+                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.8, 0, 1, screen_coords)
+                        draw_structure(wall, tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
+                    if decor == "tiles":
+                        draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
     draw_sprite(get_tex("char"+str(char_direction),(abs(velocity[0])+abs(velocity[1]) > 0.001)*curtime/200), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
@@ -347,6 +357,7 @@ def main():
             if decor == "tree" or decor == "deadtree":
                 draw_object_foreground(get_tex(decor, 0), tile_coords[0], tile_coords[1], 8, 8, screen_coords)
     draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
+    draw_object(get_tex("selection", 0), selected_tile[0] - screen_coords[0] // tile_size, selected_tile[1] - screen_coords[1] // tile_size, 0.9, 1, 1, screen_coords)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
     pygame.display.flip()
