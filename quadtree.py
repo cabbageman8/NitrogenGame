@@ -101,7 +101,7 @@ class root_node():
             self.cache.clear()
         self.cache.update({(int(x), int(y)) : data})
     def set_data(self, x, y, data):
-        if self.cache[(int(x), int(y))] != data:
+        if self.get_data(int(x), int(y)) != data:
             self.cache_data(int(x), int(y), data)
             if (abs(x)>self.size or abs(y)>self.size):
                 self.size = 2*self.size

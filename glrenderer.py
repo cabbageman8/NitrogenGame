@@ -48,11 +48,12 @@ out float thetexnum;
 out vec3 screenpos;
 void main() {
     vec2 packsize = vec2(textureSize(texpack, 0).xy);
-    float zpos = (size.x==0.0) ? vert.x : ((size.y==0.0) ? vert.y : pos.z);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*(zpos/5.0)), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*(zpos/5.0)), -zpos);
+    float zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
+    zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
+    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*(zpos/5.0)), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*(zpos/5.0)), -pos.z);
     thetexnum = texnum;
     
-    gl_Position = vec4(screenpos, 1.0);
+    gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
     v_text = vec2((in_text.x+texnum)*(packsize.y/packsize.x), in_text.y);
 }
 ''',
@@ -71,7 +72,7 @@ vec4 incolour = texture(texpack,v_text).rgba;
 void main() {
     float mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
     float mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
-    float seethrough = (screenpos.z == -1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0 ;
+    float seethrough = (screenpos.z < -1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0 ;
     f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3, incolour.a-(1.0-seethrough))));
 }
 ''')
