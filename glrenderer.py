@@ -54,7 +54,7 @@ void main() {
     thetexnum = texnum;
     
     gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
-    v_text = vec2((in_text.x+texnum)*(packsize.y/packsize.x), in_text.y);
+    v_text = vec2((in_text.x+mod(texnum, 128.0*128.0))*(128.0/packsize.x), (in_text.y+floor(texnum/128.0))*(128.0/packsize.y));
 }
 ''',
     fragment_shader='''

@@ -20,7 +20,9 @@ tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
-textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "tree", "treelog", "treestump", "treetrunk", "wall", "block"]
+textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "tree",
+            "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
+            "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern"]
 textures_img = []
 texd = {}
 def load_textures():
@@ -59,9 +61,10 @@ def get_tex(name, index):
 
 solids = {"water", "deadtree", "tree", "treelog", "treestump", "wall"}
 
-texpack = pygame.Surface((128*(len(textures_img)), 128), flags=pygame.SRCALPHA).convert_alpha()
+texpack = pygame.Surface((min(128*127, 128*(len(textures_img))), 128*(1+len(textures_img)//128)), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(textures_img):
-    texpack.blit(m, (128*i,0))
+    texpack.blit(m, (128*(i%128),128*(i//128)))
+#pygame.image.save(texpack, "texpack.png")
 overlay = pygame.Surface(window_size).convert_alpha()
 overlay.fill((255,255,255,155))
 text = ["CabbageGame Alpha", "wasd for movement", "up/down for zoom", "esc for save and quit", "F4 for fullscreen", "press h to start"]
@@ -92,13 +95,13 @@ try:
 except:
     map = root_node()
     pos = [0.0, 0.0]
-    hotbar = [("null", None), ("water", None), ("planks", None), ("planks", "tiles"), ("wall", "wall"), ("dirt", None), ("weeds", None), ("dirt", "tree"), ("dirt", "deadtree")]
+    hotbar = [("null", None), ("water", None), ("hexpavers", None), ("planks", "tiles"), ("wall", "wall"), ("dirt", None), ("weeds", None), ("dirt", "tree"), ("dirt", "deadtree")]
     sav = open(os.path.join("data", "savedata.pickle") , 'wb')
     data = {'map': map, 'pos': pos, 'hotbar': hotbar}
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-
+hotbar = [("planks", None), ("stones", None), ("hexpavers", None), ("planks", "tiles"), ("wall", "wall"), ("dirt", "fern"), ("dirt", "mushrooms"), ("lushundergrowth", "basil"), ("bottlebrushdirt", None)]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -322,26 +325,32 @@ def main():
                     mat = get_mat(tile_coords[0], tile_coords[1])
                     if (mat == "water"):
                         index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
+                    elif (mat == "hexpavers"):
+                        index = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
                         index = (tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)
                     draw_tile(get_tex(mat, index), x2, y2, screen_coords)
 
                     decor = decorate(tile_coords[0], tile_coords[1], mat)
-                    if decor == "grass":
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
-                    if decor == "tree" or decor == "treestump" or decor == "deadtree" or decor == "treelog":
+                    if decor == None:
+                        pass
+                    elif decor == "mushrooms":
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                    elif decor == "tree" or decor == "treestump" or decor == "deadtree" or decor == "treelog":
                         draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
                         draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 1.0, 0, -1, screen_coords)
                         draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 1.0, 1, 0, screen_coords)
                         draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
-                    if decor == "wall":
+                    elif decor == "wall":
                         wall = get_tex("wall", 0)
                         draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.8, 1, 0, screen_coords)
                         draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.8, 0, 1, screen_coords)
                         draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
-                    if decor == "tiles":
+                    elif decor == "tiles":
                         draw_structure(get_tex("tiles", 0), tile_coords[0], tile_coords[1], 1.8, 1, 1, screen_coords)
+                    else:
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
     draw_sprite(get_tex("char"+str(char_direction),(abs(velocity[0])+abs(velocity[1]) > 0.001)*curtime/200), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
