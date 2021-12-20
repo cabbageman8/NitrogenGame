@@ -23,7 +23,8 @@ silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_si
 textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
-            "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus"]
+            "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
+            "breadstonefalse", "breadstonetrue", "norgate"]
 textures_img = []
 texd = {}
 solids = {"water", "deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "treestump", "wall", "cactus"}
@@ -110,7 +111,7 @@ except:
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-#hotbar = [(None, None), ("stones", "lawn"), ("hexpavers", None), ("lawn", None), ("wall", "wall"), ("dirt", "bush"), ("dirt", "tarragon"), ("lushundergrowth", "basil"), ("bottlebrushdirt", None)]
+hotbar = [(None, None), ("norgate", "breadstonefalse"), ("hexpavers", "breadstonetrue"), ("lawn", None), ("wall", "wall"), ("dirt", "bush"), ("dirt", "tarragon"), ("lushundergrowth", "basil"), ("bottlebrushdirt", None)]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -140,6 +141,31 @@ def construct_overlay():
 
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
     Renderer.update_overlay(overlay)
+
+breadstone_ticked = set()
+breadstone_to_be_ticked = set()
+def breadstone_update(x, y, bool):
+    breadstone_ticked.add((x, y))
+    selected_data = map.get_data(x, y)
+    if (selected_data[1] != None) and ("breadstone" in selected_data[1]):
+        map.set_data(x, y, (selected_data[0], "breadstonetrue" if bool else "breadstonefalse"))
+        if (x+1,y) not in breadstone_ticked:
+            breadstone_update(x+1, y, bool)
+        if (x-1,y) not in breadstone_ticked:
+            breadstone_update(x-1, y, bool)
+        if (x,y+1) not in breadstone_ticked:
+            breadstone_update(x, y+1, bool)
+        if (x,y-1) not in breadstone_ticked:
+            breadstone_update(x, y-1, bool)
+    elif (selected_data[0] != None) and (selected_data[0] == "norgate"):
+        if ( not (map.get_data(x-1, y)[1] == "breadstonetrue") ) and ( not (map.get_data(x, y-1)[1] == "breadstonetrue") ):
+            breadstone_to_be_ticked.add((x, y, True))
+            breadstone_update(x + 1, y, True)
+            breadstone_update(x, y + 1, True)
+        else:
+            breadstone_to_be_ticked.add((x, y, False))
+            breadstone_update(x + 1, y, False)
+            breadstone_update(x, y + 1, False)
 
 biome_size = 100
 def get_biome(x, y):
@@ -251,6 +277,12 @@ def main():
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
+    breadstone_ticked.clear()
+    breadstone_to_be_ticked.clear()
+    for x, y, bool in breadstone_to_be_ticked.copy():
+        breadstone_update(x, y, bool)
+    breadstone_ticked.clear()
+    breadstone_to_be_ticked.clear()
     #frag_time.value = curtime
     handle_keys()
     if pygame.K_w in keydown_set:
@@ -286,7 +318,6 @@ def main():
     if pygame.K_c in keydown_set:
         map.cache.clear()
     if "unclick1" in keydown_set:
-        save_game()
         keydown_set.remove("unclick1")
         construct_overlay()
     if pygame.K_F4 in keydown_set:
@@ -326,12 +357,16 @@ def main():
         else:
             if hotbar[int(selected_item_slot)][0] != None:
                 map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0], None))
+                if (selected_data[1] != None) and "breadstone" in selected_data[1]:
+                    breadstone_update(int(selected_tile[0]), int(selected_tile[1]), False)
     if "mouse2" in keydown_set:
         hotbar[int(selected_item_slot)] = selected_data
         construct_overlay()
     if "mouse3" in keydown_set:
         if hotbar[int(selected_item_slot)][1] != None:
             map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][1]))
+            if "breadstone" in hotbar[int(selected_item_slot)][1] or ((selected_data[1] != None) and "breadstone" in selected_data[1]):
+                breadstone_update(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)][1]=="breadstonetrue")
     if "unclick4" in keydown_set:
         selected_item_slot = (selected_item_slot-1)%9
         construct_overlay()
@@ -375,6 +410,8 @@ def main():
                         draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
                     elif decor in roofing:
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.8, 1, 1, screen_coords)
+                    elif "breadstone" in decor:
+                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
                     elif decor == "cactus":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 2, 2, screen_coords)
                     else:
