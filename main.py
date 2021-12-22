@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 from PIL import Image
 import pickle
-from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder
+from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder, sqrt
 import cProfile
 from quadtree import root_node
 from glrenderer import glrenderer
@@ -24,19 +24,20 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
-            "breadstonefalse", "breadstonetrue", "norgate"]
+            "wirefalse", "wiretrue", "norgate", "flytrap"]
 textures_img = []
 texd = {}
-solids = {"water", "deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "treestump", "wall", "cactus"}
+solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "treestump", "wall", "cactus"}
 animated = {"water"}
 blocks = {"block", "wall"}
 roofing = {"tiles", "planks", "lawn"}
+difficult_terrain = {"water", "flytrap"}
 #          materials,                             shrubs,               trees
 biomes = ((("water","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
             (("gravillearobustadirt", "roughseedgrass"), ("grass", "fern"), ("normaltree", "gravilearobustatree",)),
             (("bottlebrushdirt","roughseedgrass"), ("grass", "mushrooms"), ("normaltree", "bottlebrushtree",)),
             (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("normaltree", "sheoaktree",)),
-            (("water","weeds","water"), ("grass", "bush"), ("normaltree",)),
+            (("water","weeds","water"), ("grass", "bush", "flytrap"), ("normaltree",)),
             (("sand", "fossil"), ("grass","grass", "cactus",), ("normaltree",)),
             (("water","stones"), (), ()))
 def load_textures():
@@ -105,13 +106,13 @@ try:
 except:
     map = root_node()
     pos = [0.0, 0.0]
-    hotbar = [(None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None)]
+    hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
     sav = open(os.path.join("data", "savedata.pickle") , 'wb')
     data = {'map': map, 'pos': pos, 'hotbar': hotbar}
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-hotbar = [(None, None), ("norgate", "breadstonefalse"), ("hexpavers", "breadstonetrue"), ("lawn", None), ("wall", "wall"), ("dirt", "bush"), ("dirt", "tarragon"), ("lushundergrowth", "basil"), ("bottlebrushdirt", None)]
+#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1], ["dirt", 0, 1], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -125,47 +126,42 @@ def construct_overlay():
     overlay.fill((0, 0, 0, 0))
     for i in range(9):
         overlay.blit(textures_img[texd["block"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
-        if hotbar[i][0] != None:
+        if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
-        if hotbar[i][1] != None:
-            overlay.blit(textures_img[texd[hotbar[i][1]][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
         overlay.blit(textures_img[texd["selection"][0]], (0, 110 * i - 110*4.5 + overlay.get_size()[1] / 2))
         #overlay.blit(textures_img[1], (100*i-450+overlay.get_size()[0]/2, overlay.get_size()[1]-100))
     overlay.blit(textures_img[texd["selection"][0]], (0, 110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2))
     #overlay.blit(silombol.render(str(selected_tile), True, (0, 0, 0)), mouse_pos)
     slot = hotbar[int(selected_item_slot)]
-    if slot[1]:
-        t = str(slot[0]) + "+" + str(slot[1])
-    else:
-        t = str(slot[0])
-
-    overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
+    if slot[0] != None and slot[2] > 0:
+        t = str(slot[0]) + " " + str(slot[2])
+        overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
     Renderer.update_overlay(overlay)
 
-breadstone_ticked = set()
-breadstone_to_be_ticked = set()
-def breadstone_update(x, y, bool):
-    breadstone_ticked.add((x, y))
+wire_ticked = set()
+wire_to_be_ticked = set()
+def wire_update(x, y, bool):
+    wire_ticked.add((x, y))
     selected_data = map.get_data(x, y)
-    if (selected_data[1] != None) and ("breadstone" in selected_data[1]):
-        map.set_data(x, y, (selected_data[0], "breadstonetrue" if bool else "breadstonefalse"))
-        if (x+1,y) not in breadstone_ticked:
-            breadstone_update(x+1, y, bool)
-        if (x-1,y) not in breadstone_ticked:
-            breadstone_update(x-1, y, bool)
-        if (x,y+1) not in breadstone_ticked:
-            breadstone_update(x, y+1, bool)
-        if (x,y-1) not in breadstone_ticked:
-            breadstone_update(x, y-1, bool)
+    if (selected_data[1] != None) and ("wire" in selected_data[1]):
+        map.set_data(x, y, (selected_data[0], "wiretrue" if bool else "wirefalse"))
+        if (x+1,y) not in wire_ticked:
+            wire_update(x+1, y, bool)
+        if (x-1,y) not in wire_ticked:
+            wire_update(x-1, y, bool)
+        if (x,y+1) not in wire_ticked:
+            wire_update(x, y+1, bool)
+        if (x,y-1) not in wire_ticked:
+            wire_update(x, y-1, bool)
     elif (selected_data[0] != None) and (selected_data[0] == "norgate"):
-        if ( not (map.get_data(x-1, y)[1] == "breadstonetrue") ) and ( not (map.get_data(x, y-1)[1] == "breadstonetrue") ):
-            breadstone_to_be_ticked.add((x, y, True))
-            breadstone_update(x + 1, y, True)
-            breadstone_update(x, y + 1, True)
+        if ( not (map.get_data(x-1, y)[1] == "wiretrue") ) and ( not (map.get_data(x, y-1)[1] == "wiretrue") ):
+            wire_to_be_ticked.add((x, y, True))
+            wire_update(x + 1, y, True)
+            wire_update(x, y + 1, True)
         else:
-            breadstone_to_be_ticked.add((x, y, False))
-            breadstone_update(x + 1, y, False)
-            breadstone_update(x, y + 1, False)
+            wire_to_be_ticked.add((x, y, False))
+            wire_update(x + 1, y, False)
+            wire_update(x, y + 1, False)
 
 biome_size = 100
 def get_biome(x, y):
@@ -232,7 +228,7 @@ def draw_structure(decor, x, y, z, w, h, screen_coords):
         h * tile_size)
 
 velocity = [0, 0]
-acceleration = 1/6000
+acceleration = 1/5000
 
 keydown_set = set()
 mouse_pos = pygame.mouse.get_pos()
@@ -254,15 +250,20 @@ def handle_keys():
             keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             keydown_set.add("mouse"+str(event.button))
+            if (event.button in (1,)):
+                keydown_set.add("click"+str(event.button))
         elif event.type == pygame.MOUSEBUTTONUP:
             keydown_set.remove("mouse"+str(event.button))
-            if (event.button in (1, 4, 5)):
+            if (event.button in (4, 5)):
                 keydown_set.add("unclick"+str(event.button))
 
 running=True
 frame = 0
 curtime = pygame.time.get_ticks()
 char_direction = 0
+char_speed = 0
+char_anim = 0
+steptime = curtime
 
 def main():
     global frame
@@ -274,15 +275,17 @@ def main():
     global overlay
     global window_size
     global selected_item_slot
+    global steptime
+    global char_anim
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
-    breadstone_ticked.clear()
-    breadstone_to_be_ticked.clear()
-    for x, y, bool in breadstone_to_be_ticked.copy():
-        breadstone_update(x, y, bool)
-    breadstone_ticked.clear()
-    breadstone_to_be_ticked.clear()
+    wire_ticked.clear()
+    wire_to_be_ticked.clear()
+    for x, y, bool in wire_to_be_ticked.copy():
+        wire_update(x, y, bool)
+    wire_ticked.clear()
+    wire_to_be_ticked.clear()
     #frag_time.value = curtime
     handle_keys()
     if pygame.K_w in keydown_set:
@@ -317,9 +320,6 @@ def main():
         construct_overlay()
     if pygame.K_c in keydown_set:
         map.cache.clear()
-    if "unclick1" in keydown_set:
-        keydown_set.remove("unclick1")
-        construct_overlay()
     if pygame.K_F4 in keydown_set:
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
@@ -327,21 +327,28 @@ def main():
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
 
-    velocity[0] -= velocity[0] / 3
-    velocity[1] -= velocity[1] / 3
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
     spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
-    if (mat in solids or spr != None and spr in solids):
+    if (spr != None and spr in solids):
         pos[1] += 1
         velocity = [0, 0]
     else:
         mat2 = get_mat(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]))
         spr2 = decorate(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]), mat2)
-        if (mat2 in solids or spr2 != None and spr2 in solids):
+        if (not "water" in mat) and "water" in mat2:
+            jump_into_water_sfx.stop()
+            jump_into_water_sfx.play()
+        if (spr2 != None and spr2 in solids):
             velocity = [0, 0]
         else:
-            pos[0] += dt*velocity[0]
-            pos[1] += dt*velocity[1]
+            if (mat in difficult_terrain or spr2 != None and spr2 in difficult_terrain):
+                dnom = 30
+            else:
+                dnom = 50
+            velocity[0] -= dt * velocity[0] / dnom
+            velocity[1] -= dt * velocity[1] / dnom
+            pos[0] += dt * velocity[0]
+            pos[1] += dt * velocity[1]
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     selected_tile = [mouse_pos[0] + screen_coords[0] % tile_size,
                      mouse_pos[1] + screen_coords[1] % tile_size]
@@ -350,23 +357,39 @@ def main():
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     selected_data = map.get_data(int(selected_tile[0]), int(selected_tile[1]))
-    if "mouse1" in keydown_set:
+    if "click1" in keydown_set:
         if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
-            construct_overlay()
         else:
-            if hotbar[int(selected_item_slot)][0] != None:
-                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0], None))
-                if (selected_data[1] != None) and "breadstone" in selected_data[1]:
-                    breadstone_update(int(selected_tile[0]), int(selected_tile[1]), False)
+            if selected_data[1] != None:
+                if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[1] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 1):
+                    shovel_sfx.play()
+                    hotbar[int(selected_item_slot)] = [selected_data[1], 1, hotbar[int(selected_item_slot)][2] + 1]
+                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], None))
+                    if (selected_data[1] != None) and "wire" in selected_data[1]:
+                        wire_update(int(selected_tile[0]), int(selected_tile[1]), False)
+            elif selected_data[0] != None:
+                if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[0] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 0):
+                    shovel_sfx.play()
+                    hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
+                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_biome(int(selected_tile[0]), int(selected_tile[1]))[0][0], None))
+        construct_overlay()
+        keydown_set.remove("click1")
     if "mouse2" in keydown_set:
         hotbar[int(selected_item_slot)] = selected_data
         construct_overlay()
     if "mouse3" in keydown_set:
-        if hotbar[int(selected_item_slot)][1] != None:
-            map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][1]))
-            if "breadstone" in hotbar[int(selected_item_slot)][1] or ((selected_data[1] != None) and "breadstone" in selected_data[1]):
-                breadstone_update(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)][1]=="breadstonetrue")
+        if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
+            if hotbar[int(selected_item_slot)][1] == 0:
+                hit_sfx.play()
+                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0], selected_data[1]))
+            if hotbar[int(selected_item_slot)][1] == 1:
+                crumple_sfx.play()
+                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0]))
+            hotbar[int(selected_item_slot)][2] -= 1
+            construct_overlay()
+        if "wire" in hotbar[int(selected_item_slot)][0] or ((selected_data[1] != None) and "wire" in selected_data[1]):
+            wire_update(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)][0]=="wiretrue")
     if "unclick4" in keydown_set:
         selected_item_slot = (selected_item_slot-1)%9
         construct_overlay()
@@ -384,14 +407,15 @@ def main():
                     tile_coords = [ceil(screen_coords[0] / tile_size) + x2 - 1,
                                    ceil(screen_coords[1] / tile_size) + y2 - 1]
                     mat = get_mat(tile_coords[0], tile_coords[1])
+                    index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
                     if (mat in animated):
-                        index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
+                        matindex = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
                     elif (mat == "hexpavers"):
-                        index = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
+                        matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
-                        index = point_to_random(tile_coords[0], tile_coords[1])*1000
+                        matindex = index
                         #index = (tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)
-                    draw_tile(get_tex(mat, index), x2, y2, screen_coords)
+                    draw_tile(get_tex(mat, matindex), x2, y2, screen_coords)
 
                     decor = decorate(tile_coords[0], tile_coords[1], mat)
                     if decor == None:
@@ -410,14 +434,26 @@ def main():
                         draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
                     elif decor in roofing:
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.8, 1, 1, screen_coords)
-                    elif "breadstone" in decor:
+                    elif "wire" in decor:
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
                     elif decor == "cactus":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 2, 2, screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                    elif decor == "flytrap":
+                        if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-1 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-1:
+                            index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1), screen_coords)
                     else:
                         draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
                         draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
-    draw_sprite(get_tex("char"+str(char_direction),(abs(velocity[0])+abs(velocity[1]) > 0.001)*curtime/200), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
+    char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
+    if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
+        steptime = curtime
+        if "water" in get_mat(ceil(pos[0]-1), ceil(pos[1]-1)):
+            fish_sfx.play()
+        else:
+            grass_step_sfx.play()
+    char_anim += char_speed*20
+    draw_sprite(get_tex("char"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
@@ -432,6 +468,14 @@ def main():
     pygame.display.flip()
     clock.tick(FPS)
 
+pygame.mixer.music.load('data/ambience.wav')
+pygame.mixer.music.play(-1)
+shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
+grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
+hit_sfx = pygame.mixer.Sound('data/hit.wav')
+fish_sfx = pygame.mixer.Sound('data/fish.wav')
+crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
+jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
 while running:
     #cProfile.run('main()')
     main()
