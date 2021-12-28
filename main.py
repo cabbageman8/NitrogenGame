@@ -35,8 +35,8 @@ difficult_terrain = {"water", "flytrap"}
 #          materials,                             shrubs,               trees
 biomes = ((("water","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
             (("gravillearobustadirt", "roughseedgrass"), ("grass", "fern"), ("normaltree", "gravilearobustatree",)),
-            (("bottlebrushdirt","roughseedgrass"), ("grass", "mushrooms"), ("normaltree", "bottlebrushtree",)),
-            (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("normaltree", "sheoaktree",)),
+            (("bottlebrushdirt","roughseedgrass"), ("grass",), ("normaltree", "bottlebrushtree",)),
+            (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("deadtree", "sheoaktree", "sheoaktree",)),
             (("water","weeds","water"), ("grass", "bush", "flytrap"), ("normaltree",)),
             (("sand", "fossil"), ("grass","grass", "cactus",), ("normaltree",)),
             (("water","stones"), (), ()))
@@ -83,7 +83,7 @@ for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer = glrenderer(texpack, overlay)
 
-Renderer.render((0, 0))
+Renderer.render((0, 0), tile_size)
 pygame.display.flip()
 
 def seeded_random(a):
@@ -105,14 +105,14 @@ try:
     sav.close()
 except:
     map = root_node()
-    pos = [0.0, 0.0]
+    pos = [pi, tau]
     hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
     sav = open(os.path.join("data", "savedata.pickle") , 'wb')
     data = {'map': map, 'pos': pos, 'hotbar': hotbar}
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1], ["dirt", 0, 1], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -196,7 +196,7 @@ def decorate(x, y, mat):
 
 def draw_tile(mat, x, y, screen_coords):
     # render material texture using int tile coords relitive to the screen
-    Renderer.vert_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2,
+    Renderer.tile_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2,
                                (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2,
                                0.0, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat))
 def draw_sprite(spr, x, y, z, w, h):
@@ -205,19 +205,19 @@ def draw_sprite(spr, x, y, z, w, h):
 def draw_object(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
+        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,
+        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,
         z+sin(x+y*y)/50,
-        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
-        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
+        w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
+        h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
 def draw_object_foreground(decor, x, y, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + x+y*y) * tile_size / 20,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + x+y*y) * tile_size / 20,
-        2.0,
-        w * tile_size + int(cos(curtime / 1000 + x+y*y) * tile_size / 10),
-        h * tile_size + int(sin(curtime / 300 + x+y*y) * tile_size / 10))
+        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,
+        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,
+        1.75+sin(x+y*y)/5,
+        w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
+        h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -228,7 +228,7 @@ def draw_structure(decor, x, y, z, w, h, screen_coords):
         h * tile_size)
 
 velocity = [0, 0]
-acceleration = 1/5000
+acceleration = 1/300
 
 keydown_set = set()
 mouse_pos = pygame.mouse.get_pos()
@@ -244,8 +244,7 @@ def handle_keys():
             if event.key == pygame.K_ESCAPE:
                 save_game()
                 running = False
-            else:
-                keydown_set.add(event.key)
+            keydown_set.add(event.key)
         elif event.type == pygame.KEYUP and event.key != pygame.K_F4:
             keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -289,25 +288,36 @@ def main():
     #frag_time.value = curtime
     handle_keys()
     if pygame.K_w in keydown_set:
-        velocity[1] -= acceleration * dt
-        char_direction = 0
-    if pygame.K_a in keydown_set:
-        char_direction = 2
-        if pygame.K_w in keydown_set:
-            char_direction = 3
-        velocity[0] -= acceleration * dt
-    if pygame.K_s in keydown_set:
-        char_direction = 4
         if pygame.K_a in keydown_set:
-            char_direction = 5
-        velocity[1] += acceleration * dt
-    if pygame.K_d in keydown_set:
-        char_direction = 6
-        if pygame.K_w in keydown_set:
+            velocity[0] -= acceleration * 0.707106781187
+            velocity[1] -= acceleration * 0.707106781187
+            char_direction = 3
+        elif pygame.K_d in keydown_set:
+            velocity[0] += acceleration * 0.707106781187
+            velocity[1] -= acceleration * 0.707106781187
             char_direction = 1
-        if pygame.K_s in keydown_set:
+        else:
+            velocity[1] -= acceleration
+            char_direction = 0
+    elif pygame.K_s in keydown_set:
+        if pygame.K_a in keydown_set:
+            velocity[0] -= acceleration * 0.707106781187
+            velocity[1] += acceleration * 0.707106781187
+            char_direction = 5
+        elif pygame.K_d in keydown_set:
+            velocity[0] += acceleration * 0.707106781187
+            velocity[1] += acceleration * 0.707106781187
             char_direction = 7
-        velocity[0] += acceleration * dt
+        else:
+            velocity[1] += acceleration
+            char_direction = 4
+    else:
+        if pygame.K_a in keydown_set:
+            velocity[0] -= acceleration
+            char_direction = 2
+        elif pygame.K_d in keydown_set:
+            velocity[0] += acceleration
+            char_direction = 6
     if pygame.K_t in keydown_set:
         map.tree()
     if pygame.K_UP in keydown_set:
@@ -342,11 +352,11 @@ def main():
             velocity = [0, 0]
         else:
             if (mat in difficult_terrain or spr2 != None and spr2 in difficult_terrain):
-                dnom = 30
+                dnom = 2
             else:
-                dnom = 50
-            velocity[0] -= dt * velocity[0] / dnom
-            velocity[1] -= dt * velocity[1] / dnom
+                dnom = 3
+            velocity[0] -= velocity[0] / dnom
+            velocity[1] -= velocity[1] / dnom
             pos[0] += dt * velocity[0]
             pos[1] += dt * velocity[1]
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
@@ -399,17 +409,17 @@ def main():
         construct_overlay()
         keydown_set.remove("unclick5")
     for i2, i in enumerate((1, -1)):
-        for y in range(ceil((2+i2+window_size[1] // tile_size) / 2)):
-            y2 = (y*i)%(window_size[1]//tile_size+2)
+        for y in range(ceil((1+i2+window_size[1] // tile_size) / 2)):
+            y2 = ((y+(i==1))*i)%(window_size[1]//tile_size+2)
             for j2, j in enumerate((1, -1)):
-                for x in range(ceil((2+j2+window_size[0] // tile_size)/2)):
-                    x2 = (x * j) % (window_size[0] // tile_size+2)
+                for x in range(ceil((1+j2+window_size[0] // tile_size)/2)):
+                    x2 = ((x+(j==1)) * j) % (window_size[0] // tile_size+2)
                     tile_coords = [ceil(screen_coords[0] / tile_size) + x2 - 1,
                                    ceil(screen_coords[1] / tile_size) + y2 - 1]
                     mat = get_mat(tile_coords[0], tile_coords[1])
                     index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
                     if (mat in animated):
-                        matindex = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
+                        matindex = (curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1])
                     elif (mat == "hexpavers"):
                         matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
@@ -421,30 +431,31 @@ def main():
                     if decor == None:
                         pass
                     elif decor == "mushrooms":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                     elif "tree" in decor or decor == "treestump" or decor == "deadtree" or decor == "treelog":
-                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
-                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 1.0, 0, -1, screen_coords)
-                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], 1.0, 1, 0, screen_coords)
-                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 1.0, 1, 1, screen_coords)
+                        tree_height = 0.75+sin(tile_coords[0]+tile_coords[1]*tile_coords[1])/5
+                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
+                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
+                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
                     elif decor in blocks:
                         wall = get_tex(decor, 0)
-                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.8, 1, 0, screen_coords)
-                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.8, 0, 1, screen_coords)
-                        draw_structure(wall, tile_coords[0], tile_coords[1], 0.8, 1, 1, screen_coords)
+                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0, screen_coords)
+                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.13, 0, 1, screen_coords)
+                        draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1, screen_coords)
                     elif decor in roofing:
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.8, 1, 1, screen_coords)
+                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1, screen_coords)
                     elif "wire" in decor:
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.1, 1, 1, screen_coords)
+                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                     elif decor == "cactus":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-1 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-1:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.3, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1), screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1), screen_coords)
                     else:
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.35, -2, -2, screen_coords)
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.5, 2, 2, screen_coords)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.035, -2, -2, screen_coords)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.05, 2, 2, screen_coords)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -453,7 +464,9 @@ def main():
         else:
             grass_step_sfx.play()
     char_anim += char_speed*20
-    draw_sprite(get_tex("char"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.75, 2 * tile_size, 2 * tile_size)
+    if char_speed < 0.001:
+        char_anim = 0
+    draw_sprite(get_tex("char"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
@@ -461,21 +474,27 @@ def main():
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == "normaltree" or decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
-                draw_object_foreground(get_tex(decor, 0), tile_coords[0], tile_coords[1], 8, 8, screen_coords)
+                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
     draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
 
-    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2))
+    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     pygame.display.flip()
     clock.tick(FPS)
 
 pygame.mixer.music.load('data/ambience.wav')
 pygame.mixer.music.play(-1)
 shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
+shovel_sfx.set_volume(0.5)
 grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
+grass_step_sfx.set_volume(0.1)
 hit_sfx = pygame.mixer.Sound('data/hit.wav')
+hit_sfx.set_volume(0.5)
 fish_sfx = pygame.mixer.Sound('data/fish.wav')
+fish_sfx.set_volume(0.5)
 crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
+crumple_sfx.set_volume(0.5)
 jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
+jump_into_water_sfx.set_volume(0.5)
 while running:
     #cProfile.run('main()')
     main()
