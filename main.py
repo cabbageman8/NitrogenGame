@@ -28,6 +28,7 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
 textures_img = []
 texd = {}
 solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "treestump", "wall", "cactus"}
+entities = ["charhands","charhandstouch", "charhead", "charlegs"]
 animated = {"water"}
 blocks = {"block", "wall"}
 roofing = {"tiles", "planks", "lawn"}
@@ -53,21 +54,22 @@ def load_textures():
             textures_img.append(frame)
         texd.update({mat : frame_list})
 
-    file = Image.open(os.path.join("data", "char32.png")).convert("RGBA")
-    fileb = Image.open(os.path.join("data", "charb32.png")).convert("RGBA")
-    for i in range(4):
-        frame_list = []
-        for j in range(file.height // file.width):
-            frame = pygame.image.fromstring( file.crop(Rect(0, file.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
-            frame_list.append(len(textures_img))
-            textures_img.append(frame)
-        texd.update({"char"+str(i*2): frame_list})
-        frame_list = []
-        for j in range(fileb.height // fileb.width):
-            frame = pygame.image.fromstring( fileb.crop(Rect(0, fileb.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
-            frame_list.append(len(textures_img))
-            textures_img.append(frame)
-        texd.update({"char" + str(i*2+1): frame_list})
+    for e in entities:
+        file = Image.open(os.path.join("data", "entities", e+".png")).convert("RGBA")
+        fileb = Image.open(os.path.join("data", "entities", e+"45.png")).convert("RGBA")
+        for i in range(4):
+            frame_list = []
+            for j in range(file.height // file.width):
+                frame = pygame.image.fromstring( file.crop(Rect(0, file.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
+                frame_list.append(len(textures_img))
+                textures_img.append(frame)
+            texd.update({e+str(i*2): frame_list})
+            frame_list = []
+            for j in range(fileb.height // fileb.width):
+                frame = pygame.image.fromstring( fileb.crop(Rect(0, fileb.width * j, file.width, file.width * (j + 1))).resize([128, 128], resample=Image.NEAREST).rotate(90*i).tobytes(), [128, 128], "RGBA").convert_alpha()
+                frame_list.append(len(textures_img))
+                textures_img.append(frame)
+            texd.update({e+str(i*2+1): frame_list})
 load_textures()
 def get_tex(name, index):
     return texd[name][int(index)%len(texd[name])]
@@ -102,24 +104,25 @@ try:
     map = data['map']
     pos = data['pos']
     hotbar = data['hotbar']
+    player_number = data['player_number']
     sav.close()
 except:
     map = root_node()
     pos = [pi, tau]
     hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
+    player_number = 0
     sav = open(os.path.join("data", "savedata.pickle") , 'wb')
-    data = {'map': map, 'pos': pos, 'hotbar': hotbar}
+    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
-    data = {'map': map, 'pos': pos, 'hotbar': hotbar}
+    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()
-
 selected_item_slot = 0
 
 def construct_overlay():
@@ -276,6 +279,7 @@ def main():
     global selected_item_slot
     global steptime
     global char_anim
+    global player_number
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -318,6 +322,10 @@ def main():
         elif pygame.K_d in keydown_set:
             velocity[0] += acceleration
             char_direction = 6
+    keypad_list = [pygame.K_KP0, pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_KP7, pygame.K_KP8, pygame.K_KP9]
+    for kp in keypad_list:
+        if kp in keydown_set:
+            player_number = keypad_list.index(kp)
     if pygame.K_t in keydown_set:
         map.tree()
     if pygame.K_UP in keydown_set:
@@ -450,7 +458,7 @@ def main():
                     elif decor == "cactus":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
                     elif decor == "flytrap":
-                        if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-1 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-1:
+                        if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1), screen_coords)
                     else:
@@ -466,7 +474,9 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
-    draw_sprite(get_tex("char"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
+    draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
+    draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
+    draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(7 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
@@ -486,7 +496,7 @@ pygame.mixer.music.play(-1)
 shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
 shovel_sfx.set_volume(0.5)
 grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
-grass_step_sfx.set_volume(0.1)
+grass_step_sfx.set_volume(0.5)
 hit_sfx = pygame.mixer.Sound('data/hit.wav')
 hit_sfx.set_volume(0.5)
 fish_sfx = pygame.mixer.Sound('data/fish.wav')
