@@ -24,23 +24,24 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
-            "wirefalse", "wiretrue", "norgate", "flytrap"]
+            "wirefalse", "wiretrue", "norgate", "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
+            "freshwater"]
 textures_img = []
 texd = {}
-solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "treestump", "wall", "cactus"}
+solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus"}
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
-animated = {"water"}
+animated = {"water", "freshwater"}
 blocks = {"block", "wall"}
-roofing = {"tiles", "planks", "lawn"}
-difficult_terrain = {"water", "flytrap"}
+roofing = {"tiles", "planks"}
+difficult_terrain = {"water", "flytrap", "freshwater"}
 #          materials,                             shrubs,               trees
-biomes = ((("water","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
+biomes = ((("freshwater","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
             (("gravillearobustadirt", "roughseedgrass"), ("grass", "fern"), ("normaltree", "gravilearobustatree",)),
             (("bottlebrushdirt","roughseedgrass"), ("grass",), ("normaltree", "bottlebrushtree",)),
             (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("deadtree", "sheoaktree", "sheoaktree",)),
-            (("water","weeds","water"), ("grass", "bush", "flytrap"), ("normaltree",)),
+            (("freshwater","weeds","freshwater"), ("grass", "bush", "flytrap", "lillypad",), ("normaltree",)),
             (("sand", "fossil"), ("grass","grass", "cactus",), ("normaltree",)),
-            (("water","stones"), (), ()))
+            (("water","stones"), (None, ), (None, )))
 def load_textures():
     global texd
     global textures_img
@@ -116,11 +117,11 @@ except:
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["wiretrue", 1, 1], ["flytrap", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
-    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
+    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number': player_number}
     pickle.dump(data, sav)
     sav.close()
 selected_item_slot = 0
@@ -190,8 +191,10 @@ def decorate(x, y, mat):
     else:
         r = point_to_random(x, y)
         biome = get_biome(x, y)
-        if (r < 0.7 and (mat == "weeds" or mat == "roughseedgrass")) or (r < 0.1 and ("dirt" in mat or "sand" in mat)):
+        if ((r < 0.7 and (mat == "weeds" or mat == "roughseedgrass"))) or (r < 0.1 and ("dirt" in mat or "sand" in mat)) or "water" in mat:
             dec = biome[1][int(r * 100) % len(biome[1])]
+            if "water" in mat and dec != "lillypad" or not "water" in mat and dec == "lillypad":
+                dec = None
         if r > 0.98 and "dirt" in mat:
             dec = biome[2][int(r * 100) % len(biome[2])]
         map.cache_data(int(x), int(y), (mat, dec))
@@ -213,12 +216,12 @@ def draw_object(decor, x, y, z, w, h, screen_coords):
         z+sin(x+y*y)/50,
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
-def draw_object_foreground(decor, x, y, w, h, screen_coords):
+def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,
         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,
-        1.75+sin(x+y*y)/5,
+        1+z,
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
 def draw_structure(decor, x, y, z, w, h, screen_coords):
@@ -427,7 +430,7 @@ def main():
                     mat = get_mat(tile_coords[0], tile_coords[1])
                     index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
                     if (mat in animated):
-                        matindex = (curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1])
+                        matindex = index+(curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1])
                     elif (mat == "hexpavers"):
                         matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
@@ -440,12 +443,14 @@ def main():
                         pass
                     elif decor == "mushrooms":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
-                    elif "tree" in decor or decor == "treestump" or decor == "deadtree" or decor == "treelog":
-                        tree_height = 0.75+sin(tile_coords[0]+tile_coords[1]*tile_coords[1])/5
+                    elif decor == "normaltree" or decor == "birchtreelog":
+                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
+                    elif decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree" or decor == "treelog":
                         draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
-                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
-                        draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
-                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
+                    elif decor == "birchtreestump":
+                        draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
+                    elif decor == "treestump":
+                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
                     elif decor in blocks:
                         wall = get_tex(decor, 0)
                         draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0, screen_coords)
@@ -457,6 +462,8 @@ def main():
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                     elif decor == "cactus":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                    elif decor == "lillypad":
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1), screen_coords)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
@@ -478,13 +485,23 @@ def main():
     draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
-        for x in range(7 + window_size[0] // tile_size):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 4,
-                           ceil(screen_coords[1] / tile_size) + y - 4]
+        for x in range(8 + window_size[0] // tile_size):
+            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 7,
+                           ceil(screen_coords[1] / tile_size) + y - 2]
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
-            if decor == "normaltree" or decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
-                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
+            if decor == "normaltree":
+                tree_height = 0.75 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 5
+                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
+                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
+                draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
+                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
+            if decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
+                tree_height = 0.75 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 5
+                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
+                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
+                draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
+                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
     draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
