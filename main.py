@@ -1,3 +1,6 @@
+# cabbagegame Alpha
+# to compile run
+# py -m nuitka --standalone --follow-imports --include-data-dir=data=data main.py
 import pygame
 from pygame.locals import *
 from PIL import Image
@@ -25,7 +28,7 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
             "wirefalse", "wiretrue", "norgate", "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
-            "freshwater"]
+            "freshwater", "axe", "spade"]
 textures_img = []
 texd = {}
 solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus"}
@@ -118,6 +121,8 @@ except:
     sav.close()
     print('could not load, blank save loaded')
 #hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+#hotbar[0] = ["axe", 1, 1]
+#hotbar[1] = ["spade", 1, 1]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -128,18 +133,20 @@ selected_item_slot = 0
 
 def construct_overlay():
     overlay.fill((0, 0, 0, 0))
+    overlay.blit(textures_img[texd["selection"][0]], (0, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2))
     for i in range(9):
-        overlay.blit(textures_img[texd["block"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
+        #overlay.blit(textures_img[texd["block"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
+        #overlay.blit(textures_img[texd["selection"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
         if hotbar[i][0] != None and hotbar[i][2] > 0:
-            overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
-        overlay.blit(textures_img[texd["selection"][0]], (0, 110 * i - 110*4.5 + overlay.get_size()[1] / 2))
+            overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
         #overlay.blit(textures_img[1], (100*i-450+overlay.get_size()[0]/2, overlay.get_size()[1]-100))
-    overlay.blit(textures_img[texd["selection"][0]], (0, 110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2))
     #overlay.blit(silombol.render(str(selected_tile), True, (0, 0, 0)), mouse_pos)
     slot = hotbar[int(selected_item_slot)]
     if slot[0] != None and slot[2] > 0:
-        t = str(slot[0]) + " " + str(slot[2])
-        overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+110 * selected_item_slot - 110 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
+        t = str(slot[0])
+        if slot[2] > 1:
+            t += " " + str(slot[2])
+        overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
     Renderer.update_overlay(overlay)
 
 wire_ticked = set()
@@ -224,6 +231,7 @@ def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
         1+z,
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
+    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -0.12, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -232,6 +240,8 @@ def draw_structure(decor, x, y, z, w, h, screen_coords):
         z,
         w * tile_size,
         h * tile_size)
+    if z > 1 or w * h == 0:
+        Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2, -0.12, (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2, decor))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -448,8 +458,10 @@ def main():
                     elif decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree" or decor == "treelog":
                         draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                     elif decor == "birchtreestump":
+                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                         draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
                     elif decor == "treestump":
+                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                         draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
                     elif decor in blocks:
                         wall = get_tex(decor, 0)
@@ -481,8 +493,8 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
-    draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
-    draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
+    draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
+    draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
     for y in range(7 + window_size[1] // tile_size):
         for x in range(8 + window_size[0] // tile_size):
