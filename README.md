@@ -13,10 +13,7 @@ You should use pygame 2.0.3 (SDL 2.0.16, Python 3.9.9) with the following module
 * pygame
 * PIL / PILLOW
 * pickle
-* math
 * cProfile
-* sys
-* os
 * struct
 * moderngl
 * glcontext
