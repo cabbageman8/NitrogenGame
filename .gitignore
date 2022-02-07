@@ -7,3 +7,6 @@ main.build
 venv
 
 texpack.png
+
+data/savedata.pickle
+main.dist/data/savedata.pickle
