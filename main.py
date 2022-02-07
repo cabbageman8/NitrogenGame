@@ -5,7 +5,7 @@ import pygame
 from pygame.locals import *
 from PIL import Image
 import pickle
-from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder, sqrt
+from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder, sqrt, log
 import cProfile
 from quadtree import root_node
 from glrenderer import glrenderer
@@ -27,7 +27,7 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
-            "wirefalse", "wiretrue", "norgate", "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
+            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
             "freshwater", "axe", "spade"]
 textures_img = []
 texd = {}
@@ -120,7 +120,7 @@ except:
     pickle.dump(data, sav)
     sav.close()
     print('could not load, blank save loaded')
-#hotbar = [["norgate", 0, 1], ["wirefalse", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+#hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["axe", 1, 1]
 #hotbar[1] = ["spade", 1, 1]
 def save_game():
@@ -148,31 +148,6 @@ def construct_overlay():
             t += " " + str(slot[2])
         overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
     Renderer.update_overlay(overlay)
-
-wire_ticked = set()
-wire_to_be_ticked = set()
-def wire_update(x, y, bool):
-    wire_ticked.add((x, y))
-    selected_data = map.get_data(x, y)
-    if (selected_data[1] != None) and ("wire" in selected_data[1]):
-        map.set_data(x, y, (selected_data[0], "wiretrue" if bool else "wirefalse"))
-        if (x+1,y) not in wire_ticked:
-            wire_update(x+1, y, bool)
-        if (x-1,y) not in wire_ticked:
-            wire_update(x-1, y, bool)
-        if (x,y+1) not in wire_ticked:
-            wire_update(x, y+1, bool)
-        if (x,y-1) not in wire_ticked:
-            wire_update(x, y-1, bool)
-    elif (selected_data[0] != None) and (selected_data[0] == "norgate"):
-        if ( not (map.get_data(x-1, y)[1] == "wiretrue") ) and ( not (map.get_data(x, y-1)[1] == "wiretrue") ):
-            wire_to_be_ticked.add((x, y, True))
-            wire_update(x + 1, y, True)
-            wire_update(x, y + 1, True)
-        else:
-            wire_to_be_ticked.add((x, y, False))
-            wire_update(x + 1, y, False)
-            wire_update(x, y + 1, False)
 
 biome_size = 100
 def get_biome(x, y):
@@ -231,7 +206,7 @@ def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
         1+z,
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
-    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -0.12, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -240,8 +215,9 @@ def draw_structure(decor, x, y, z, w, h, screen_coords):
         z,
         w * tile_size,
         h * tile_size)
-    if z > 1 or w * h == 0:
-        Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2, -0.12, (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2, decor))
+    if w * h == 0:
+        Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2, -z, (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2, decor))
+
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -296,12 +272,6 @@ def main():
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
-    wire_ticked.clear()
-    wire_to_be_ticked.clear()
-    for x, y, bool in wire_to_be_ticked.copy():
-        wire_update(x, y, bool)
-    wire_ticked.clear()
-    wire_to_be_ticked.clear()
     #frag_time.value = curtime
     handle_keys()
     if pygame.K_w in keydown_set:
@@ -397,8 +367,6 @@ def main():
                     shovel_sfx.play()
                     hotbar[int(selected_item_slot)] = [selected_data[1], 1, hotbar[int(selected_item_slot)][2] + 1]
                     map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], None))
-                    if (selected_data[1] != None) and "wire" in selected_data[1]:
-                        wire_update(int(selected_tile[0]), int(selected_tile[1]), False)
             elif selected_data[0] != None:
                 if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[0] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 0):
                     shovel_sfx.play()
@@ -419,8 +387,6 @@ def main():
                 map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0]))
             hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
-        if "wire" in hotbar[int(selected_item_slot)][0] or ((selected_data[1] != None) and "wire" in selected_data[1]):
-            wire_update(int(selected_tile[0]), int(selected_tile[1]), hotbar[int(selected_item_slot)][0]=="wiretrue")
     if "unclick4" in keydown_set:
         selected_item_slot = (selected_item_slot-1)%9
         construct_overlay()
@@ -496,20 +462,20 @@ def main():
     draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
-    for y in range(7 + window_size[1] // tile_size):
-        for x in range(8 + window_size[0] // tile_size):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 7,
-                           ceil(screen_coords[1] / tile_size) + y - 2]
+    for y in range(14 + window_size[1] // tile_size):
+        for x in range(18 + window_size[0] // tile_size):
+            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 9,
+                           ceil(screen_coords[1] / tile_size) + y - 8]
             mat = get_mat(tile_coords[0], tile_coords[1])
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == "normaltree":
-                tree_height = 0.75 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 5
+                tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
                 draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
                 draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
                 draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
                 draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
             if decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
-                tree_height = 0.75 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 5
+                tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
                 draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
                 draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
                 draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
