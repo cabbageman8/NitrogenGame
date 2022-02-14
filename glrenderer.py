@@ -7,6 +7,7 @@ import pygame
 class glrenderer():
     def __init__(self, texpack, overlay):
         self.vert_list = []
+        self.shadow_list = []
         self.tile_list = []
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
@@ -175,6 +176,20 @@ void main() {
         texture_data = overlay.get_view('1')
         self.overlay_texture.write(texture_data)
 
+    def write_vert_data(self, vert_list):
+        self.instance_data_pos.write(b''.join(struct.pack(
+            '3f',
+            x, y, z
+        ) for x, y, z, w, h, tex in vert_list))
+        self.instance_data_size.write(b''.join(struct.pack(
+            '2f',
+            w, h
+        ) for x, y, z, w, h, tex in vert_list))
+        self.instance_data_texnum.write(b''.join(struct.pack(
+            '1f',
+            tex
+        ) for x, y, z, w, h, tex in vert_list))
+
     def render(self, mouse_pos, tile_size):
         self.ctx.clear()
         self.texpack_texture.use()
@@ -182,40 +197,22 @@ void main() {
         self.prog['mouse_pos'].value = mouse_pos
         self.prog['tile_size'].value = tile_size/100.0
         self.shadowprog['tile_size'].value = tile_size/100.0
-        self.instance_data_pos.write(b''.join(struct.pack(
-            '3f',
-            x, y, z
-        ) for x, y, z, w, h, tex in self.tile_list))
-        self.instance_data_size.write(b''.join(struct.pack(
-            '2f',
-            w, h
-        ) for x, y, z, w, h, tex in self.tile_list))
-        self.instance_data_texnum.write(b''.join(struct.pack(
-            '1f',
-            tex
-        ) for x, y, z, w, h, tex in self.tile_list))
+        self.write_vert_data(self.tile_list)
         self.vao.render(instances=len(self.tile_list))
 
         self.vert_list = sorted(self.vert_list, key=lambda tup: tup[2])
-        #self.vert_list.append((0, 0, 0.0, 2, 2, 1))
-        self.instance_data_pos.write(b''.join(struct.pack(
-            '3f',
-            x, y, z
-        ) for x, y, z, w, h, tex in self.vert_list))
-        self.instance_data_size.write(b''.join(struct.pack(
-            '2f',
-            w, h
-        ) for x, y, z, w, h, tex in self.vert_list))
-        self.instance_data_texnum.write(b''.join(struct.pack(
-            '1f',
-            tex
-        ) for x, y, z, w, h, tex in self.vert_list))
+        self.write_vert_data(self.vert_list)
         #print(len(self.vert_list),"instances")
         self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
         self.shadowvao.render(instances=len(self.vert_list))
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
         self.vao.render(instances=len(self.vert_list))
+        self.write_vert_data(self.shadow_list)
+        self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
+        self.shadowvao.render(instances=len(self.shadow_list))
+        self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
         self.overlay_texture.use()
         self.quad_fs.render()
         self.vert_list = []
+        self.shadow_list = []
         self.tile_list = []

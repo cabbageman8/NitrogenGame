@@ -11,6 +11,11 @@ from quadtree import root_node
 from glrenderer import glrenderer
 import sys
 import os
+import time
+import requests
+import io
+import base64
+
 pygame.init()
 pygame.font.init()
 
@@ -28,7 +33,7 @@ textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
-            "freshwater", "axe", "spade"]
+            "freshwater", "axe", "spade", "cloud", "talldrygrass"]
 textures_img = []
 texd = {}
 solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus"}
@@ -84,7 +89,7 @@ for i, m in enumerate(textures_img):
 pygame.image.save(texpack, "texpack.png")
 overlay = pygame.Surface(window_size).convert_alpha()
 overlay.fill((255,255,255,155))
-text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "up/down for zoom", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
+text = ["connecting to server"]
 for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer = glrenderer(texpack, overlay)
@@ -102,27 +107,47 @@ def seeded_random(a):
 def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y * y)
 
+text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
 try:
-    sav = open(os.path.join("data", "savedata.pickle") , 'rb')
+    resp = requests.get("http://cabbageserver.ddns.net:27448/bin", timeout=2)
+    sav = io.BytesIO(base64.b64decode(resp.content))
     data = pickle.load(sav)
     map = data['map']
     pos = data['pos']
     hotbar = data['hotbar']
     player_number = data['player_number']
     sav.close()
+    text.append('loaded save from server')
 except:
-    map = root_node()
-    pos = [pi, tau]
-    hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
-    player_number = 0
-    sav = open(os.path.join("data", "savedata.pickle") , 'wb')
-    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
-    pickle.dump(data, sav)
-    sav.close()
-    print('could not load, blank save loaded')
+    try:
+        sav = open(os.path.join("data", "savedata.pickle"), 'rb')
+        data = pickle.load(sav)
+        map = data['map']
+        pos = data['pos']
+        hotbar = data['hotbar']
+        player_number = data['player_number']
+        sav.close()
+        text.append('could not reach server, local save loaded')
+    except:
+        map = root_node()
+        pos = [pi, tau]
+        hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
+        player_number = 0
+        sav = open(os.path.join("data", "savedata.pickle") , 'wb')
+        data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
+        pickle.dump(data, sav)
+        sav.close()
+        text.append('could not load local savefile, blank save loaded')
+
+overlay.fill((255,255,255,155))
+for i, t in enumerate(text):
+    overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
+Renderer.update_overlay(overlay)
+
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["axe", 1, 1]
 #hotbar[1] = ["spade", 1, 1]
+hotbar[1] = ["talldrygrass", 1, 999]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -207,6 +232,10 @@ def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
     Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+def draw_shadow(decor, x, y, z, w, h, screen_coords):
+    # render sprite texture using tile coords relitive to the world
+    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+    Renderer.shadow_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -313,6 +342,8 @@ def main():
         map.tree()
     if pygame.K_UP in keydown_set:
         tile_size += 2
+        if (tile_size > 75):
+            tile_size = 75
     if pygame.K_DOWN in keydown_set:
         tile_size -= 2
         if (tile_size < 10):
@@ -436,12 +467,12 @@ def main():
                         draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1, screen_coords)
                     elif decor in roofing:
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1, screen_coords)
-                    elif "wire" in decor:
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
                     elif decor == "cactus":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
                     elif decor == "lillypad":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                    elif decor == "talldrygrass":
+                        draw_structure(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1, screen_coords)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
@@ -481,6 +512,10 @@ def main():
                 draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
                 draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
     draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
+    for c in range(10):
+        draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100, screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100, 1, 100*(int(c)%2*2-1), 100*(int(c//2)%2*2-1), screen_coords)
+
+    #draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size+20, screen_coords[1] / tile_size+8, 1, 1000, 1000, screen_coords)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     pygame.display.flip()
