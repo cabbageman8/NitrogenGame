@@ -29,8 +29,9 @@ precision mediump float;
 uniform sampler2D overlay;
 in vec2 v_text;
 out vec4 f_color;
-vec4 incolour = texture(overlay,v_text).rgba;
+vec4 incolour;
 void main() {
+    incolour = texture(overlay,v_text);
     f_color = vec4(incolour.r, incolour.g, incolour.b, incolour.a);
 }
         ''')
@@ -48,9 +49,11 @@ uniform sampler2D overlay;
 out vec2 v_text;
 out float thetexnum;
 out vec3 screenpos;
+vec2 packsize;
+float zpos;
 void main() {
-    vec2 packsize = vec2(textureSize(texpack, 0).xy);
-    float zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
+    packsize = vec2(textureSize(texpack, 0).xy);
+    zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
     screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*tile_size), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*tile_size), -pos.z);
     thetexnum = texnum;
@@ -70,11 +73,15 @@ in vec2 v_text;
 in float thetexnum;
 in vec3 screenpos;
 out vec4 f_color;
-vec4 incolour = texture(texpack,v_text).rgba;
+vec4 incolour;
+float mid_dist_2;
+float mouse_dist_2;
+float seethrough;
 void main() {
-    float mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
-    float mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
-    float seethrough = (screenpos.z < -1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0 ;
+    incolour = texture(texpack,v_text);
+    mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
+    mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
+    seethrough = (screenpos.z < -1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0;
     f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3, incolour.a-(1.0-seethrough))));
 }
 ''')
@@ -91,9 +98,11 @@ uniform sampler2D texpack;
 out vec2 v_text;
 out float thetexnum;
 out vec3 screenpos;
+vec2 packsize;
+float zpos;
 void main() {
-    vec2 packsize = vec2(textureSize(texpack, 0).xy);
-    float zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
+    packsize = vec2(textureSize(texpack, 0).xy);
+    zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
     screenpos = vec3((pos.x+vert.x*size.x-1.0)+0.3*(zpos*tile_size), (1.0-pos.y-vert.y*size.y)+0.3*(zpos*tile_size), -pos.z);
     thetexnum = texnum;
@@ -108,9 +117,10 @@ precision mediump float;
 uniform sampler2D texpack;
 in vec2 v_text;
 in vec3 screenpos;
-vec4 incolour = texture(texpack,v_text).rgba;
+vec4 incolour;
 out vec4 f_color;
 void main() {
+    incolour = texture(texpack,v_text);
     f_color = vec4(0, 0.02, 0.05, min(incolour.a,min(0.5, incolour.a)));
 }
 ''')

@@ -13,7 +13,6 @@ import sys
 import os
 import time
 import requests
-import io
 import base64
 
 pygame.init()
@@ -110,13 +109,11 @@ def point_to_random(x, y):
 text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
 try:
     resp = requests.get("http://cabbageserver.ddns.net:27448/bin", timeout=2)
-    sav = io.BytesIO(base64.b64decode(resp.content))
-    data = pickle.load(sav)
+    sav = data = pickle.loads(base64.b64decode(resp.content))
     map = data['map']
     pos = data['pos']
     hotbar = data['hotbar']
     player_number = data['player_number']
-    sav.close()
     text.append('loaded save from server')
 except:
     try:
