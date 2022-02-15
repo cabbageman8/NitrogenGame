@@ -5,7 +5,7 @@ import pygame
 from pygame.locals import *
 from PIL import Image
 import pickle
-from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, remainder, sqrt, log
+from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, sqrt, log
 import cProfile
 from quadtree import root_node
 from glrenderer import glrenderer
@@ -25,7 +25,7 @@ clock = pygame.time.Clock()
 window_size=(2560, 1440)
 tile_size = 75
 
-pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL, vsync=1)
+pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
 textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
