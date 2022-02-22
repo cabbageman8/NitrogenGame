@@ -58,6 +58,7 @@ def get_players():
 @app.route('/player_update', methods=['POST'])
 def player_update():
     players.update(request.form)
+    print("players:", players.keys())
     return str(players)
 
 if __name__ == '__main__':

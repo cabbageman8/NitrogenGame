@@ -523,9 +523,9 @@ def main():
             coords = [float(values[0])-.5, float(values[1])-.5]
             direc = values[2][1:]
             anim = values[3][1:]
-            draw_object(get_tex("charlegs"+str(direc), anim), coords[0], coords[1], 0.05, 2, 2, screen_coords)
-            draw_object(get_tex("charhands"+str(direc), anim), coords[0], coords[1], 0.05, 2, 2, screen_coords)
-            draw_object(get_tex("charhead"+str(direc), int(number)), coords[0], coords[1], 0.05, 2, 2, screen_coords)
+            draw_object(get_tex("charlegs"+str(direc), float(anim)), coords[0], coords[1], 0.05, 2, 2, screen_coords)
+            draw_object(get_tex("charhands"+str(direc), float(anim)), coords[0], coords[1], 0.07, 2, 2, screen_coords)
+            draw_object(get_tex("charhead"+str(direc), int(number)), coords[0], coords[1], 0.08, 2, 2, screen_coords)
     draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
