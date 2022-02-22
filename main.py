@@ -4,7 +4,6 @@
 import pygame
 from pygame.locals import *
 from PIL import Image
-import grequests
 import pickle
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, sqrt, log
 import cProfile
@@ -16,6 +15,10 @@ import time
 import datetime
 import requests
 import base64
+
+logfile = open("log.txt", 'w')
+sys.stderr = logfile
+sys.stdout = logfile
 
 pygame.init()
 pygame.font.init()
@@ -299,8 +302,9 @@ char_direction = 0
 char_speed = 0
 char_anim = 0
 steptime = curtime
-req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
-req.send()
+req = []
+#req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
+#req.send()
 player_text = []
 last_server_update = 0
 
@@ -505,11 +509,10 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
-    if req.response != None and last_server_update+0.1 < time.time():
-        print("ping:", req.response.elapsed / datetime.timedelta(milliseconds=1), "ms")
-        player_text = req.response.text.split("]'")[:-1]
-        req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
-        req.send()
+    if last_server_update+0.1 < time.time():
+        resp = requests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
+        player_text = resp.text.split("]'")[:-1]
+        print("ping:", resp.elapsed / datetime.timedelta(milliseconds=1), "ms")
         last_server_update = time.time()
 
     for p in player_text:
@@ -554,6 +557,6 @@ def main():
     pygame.display.flip()
     clock.tick(FPS)
 
+cProfile.run('main()')
 while running:
-    #cProfile.run('main()')
     main()
