@@ -10,3 +10,4 @@ texpack.png
 
 data/savedata.pickle
 main.dist/data/savedata.pickle
+data/serverdata.pickle
