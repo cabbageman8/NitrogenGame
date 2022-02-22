@@ -1,3 +1,4 @@
+import requests
 
 class leaf_node():
     def __init__(self, data = None):
@@ -78,6 +79,7 @@ class root_node():
         self.children = (branch_node(), branch_node(), branch_node(), branch_node())
         self.size = 2**4
         self.cache = {}
+        self.save_buffer = {}
     def get_data(self, x, y):
         if (int(x), int(y)) in self.cache:
             return self.cache[(int(x), int(y))]
@@ -103,6 +105,7 @@ class root_node():
     def set_data(self, x, y, data):
         if self.get_data(int(x), int(y)) != data:
             self.cache_data(int(x), int(y), data)
+            self.save_buffer.update({(int(x), int(y)): str(data)})
             if (abs(x)>self.size or abs(y)>self.size):
                 self.size = 2*self.size
                 print("world size now =", self.size)
@@ -122,3 +125,10 @@ class root_node():
                         self.children[2].set_data(x, y, data, -self.size, self.size, self.size)
                     else:
                         self.children[0].set_data(x, y, data, -self.size, -self.size, self.size)
+    def save_to_server(self):
+        try:
+            resp = requests.post("http://cabbageserver.ddns.net:27448/save_to_server", data=self.save_buffer, timeout=2)
+            print("server says:", resp.text)
+            self.save_buffer.clear()
+        except:
+            print("error saving data to server")

@@ -1,9 +1,10 @@
-# cabbagegame Alpha
-# to compile run
+# Nitrogen Alpha
+# to compile; run
 # py -m nuitka --standalone --follow-imports --include-data-dir=data=data main.py
 import pygame
 from pygame.locals import *
 from PIL import Image
+import grequests
 import pickle
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, sqrt, log
 import cProfile
@@ -12,6 +13,7 @@ from glrenderer import glrenderer
 import sys
 import os
 import time
+import datetime
 import requests
 import base64
 
@@ -96,6 +98,21 @@ Renderer = glrenderer(texpack, overlay)
 Renderer.render((0, 0), tile_size)
 pygame.display.flip()
 
+pygame.mixer.music.load('data/ambience.wav')
+pygame.mixer.music.play(-1)
+shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
+shovel_sfx.set_volume(0.5)
+grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
+grass_step_sfx.set_volume(0.5)
+hit_sfx = pygame.mixer.Sound('data/hit.wav')
+hit_sfx.set_volume(0.5)
+fish_sfx = pygame.mixer.Sound('data/fish.wav')
+fish_sfx.set_volume(0.5)
+crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
+crumple_sfx.set_volume(0.5)
+jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
+jump_into_water_sfx.set_volume(0.5)
+
 def seeded_random(a):
     output = (41406202+14874235*a)%79493069
     output = (43915416+77751829*output)%76741089
@@ -107,50 +124,51 @@ def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y * y)
 
 text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
+# get local data
+try:
+    sav = open(os.path.join("data", "savedata.pickle"), 'rb')
+    data = pickle.load(sav)
+    pos = data['pos']
+    hotbar = data['hotbar']
+    player_number = data['player_number']
+    sav.close()
+    text.append('loaded local save')
+except:
+    pos = [pi, tau]
+    hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
+    player_number = int(seeded_random(time.time()%100000000)*10000)
+    sav = open(os.path.join("data", "savedata.pickle") , 'wb')
+    data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
+    pickle.dump(data, sav)
+    sav.close()
+    text.append('could not find local save, blank save loaded')
+# get server data
 try:
     resp = requests.get("http://cabbageserver.ddns.net:27448/bin", timeout=2)
     sav = data = pickle.loads(base64.b64decode(resp.content))
     map = data['map']
-    pos = data['pos']
-    hotbar = data['hotbar']
-    player_number = data['player_number']
+    players = data['players']
     text.append('loaded save from server')
 except:
-    try:
-        sav = open(os.path.join("data", "savedata.pickle"), 'rb')
-        data = pickle.load(sav)
-        map = data['map']
-        pos = data['pos']
-        hotbar = data['hotbar']
-        player_number = data['player_number']
-        sav.close()
-        text.append('could not reach server, local save loaded')
-    except:
-        map = root_node()
-        pos = [pi, tau]
-        hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
-        player_number = 0
-        sav = open(os.path.join("data", "savedata.pickle") , 'wb')
-        data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
-        pickle.dump(data, sav)
-        sav.close()
-        text.append('could not load local savefile, blank save loaded')
+    map = root_node()
+    text.append('could not reach server, blank save loaded, progress will not be saved')
 
 overlay.fill((255,255,255,155))
 for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer.update_overlay(overlay)
 
-#hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["axe", 1, 1]
 #hotbar[1] = ["spade", 1, 1]
 hotbar[1] = ["talldrygrass", 1, 999]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
-    data = {'map': map, 'pos': pos, 'hotbar': hotbar, 'player_number': player_number}
+    data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()
+    map.save_to_server()
 selected_item_slot = 0
 
 def construct_overlay():
@@ -281,6 +299,10 @@ char_direction = 0
 char_speed = 0
 char_anim = 0
 steptime = curtime
+req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
+req.send()
+player_text = []
+last_server_update = 0
 
 def main():
     global frame
@@ -294,7 +316,9 @@ def main():
     global selected_item_slot
     global steptime
     global char_anim
-    global player_number
+    global req
+    global player_text
+    global last_server_update
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -331,12 +355,6 @@ def main():
         elif pygame.K_d in keydown_set:
             velocity[0] += acceleration
             char_direction = 6
-    keypad_list = [pygame.K_KP0, pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_KP7, pygame.K_KP8, pygame.K_KP9]
-    for kp in keypad_list:
-        if kp in keydown_set:
-            player_number = keypad_list.index(kp)
-    if pygame.K_t in keydown_set:
-        map.tree()
     if pygame.K_UP in keydown_set:
         tile_size += 2
         if (tile_size > 75):
@@ -487,6 +505,24 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
+    if req.response != None and last_server_update+0.1 < time.time():
+        print("ping:", req.response.elapsed / datetime.timedelta(milliseconds=1), "ms")
+        player_text = req.response.text.split("]'")[:-1]
+        req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
+        req.send()
+        last_server_update = time.time()
+
+    for p in player_text:
+        kv = p.split("'")
+        number = kv[1]
+        if int(number) != player_number:
+            values = kv[3][1:].split(",")
+            coords = [float(values[0])-.5, float(values[1])-.5]
+            direc = values[2][1:]
+            anim = values[3][1:]
+            draw_object(get_tex("charlegs"+str(direc), anim), coords[0], coords[1], 0.05, 2, 2, screen_coords)
+            draw_object(get_tex("charhands"+str(direc), anim), coords[0], coords[1], 0.05, 2, 2, screen_coords)
+            draw_object(get_tex("charhead"+str(direc), int(number)), coords[0], coords[1], 0.05, 2, 2, screen_coords)
     draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
@@ -518,20 +554,6 @@ def main():
     pygame.display.flip()
     clock.tick(FPS)
 
-pygame.mixer.music.load('data/ambience.wav')
-pygame.mixer.music.play(-1)
-shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
-shovel_sfx.set_volume(0.5)
-grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
-grass_step_sfx.set_volume(0.5)
-hit_sfx = pygame.mixer.Sound('data/hit.wav')
-hit_sfx.set_volume(0.5)
-fish_sfx = pygame.mixer.Sound('data/fish.wav')
-fish_sfx.set_volume(0.5)
-crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
-crumple_sfx.set_volume(0.5)
-jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
-jump_into_water_sfx.set_volume(0.5)
 while running:
     #cProfile.run('main()')
     main()
