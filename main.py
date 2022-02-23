@@ -32,7 +32,7 @@ tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
-textures = ["null", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
+textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
@@ -517,7 +517,7 @@ def main():
         world_text = world_text.split(",")
         for i in range(len(world_text)//4):
             #print(world_text[4*i+0],world_text[4*i+1],world_text[4*i+2],world_text[4*i+3])
-            map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+0]), (world_text[4*i+2],world_text[4*i+3]))
+            map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+1]), (world_text[4*i+2],world_text[4*i+3]))
         player_text = text[0].split("]'")[:-1]
         print("ping:", resp.elapsed / datetime.timedelta(milliseconds=1), "ms")
         last_server_update = time.time()
