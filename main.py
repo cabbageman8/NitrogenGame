@@ -150,7 +150,6 @@ try:
     resp = requests.get("http://cabbageserver.ddns.net:27448/bin", timeout=2)
     sav = data = pickle.loads(base64.b64decode(resp.content))
     map = data['map']
-    players = data['players']
     text.append('loaded save from server')
 except:
     map = root_node()
@@ -510,8 +509,16 @@ def main():
     if char_speed < 0.001:
         char_anim = 0
     if last_server_update+0.1 < time.time():
+        if len(map.save_buffer) > 0:
+            save_game()
         resp = requests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
-        player_text = resp.text.split("]'")[:-1]
+        text = resp.text.split("&")
+        world_text = text[1].replace("{", "").replace("}", "").replace("(", "").replace(")", "").replace("'", "").replace(" ", "").replace(":", ",")
+        world_text = world_text.split(",")
+        for i in range(len(world_text)//4):
+            #print(world_text[4*i+0],world_text[4*i+1],world_text[4*i+2],world_text[4*i+3])
+            map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+0]), (world_text[4*i+2],world_text[4*i+3]))
+        player_text = text[0].split("]'")[:-1]
         print("ping:", resp.elapsed / datetime.timedelta(milliseconds=1), "ms")
         last_server_update = time.time()
 

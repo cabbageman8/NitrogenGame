@@ -5,17 +5,18 @@ from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil, floor, sqrt, lo
 from flask import Flask, request
 from quadtree import root_node
 
+players = {}
+player_inbox = {}
+
 try:
     sav = open(os.path.join("data", "serverdata.pickle") , 'rb')
     data = pickle.load(sav)
     map = data['map']
-    players = data['players']
     sav.close()
 except:
     map = root_node()
-    players = {}
     sav = open(os.path.join("data", "serverdata.pickle"), 'wb')
-    data = {'map': map, 'players': players}
+    data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
     print('could not load local savefile, blank save loaded')
@@ -23,7 +24,7 @@ except:
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "serverdata.pickle"), 'wb')
-    data = {'map': map, 'players': players}
+    data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
 
@@ -49,7 +50,14 @@ def save_to_server():
             dec = None
         else:
             dec = dec[1]
-        map.set_data(int(keys[0][1:]), int(keys[1][:-1]), (mat, dec))
+        payload = ((int(keys[0][1:]), int(keys[1][:-1])), (mat, dec))
+        for k in player_inbox.keys():
+            if len(player_inbox[k]) > 100:
+                del player_inbox[k]
+                del players[k]
+        for k in player_inbox.keys():
+            player_inbox[k].update({payload[0]: payload[1]})
+        map.apply_data(payload[0][0], payload[0][1], payload[1])
     save_game()
     return "ok"
 @app.route('/get_players', methods=['GET'])
@@ -58,8 +66,13 @@ def get_players():
 @app.route('/player_update', methods=['POST'])
 def player_update():
     players.update(request.form)
-    print("players:", players.keys())
-    return str(players)
+    for k in request.form.keys():
+        player_num = k
+    if player_num not in player_inbox.keys():
+        player_inbox.update({player_num : {}})
+    downloads = player_inbox[player_num]
+    player_inbox.update({player_num: {}})
+    return str(players)+"&"+str(downloads)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port="27448") # start running server on eth1 port 27448

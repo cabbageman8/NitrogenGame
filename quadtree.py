@@ -102,10 +102,9 @@ class root_node():
             print("cleared cache")
             self.cache.clear()
         self.cache.update({(int(x), int(y)) : data})
-    def set_data(self, x, y, data):
+    def apply_data(self, x, y, data):
         if self.get_data(int(x), int(y)) != data:
             self.cache_data(int(x), int(y), data)
-            self.save_buffer.update({(int(x), int(y)): str(data)})
             if (abs(x)>self.size or abs(y)>self.size):
                 self.size = 2*self.size
                 print("world size now =", self.size)
@@ -125,10 +124,15 @@ class root_node():
                         self.children[2].set_data(x, y, data, -self.size, self.size, self.size)
                     else:
                         self.children[0].set_data(x, y, data, -self.size, -self.size, self.size)
+    def set_data(self, x, y, data):
+        if self.get_data(int(x), int(y)) != data:
+            self.save_buffer.update({(int(x), int(y)): str(data)})
+            self.apply_data(x, y, data)
     def save_to_server(self):
         try:
-            resp = requests.post("http://cabbageserver.ddns.net:27448/save_to_server", data=self.save_buffer, timeout=2)
-            print("server says:", resp.text)
-            self.save_buffer.clear()
+            if len(self.save_buffer) > 0:
+                resp = requests.post("http://cabbageserver.ddns.net:27448/save_to_server", data=self.save_buffer, timeout=2)
+                print("server says:", resp.text)
+                self.save_buffer.clear()
         except:
             print("error saving data to server")
