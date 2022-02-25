@@ -26,8 +26,8 @@ pygame.font.init()
 FPS=60
 clock = pygame.time.Clock()
 #window_size=(1000, 1000)
-#window_size=(1920, 1080)
-window_size=(2560, 1440)
+window_size=(1920, 1080)
+#window_size=(2560, 1440)
 tile_size = 75
 
 pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
@@ -117,7 +117,7 @@ jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
 jump_into_water_sfx.set_volume(0.5)
 
 def seeded_random(a):
-    output = (41406202+14874235*a)%79493069
+    output = (41406202+14874235*a     )%79493069
     output = (43915416+77751829*output)%76741089
     output = (66947287+44145130*output)%90370934
     output = (64705634+34405431*output)%23928528
@@ -155,15 +155,19 @@ except:
     map = root_node()
     text.append('could not reach server, blank save loaded, progress will not be saved')
 
-overlay.fill((255,255,255,155))
-for i, t in enumerate(text):
-    overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
-Renderer.update_overlay(overlay)
+def render_text(text):
+    global overlay
+    global Renderer
+    overlay.fill((255,255,255,155))
+    for i, t in enumerate(text):
+        overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
+    Renderer.update_overlay(overlay)
+render_text(text)
 
-hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
+#hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["axe", 1, 1]
 #hotbar[1] = ["spade", 1, 1]
-hotbar[1] = ["talldrygrass", 1, 999]
+#hotbar[1] = ["talldrygrass", 1, 999]
 def save_game():
     print("saving game")
     sav = open(os.path.join("data", "savedata.pickle"), 'wb')
@@ -424,7 +428,7 @@ def main():
         construct_overlay()
         keydown_set.remove("click1")
     if "mouse2" in keydown_set:
-        hotbar[int(selected_item_slot)] = selected_data
+        hotbar[int(selected_item_slot)] = [selected_data[0], 0, 1]
         construct_overlay()
     if "mouse3" in keydown_set:
         if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
@@ -508,31 +512,42 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
-    if last_server_update+0.1 < time.time():
+    if last_server_update+1 < time.time():
         if len(map.save_buffer) > 0:
             save_game()
-        resp = requests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
-        text = resp.text.split("&")
-        world_text = text[1].replace("{", "").replace("}", "").replace("(", "").replace(")", "").replace("'", "").replace(" ", "").replace(":", ",")
-        world_text = world_text.split(",")
-        for i in range(len(world_text)//4):
-            #print(world_text[4*i+0],world_text[4*i+1],world_text[4*i+2],world_text[4*i+3])
-            map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+1]), (world_text[4*i+2],world_text[4*i+3]))
-        player_text = text[0].split("]'")[:-1]
-        print("ping:", resp.elapsed / datetime.timedelta(milliseconds=1), "ms")
+        try:
+            resp = requests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed, time.time()])}, timeout=2)
+            text = resp.text.split("&")
+            world_text = text[1].replace("{", "").replace("}", "").replace("(", "").replace(")", "").replace("'", "").replace(" ", "").replace(":", ",").split(",")
+            player_text = text[0].split("]'")[:-1]
+            for i in range(len(world_text)//4):
+                #print(world_text[4*i+0],world_text[4*i+1],world_text[4*i+2],world_text[4*i+3])
+                if world_text[4*i+3] == "None":
+                    world_text[4*i+3] = None
+                map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+1]), (world_text[4*i+2],world_text[4*i+3]))
+        except:
+            render_text(["Error reaching server"])
         last_server_update = time.time()
 
     for p in player_text:
         kv = p.split("'")
-        number = kv[1]
+        number = int(kv[1])
         if int(number) != player_number:
             values = kv[3][1:].split(",")
             coords = [float(values[0])-.5, float(values[1])-.5]
-            direc = values[2][1:]
-            anim = values[3][1:]
-            draw_object(get_tex("charlegs"+str(direc), float(anim)), coords[0], coords[1], 0.05, 2, 2, screen_coords)
-            draw_object(get_tex("charhands"+str(direc), float(anim)), coords[0], coords[1], 0.07, 2, 2, screen_coords)
-            draw_object(get_tex("charhead"+str(direc), int(number)), coords[0], coords[1], 0.08, 2, 2, screen_coords)
+            direc = int(values[2][1:])
+            anim = float(values[3][1:])
+            speed = float(values[4][1:])
+            t = float(values[5][1:])
+            dt = 1000*(time.time()-t)
+            anim += dt/20 * speed*20
+            if direc%2:
+                dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
+            else:
+                dx, dy = dt*speed*cos(direc*tau/8+tau/4), dt*speed*sin(direc*tau/8-tau/4)
+            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2, screen_coords)
+            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2, screen_coords)
+            draw_object(get_tex("charhead"+str(direc), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, screen_coords)
     draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
     draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
