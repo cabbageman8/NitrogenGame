@@ -22,6 +22,15 @@ sys.stdout = logfile
 
 pygame.init()
 pygame.font.init()
+pygame.joystick.init()
+
+print("number of gamepads:", pygame.joystick.get_count())
+gamepads = []
+for i in range(pygame.joystick.get_count()):
+    joystick = pygame.joystick.Joystick(i)
+    joystick.init()
+    gamepads.append(joystick)
+
 
 FPS=60
 clock = pygame.time.Clock()
@@ -273,11 +282,16 @@ velocity = [0, 0]
 acceleration = 1/300
 
 keydown_set = set()
+gamepad_set = set()
+old_gamepad_set = set()
 mouse_pos = pygame.mouse.get_pos()
 def handle_keys():
     global running
     global mouse_pos
-    mouse_pos = pygame.mouse.get_pos()
+    global old_gamepad_set
+    mouse_rel = pygame.mouse.get_rel()
+    if mouse_rel[0] + mouse_rel[1]:
+        mouse_pos = pygame.mouse.get_pos()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             save_game()
@@ -297,6 +311,31 @@ def handle_keys():
             keydown_set.remove("mouse"+str(event.button))
             if (event.button in (4, 5)):
                 keydown_set.add("unclick"+str(event.button))
+    old_gamepad_set = set(gamepad_set)
+    gamepad_set.clear()
+    for g in gamepads:
+        for a in range(g.get_numaxes()):
+            state = g.get_axis(a)
+            if abs(state) > 0.333:
+                if a == 0:
+                    gamepad_set.add("stickx"+str(floor(state)*+2+1))
+                elif a == 1:
+                    gamepad_set.add("sticky"+str(floor(state)*-2-1))
+                elif a == 3:
+                    mouse_pos = [mouse_pos[0]+state*7, mouse_pos[1]]
+                elif a == 4:
+                    mouse_pos = [mouse_pos[0], mouse_pos[1]+state*7]
+        for b in range(g.get_numbuttons()):
+            state = g.get_button(b)
+            if state:
+                gamepad_set.add("button"+str(b))
+                print("button"+str(b))
+        for d in range(g.get_numhats()):
+            x, y = g.get_hat(d)
+            if x:
+                gamepad_set.add("d-padx"+str(x))
+            if y:
+                gamepad_set.add("d-pady"+str(y))
 
 running=True
 frame = 0
@@ -331,24 +370,24 @@ def main():
     curtime = pygame.time.get_ticks()
     #frag_time.value = curtime
     handle_keys()
-    if pygame.K_w in keydown_set:
-        if pygame.K_a in keydown_set:
+    if pygame.K_w in keydown_set or "sticky1" in gamepad_set:
+        if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
             velocity[0] -= acceleration * 0.707106781187
             velocity[1] -= acceleration * 0.707106781187
             char_direction = 3
-        elif pygame.K_d in keydown_set:
+        elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration * 0.707106781187
             velocity[1] -= acceleration * 0.707106781187
             char_direction = 1
         else:
             velocity[1] -= acceleration
             char_direction = 0
-    elif pygame.K_s in keydown_set:
-        if pygame.K_a in keydown_set:
+    elif pygame.K_s in keydown_set or "sticky-1" in gamepad_set:
+        if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
             velocity[0] -= acceleration * 0.707106781187
             velocity[1] += acceleration * 0.707106781187
             char_direction = 5
-        elif pygame.K_d in keydown_set:
+        elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration * 0.707106781187
             velocity[1] += acceleration * 0.707106781187
             char_direction = 7
@@ -356,17 +395,17 @@ def main():
             velocity[1] += acceleration
             char_direction = 4
     else:
-        if pygame.K_a in keydown_set:
+        if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
             velocity[0] -= acceleration
             char_direction = 2
-        elif pygame.K_d in keydown_set:
+        elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration
             char_direction = 6
-    if pygame.K_UP in keydown_set:
+    if pygame.K_UP in keydown_set or "d-padx1" in gamepad_set:
         tile_size += 2
         if (tile_size > 75):
             tile_size = 75
-    if pygame.K_DOWN in keydown_set:
+    if pygame.K_DOWN in keydown_set or "d-padx-1" in gamepad_set:
         tile_size -= 2
         if (tile_size < 10):
             tile_size = 10
@@ -411,7 +450,7 @@ def main():
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     selected_data = map.get_data(int(selected_tile[0]), int(selected_tile[1]))
-    if "click1" in keydown_set:
+    if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
         if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
         else:
@@ -426,11 +465,12 @@ def main():
                     hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
                     map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_biome(int(selected_tile[0]), int(selected_tile[1]))[0][0], None))
         construct_overlay()
-        keydown_set.remove("click1")
+        if "click1" in keydown_set:
+            keydown_set.remove("click1")
     if "mouse2" in keydown_set:
         hotbar[int(selected_item_slot)] = [selected_data[0], 0, 1]
         construct_overlay()
-    if "mouse3" in keydown_set:
+    if "mouse3" in keydown_set or "button9" in gamepad_set:
         if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
             if hotbar[int(selected_item_slot)][1] == 0:
                 hit_sfx.play()
@@ -440,14 +480,16 @@ def main():
                 map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0]))
             hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
-    if "unclick4" in keydown_set:
+    if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot-1)%9
         construct_overlay()
-        keydown_set.remove("unclick4")
-    if "unclick5" in keydown_set:
+        if "unclick4" in keydown_set:
+            keydown_set.remove("unclick4")
+    if "unclick5" in keydown_set or "d-pady-1" in gamepad_set and not "d-pady-1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot+1)%9
         construct_overlay()
-        keydown_set.remove("unclick5")
+        if "unclick5" in keydown_set:
+            keydown_set.remove("unclick5")
     for i2, i in enumerate((1, -1)):
         for y in range(ceil((1+i2+window_size[1] // tile_size) / 2)):
             y2 = ((y+(i==1))*i)%(window_size[1]//tile_size+2)
@@ -579,6 +621,8 @@ def main():
     pygame.display.flip()
     clock.tick(FPS)
 
-cProfile.run('main()')
+for i in range(60):
+    main()
+cProfile.run('main()', sort=2)
 while running:
     main()
