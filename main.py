@@ -554,7 +554,7 @@ def main():
     char_anim += char_speed*20
     if char_speed < 0.001:
         char_anim = 0
-    if last_server_update+1 < time.time():
+    if last_server_update+0.1 < time.time():
         if len(map.save_buffer) > 0:
             save_game()
         try:
