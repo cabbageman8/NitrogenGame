@@ -581,7 +581,7 @@ def main():
             anim = float(values[3][1:])
             speed = float(values[4][1:])
             t = float(values[5][1:])
-            dt = 1000*(time.time()-t)
+            dt = 1000*(time.time()-last_server_update)
             anim += dt/20 * speed*20
             if direc%2:
                 dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
