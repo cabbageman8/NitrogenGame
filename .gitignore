@@ -7,9 +7,13 @@ Nitrogen.build
 venv
 
 texpack.png
+Nitrogen.dist/texpack.png
 
 data/savedata.pickle
 Nitrogen.dist/data/savedata.pickle
+
 data/serverdata.pickle
 Nitrogen.dist/data/serverdata.pickle
+
 log.txt
+Nitrogen.dist/log.txt
