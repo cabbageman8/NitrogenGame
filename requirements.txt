@@ -1,0 +1,6 @@
+pygame
+PILLOW
+moderngl
+glcontext
+requests
+flask

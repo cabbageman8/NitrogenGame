@@ -2,14 +2,14 @@
 
 __pycache__
 
-main.build
+Nitrogen.build
 
 venv
 
 texpack.png
 
 data/savedata.pickle
-main.dist/data/savedata.pickle
+Nitrogen.dist/data/savedata.pickle
 data/serverdata.pickle
-main.dist/data/serverdata.pickle
+Nitrogen.dist/data/serverdata.pickle
 log.txt
