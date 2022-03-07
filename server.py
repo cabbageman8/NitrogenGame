@@ -77,4 +77,3 @@ while True:
                 player_inbox[k].update({payload[0]: payload[1]})
             map.apply_data(payload[0][0], payload[0][1], payload[1])
         save_game()
-        map.tree()

@@ -250,6 +250,11 @@ def decorate(x, y, mat):
         map.cache_data(int(x), int(y), (mat, dec))
     return dec
 
+def get_tile_info(x, y):
+    mat = get_mat(x, y)
+    dec = decorate(x, y, mat)
+    return (mat, dec)
+
 def draw_tile(mat, x, y, screen_coords):
     # render material texture using int tile coords relitive to the screen
     Renderer.tile_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2,
@@ -336,8 +341,12 @@ def handle_keys():
                     gamepad_set.add("sticky"+str(floor(state)*-2-1))
                 elif a == 3:
                     mouse_pos = [mouse_pos[0]+state*7, mouse_pos[1]]
+                    if mouse_pos[0] < 0 or mouse_pos[0] > window_size[0]:
+                        mouse_pos = [mouse_pos[0] - state * 7, mouse_pos[1]]
                 elif a == 4:
                     mouse_pos = [mouse_pos[0], mouse_pos[1]+state*7]
+                    if mouse_pos[1] < 0 or mouse_pos[1] > window_size[1]:
+                        mouse_pos = [mouse_pos[0], mouse_pos[1] - state * 7]
         for b in range(g.get_numbuttons()):
             state = g.get_button(b)
             if state:
@@ -467,17 +476,17 @@ def main():
                      -screen_coords[1] % tile_size + tile_size * ceil(selected_tile[1] / tile_size) - window_size[1] // 2]
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
-    selected_data = map.get_data(int(selected_tile[0]), int(selected_tile[1]))
+    selected_data = get_tile_info(int(selected_tile[0]), int(selected_tile[1]))
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
         if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
         else:
-            if selected_data[1] != None:
+            if selected_data != None and selected_data[1] != None:
                 if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[1] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 1):
                     shovel_sfx.play()
                     hotbar[int(selected_item_slot)] = [selected_data[1], 1, hotbar[int(selected_item_slot)][2] + 1]
                     map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], None))
-            elif selected_data[0] != None:
+            elif selected_data != None and selected_data[0] != None:
                 if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[0] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 0):
                     shovel_sfx.play()
                     hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
