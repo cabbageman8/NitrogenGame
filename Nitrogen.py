@@ -598,10 +598,10 @@ def main():
         if int(number) != player_number:
             values = player_text[number]
             coords = [float(values[0])-.5, float(values[1])-.5]
-            direc = int(values[2][1:])
-            anim = float(values[3][1:])
-            speed = float(values[4][1:])
-            t = float(values[5][1:])
+            direc = int(values[2])
+            anim = float(values[3])
+            speed = float(values[4])
+            t = float(values[5])
             dt = 1000*(time.time()-last_server_update)
             anim += dt/20 * speed*20
             if direc%2:
