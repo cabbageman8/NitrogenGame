@@ -3,4 +3,3 @@ PILLOW
 moderngl
 glcontext
 requests
-flask

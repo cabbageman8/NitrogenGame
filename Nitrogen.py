@@ -1,6 +1,6 @@
 # Nitrogen Alpha
 # to compile; run
-# py -m nuitka --standalone --follow-imports --include-data-dir=data Nitrogen.py
+# py -m nuitka --standalone --follow-imports --include-data-dir=data=data Nitrogen.py
 import pygame
 from pygame.locals import *
 from PIL import Image
@@ -12,8 +12,7 @@ from glrenderer import glrenderer
 import sys
 import os
 import time
-import datetime
-import requests
+import socket
 import base64
 
 logfile = open("log.txt", 'w')
@@ -135,6 +134,13 @@ def seeded_random(a):
 def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y * y)
 
+ip = "cabbageserver.ddns.net"
+port = int(27448)
+server_address = (ip, port)
+
+# Create socket for server
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+
 text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
 # get local data
 try:
@@ -156,13 +162,15 @@ except:
     text.append('could not find local save, blank save loaded')
 # get server data
 try:
-    resp = requests.get("http://cabbageserver.ddns.net:27448/bin", timeout=2)
-    sav = data = pickle.loads(base64.b64decode(resp.content))
+    sock.sendto('world_download'.encode('utf-8'), server_address)
+    data, address = sock.recvfrom(81920000)
+    data = pickle.loads(base64.b64decode(data.decode('utf-8')))
     map = data['map']
     text.append('loaded save from server')
 except:
     map = root_node()
     text.append('could not reach server, blank save loaded, progress will not be saved')
+sock.setblocking(False)
 
 def render_text(text):
     global overlay
@@ -183,7 +191,12 @@ def save_game():
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()
-    map.save_to_server()
+    if len(map.save_buffer) > 0:
+        #try:
+        sock.sendto(str('save_to_server'+str(base64.b64encode(pickle.dumps(map.save_buffer)))).encode('utf-8'), server_address)
+        map.save_buffer.clear()
+        #except:
+        #    print("error saving data to server")
 selected_item_slot = 0
 
 def construct_overlay():
@@ -347,8 +360,10 @@ steptime = curtime
 req = []
 #req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
 #req.send()
-player_text = []
+world_text = {}
+player_text = {}
 last_server_update = 0
+server_fails = 0
 
 def main():
     global frame
@@ -363,8 +378,11 @@ def main():
     global steptime
     global char_anim
     global req
+    global world_text
     global player_text
     global last_server_update
+    global server_address
+    global server_fails
     frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -558,24 +576,27 @@ def main():
         if len(map.save_buffer) > 0:
             save_game()
         try:
-            resp = requests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed, time.time()])}, timeout=2)
-            text = resp.text.split("&")
-            world_text = text[1].replace("{", "").replace("}", "").replace("(", "").replace(")", "").replace("'", "").replace(" ", "").replace(":", ",").split(",")
-            player_text = text[0].split("]'")[:-1]
-            for i in range(len(world_text)//4):
-                #print(world_text[4*i+0],world_text[4*i+1],world_text[4*i+2],world_text[4*i+3])
-                if world_text[4*i+3] == "None":
-                    world_text[4*i+3] = None
-                map.apply_data(int(world_text[4*i+0]), int(world_text[4*i+1]), (world_text[4*i+2],world_text[4*i+3]))
+            sock.sendto(str("player_update"+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
+            #time.sleep(0.01)
+            data, address = sock.recvfrom(8192)
+            text = data.decode('utf-8')
+            text = text.split("&")
+            world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
+            player_text = pickle.loads(base64.b64decode(text[0][2:-1]))
+            for key in world_text.keys():
+                if world_text[key][1] == "None":
+                    world_text[key] = (world_text[key][0], None)
+                map.apply_data(key[0], key[1], world_text[key])
+            server_fails = 0
         except:
-            render_text(["Error reaching server"])
+            server_fails += 1
+            if server_fails > 60:
+                render_text(["Error reaching server"])
         last_server_update = time.time()
 
-    for p in player_text:
-        kv = p.split("'")
-        number = int(kv[1])
+    for number in player_text.keys():
         if int(number) != player_number:
-            values = kv[3][1:].split(",")
+            values = player_text[number]
             coords = [float(values[0])-.5, float(values[1])-.5]
             direc = int(values[2][1:])
             anim = float(values[3][1:])
@@ -621,7 +642,9 @@ def main():
     pygame.display.flip()
     clock.tick(FPS)
 
-for i in range(60):
+i = 60
+while i>0 and running:
+    i-=1
     main()
 cProfile.run('main()', sort=2)
 while running:
