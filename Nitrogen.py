@@ -38,7 +38,12 @@ window_size=(1920, 1080)
 #window_size=(2560, 1440)
 tile_size = 75
 
-pygame.display.set_mode(window_size, DOUBLEBUF|OPENGL)
+pygame.display.set_mode(size=window_size, flags=DOUBLEBUF|OPENGL, vsync=True)
+
+pygame.display.toggle_fullscreen()
+window_size = pygame.display.get_window_size()
+overlay = pygame.Surface(window_size).convert_alpha()
+
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
 textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
             "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
@@ -141,7 +146,7 @@ server_address = (ip, port)
 # Create socket for server
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 
-text = ["visit cabbage.moe", "CabbageGame Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "MM pick-block", "RM place decoration", "press h to start"]
+text = ["visit cabbage.moe", "Nitrogen Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "RM place decoration", "press h to start"]
 # get local data
 try:
     sav = open(os.path.join("data", "savedata.pickle"), 'rb')
@@ -351,7 +356,6 @@ def handle_keys():
             state = g.get_button(b)
             if state:
                 gamepad_set.add("button"+str(b))
-                print("button"+str(b))
         for d in range(g.get_numhats()):
             x, y = g.get_hat(d)
             if x:
