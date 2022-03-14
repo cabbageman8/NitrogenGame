@@ -19,14 +19,14 @@ player_inbox = {}
 blacklist = {}
 
 try:
-    sav = open(os.path.join("data", "serverdata.pickle") , 'rb')
+    sav = open("serverdata.pickle" , 'rb')
     data = pickle.load(sav)
     map = data['map']
     sav.close()
     print("loaded savefile successfully")
 except:
     map = root_node()
-    sav = open(os.path.join("data", "serverdata.pickle"), 'wb')
+    sav = open("serverdata.pickle", 'wb')
     data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
@@ -34,7 +34,7 @@ except:
 
 def save_game():
     print("saving map")
-    sav = open(os.path.join("data", "serverdata.pickle"), 'wb')
+    sav = open("serverdata.pickle", 'wb')
     data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
@@ -46,7 +46,7 @@ while True:
 
         if header == "world_download":
             print("processing world_download", "from", client_address)
-            sav = open(os.path.join("data", "serverdata.pickle"), 'rb')
+            sav = open("serverdata.pickle", 'rb')
             bin = sav.read()
             sav.close()
             response = base64.b64encode(bin)
