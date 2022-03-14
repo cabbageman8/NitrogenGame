@@ -9,6 +9,5 @@ RUN git clone \
   --sparse \
   https://github.com/cabbageman8/NitrogenGame.git
 WORKDIR /NitrogenGame
-RUN pip install -r requirements.txt
-EXPOSE 27448
+EXPOSE 27448/udp
 CMD [ "python", "./server.py" ]
