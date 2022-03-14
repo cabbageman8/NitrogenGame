@@ -145,6 +145,7 @@ server_address = (ip, port)
 
 # Create socket for server
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+sock.setblocking(False)
 
 text = ["visit cabbage.moe", "Nitrogen Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "RM place decoration", "press h to start"]
 # get local data
@@ -168,6 +169,7 @@ except:
 # get server data
 try:
     sock.sendto('world_download'.encode('utf-8'), server_address)
+    time.sleep(1)
     data, address = sock.recvfrom(81920000)
     data = pickle.loads(base64.b64decode(data.decode('utf-8')))
     map = data['map']
@@ -175,12 +177,16 @@ try:
 except:
     map = root_node()
     text.append('could not reach server, blank save loaded, progress will not be saved')
-sock.setblocking(False)
+
+titlescreen = pygame.image.load(os.path.join("data", "titlescreen.png"))
 
 def render_text(text):
     global overlay
     global Renderer
-    overlay.fill((255,255,255,155))
+    overlay.fill((0, 0, 0, 0))
+    file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
+    img = pygame.image.fromstring( file.resize(window_size, resample=Image.NEAREST).tobytes(), window_size, "RGBA").convert_alpha()
+    overlay.blit(img, (0, 0))
     for i, t in enumerate(text):
         overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
     Renderer.update_overlay(overlay)
@@ -289,6 +295,12 @@ def draw_shadow(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
     Renderer.shadow_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+def draw_weather(decor, x, y, z, w, h, screen_coords):
+    # render sprite texture using tile coords relitive to the world
+    spr, x, y, z, w, h = decor, 1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20, 1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20, 1+z, w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10), h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10)
+    Renderer.weather_list.append((x / window_size[0] * 2, (y) / window_size[1] * 2, z, w / window_size[0] * 2, h / window_size[1] * 2, spr))
+    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
     draw_sprite( decor,
@@ -597,14 +609,13 @@ def main():
             world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
             player_text = pickle.loads(base64.b64decode(text[0][2:-1]))
             for key in world_text.keys():
-                if world_text[key][1] == "None":
-                    world_text[key] = (world_text[key][0], None)
                 map.apply_data(key[0], key[1], world_text[key])
             server_fails = 0
         except:
             server_fails += 1
-            if server_fails > 60:
-                render_text(["Error reaching server"])
+            if server_fails > 60*5:
+                render_text(["Error reaching server", "progress will not be saved"])
+                server_fails = 0
         last_server_update = time.time()
 
     for number in player_text.keys():
@@ -645,9 +656,12 @@ def main():
                 draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
                 draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
                 draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
-    draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
+    draw_structure(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1, screen_coords)
+    #draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
     for c in range(10):
         draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100, screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100, 1, 100*(int(c)%2*2-1), 100*(int(c//2)%2*2-1), screen_coords)
+    for c in range(5):
+        draw_weather(get_tex("cloud", 0), screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100, screen_coords[1] / tile_size + (time.time()/40+873356*c-screen_coords[1] / tile_size)%(300+c)-100, 1, 100*(int(c)%2*2-1), 100*(int(c//2)%2*2-1), screen_coords)
 
     #draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size+20, screen_coords[1] / tile_size+8, 1, 1000, 1000, screen_coords)
 

@@ -8,6 +8,7 @@ class glrenderer():
     def __init__(self, texpack, overlay):
         self.vert_list = []
         self.shadow_list = []
+        self.weather_list = []
         self.tile_list = []
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
@@ -53,7 +54,7 @@ vec2 packsize;
 float zpos;
 void main() {
     packsize = vec2(textureSize(texpack, 0).xy);
-    zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
+    zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
     screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*tile_size), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*tile_size), -pos.z);
     thetexnum = texnum;
@@ -81,8 +82,8 @@ void main() {
     incolour = texture(texpack,v_text);
     mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
     mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
-    seethrough = (screenpos.z < -1.0) ? mid_dist_2*mouse_dist_2*100.0 : 1.0;
-    f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3, incolour.a-(1.0-seethrough))));
+    seethrough = (screenpos.z < -1.0) ? incolour.a*mid_dist_2*mouse_dist_2*50.0 : incolour.a;
+    f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3*incolour.a, seethrough)));
 }
 ''')
         self.shadowprog = self.ctx.program(
@@ -208,21 +209,24 @@ void main() {
         self.prog['tile_size'].value = tile_size/100.0
         self.shadowprog['tile_size'].value = tile_size/100.0
         self.write_vert_data(self.tile_list)
-        self.vao.render(instances=len(self.tile_list))
+        self.vao.render(instances=len(self.tile_list)) # render tiles (unordered)
 
         self.vert_list = sorted(self.vert_list, key=lambda tup: tup[2])
         self.write_vert_data(self.vert_list)
         #print(len(self.vert_list),"instances")
         self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
-        self.shadowvao.render(instances=len(self.vert_list))
+        self.shadowvao.render(instances=len(self.vert_list)) # render object shadows (ordered)
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
-        self.vao.render(instances=len(self.vert_list))
+        self.vao.render(instances=len(self.vert_list)) # render objects (ordered)
         self.write_vert_data(self.shadow_list)
         self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
-        self.shadowvao.render(instances=len(self.shadow_list))
+        self.shadowvao.render(instances=len(self.shadow_list)) # render non-object shadows (unordered)
+        self.write_vert_data(self.weather_list)
+        self.vao.render(instances=len(self.weather_list)) # render weather (unordered)
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
         self.overlay_texture.use()
-        self.quad_fs.render()
+        self.quad_fs.render() # render UI overlay
         self.vert_list = []
         self.shadow_list = []
+        self.weather_list = []
         self.tile_list = []
