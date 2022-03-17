@@ -50,14 +50,14 @@ textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
-            "freshwater", "axe", "spade", "cloud", "talldrygrass"]
+            "freshwater", "axe", "spade", "cloud", "talldrygrass", "glass"]
 textures_img = []
 texd = {}
 solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus"}
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
 animated = {"water", "freshwater"}
 blocks = {"block", "wall"}
-roofing = {"tiles", "planks"}
+roofing = {"tiles", "planks", "glass"}
 difficult_terrain = {"water", "flytrap", "freshwater"}
 #          materials,                             shrubs,               trees
 biomes = ((("freshwater","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
@@ -123,11 +123,11 @@ grass_step_sfx.set_volume(0.5)
 hit_sfx = pygame.mixer.Sound('data/hit.wav')
 hit_sfx.set_volume(0.5)
 fish_sfx = pygame.mixer.Sound('data/fish.wav')
-fish_sfx.set_volume(0.5)
+fish_sfx.set_volume(0.2)
 crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
 crumple_sfx.set_volume(0.5)
 jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
-jump_into_water_sfx.set_volume(0.5)
+jump_into_water_sfx.set_volume(0.2)
 
 def seeded_random(a):
     output = (41406202+14874235*a     )%79493069
@@ -139,6 +139,7 @@ def seeded_random(a):
 def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y * y)
 
+#ip = "localhost"
 ip = "cabbageserver.ddns.net"
 port = int(27448)
 server_address = (ip, port)
@@ -150,7 +151,7 @@ sock.setblocking(False)
 text = ["visit cabbage.moe", "Nitrogen Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "RM place decoration", "press h to start"]
 # get local data
 try:
-    sav = open(os.path.join("data", "savedata.pickle"), 'rb')
+    sav = open(os.path.join("save", "savedata.pickle"), 'rb')
     data = pickle.load(sav)
     pos = data['pos']
     hotbar = data['hotbar']
@@ -161,22 +162,36 @@ except:
     pos = [pi, tau]
     hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
     player_number = int(seeded_random(time.time()%100000000)*10000)
-    sav = open(os.path.join("data", "savedata.pickle") , 'wb')
+    sav = open(os.path.join("save", "savedata.pickle") , 'wb')
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()
     text.append('could not find local save, blank save loaded')
 # get server data
+map = root_node()
 try:
     sock.sendto('world_download'.encode('utf-8'), server_address)
-    time.sleep(1)
-    data, address = sock.recvfrom(81920000)
-    data = pickle.loads(base64.b64decode(data.decode('utf-8')))
-    map = data['map']
+    downl_time = time.time()
+    while time.time() - downl_time < 1:
+        try:
+            byt, address = sock.recvfrom(2**16)
+            data = pickle.loads(byt)
+            print("received", len(data), "tiles (", len(byt), "bytes )")
+            for key, value in data.items():
+                payload = (key, value)
+                map.apply_data(payload[0][0], payload[0][1], payload[1])
+        except BlockingIOError:
+            pass
     text.append('loaded save from server')
-except:
-    map = root_node()
-    text.append('could not reach server, blank save loaded, progress will not be saved')
+except ConnectionResetError:
+    text.append('could not reach server')
+    text.append('progress will not be saved')
+except socket.gaierror:
+    text.append('the ip you have entered is not valid')
+    text.append('progress will not be saved')
+except pickle.UnpicklingError:
+    text.append('data received is not valid, the server or client is likely out of date')
+    text.append('progress will not be saved')
 
 titlescreen = pygame.image.load(os.path.join("data", "titlescreen.png"))
 
@@ -193,12 +208,12 @@ def render_text(text):
 render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-#hotbar[0] = ["axe", 1, 1]
+#hotbar[0] = ["glass", 1, 9999]
 #hotbar[1] = ["spade", 1, 1]
 #hotbar[1] = ["talldrygrass", 1, 999]
 def save_game():
     print("saving game")
-    sav = open(os.path.join("data", "savedata.pickle"), 'wb')
+    sav = open(os.path.join("save", "savedata.pickle"), 'wb')
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
     pickle.dump(data, sav)
     sav.close()

@@ -1,8 +1,8 @@
 import socket
 import pickle
-import os
 import base64
-from quadtree import root_node
+import os
+from itertools import islice
 
 port = int(27448)
 ip = "0.0.0.0"
@@ -19,14 +19,14 @@ player_inbox = {}
 blacklist = {}
 
 try:
-    sav = open("serverdata.pickle" , 'rb')
+    sav = open(os.path.join("save", "serverdata.pickle"), 'rb')
     data = pickle.load(sav)
     map = data['map']
     sav.close()
     print("loaded savefile successfully")
 except:
-    map = root_node()
-    sav = open("serverdata.pickle", 'wb')
+    map = {}
+    sav = open(os.path.join("save", "serverdata.pickle"), 'wb')
     data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
@@ -34,10 +34,15 @@ except:
 
 def save_game():
     print("saving map")
-    sav = open("serverdata.pickle", 'wb')
+    sav = open(os.path.join("save", "serverdata.pickle"), 'wb')
     data = {'map': map}
     pickle.dump(data, sav)
     sav.close()
+
+def dict_chunks(dict, size=1000):
+    it = iter(dict)
+    for i in range(0, len(dict), size):
+        yield {k:dict[k] for k in islice(it, size)}
 
 while True:
     data, client_address = s.recvfrom(8192)
@@ -46,12 +51,10 @@ while True:
 
         if header == "world_download":
             print("processing world_download", "from", client_address)
-            sav = open("serverdata.pickle", 'rb')
-            bin = sav.read()
-            sav.close()
-            response = base64.b64encode(bin)
-
-            s.sendto(response, client_address)
+            for chunk in dict_chunks(map):
+                print(chunk)
+                response = pickle.dumps(chunk)
+                s.sendto(response, client_address)
 
         elif header[:13] == "player_update":
             header = header[13:].split(',')
@@ -78,5 +81,5 @@ while True:
                         del players[k]
                 for k in players.keys():
                     player_inbox[k].update({payload[0]: payload[1]})
-                map.apply_data(payload[0][0], payload[0][1], payload[1])
+                map.update({payload[0]: payload[1]})
             save_game()
