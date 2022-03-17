@@ -1,5 +1,5 @@
 FROM python:3-slim
-VOLUME /data
+VOLUME /NitrogenGame/save
 RUN apt-get update && \
     apt-get upgrade -y && \ 
     apt-get install -y git
