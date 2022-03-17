@@ -1,6 +1,6 @@
 # Nitrogen Alpha
 # to compile; run
-# py -m nuitka --standalone --follow-imports --include-data-dir=data=data Nitrogen.py
+# py -m nuitka --standalone --include-data-dir=data=data --include-data-dir=save=save Nitrogen.py
 import pygame
 from pygame.locals import *
 from PIL import Image
