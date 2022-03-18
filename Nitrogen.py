@@ -305,16 +305,44 @@ def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
         1+z,
         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
-    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+    Renderer.tile_list.insert(0,
+                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
+                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
+                               -z,
+                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
+                               decor))
 def draw_shadow(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
-    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
-    Renderer.shadow_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+    Renderer.tile_list.insert(0,
+                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
+                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
+                               -z,
+                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
+                               (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
+                               decor))
+    Renderer.shadow_list.insert(0,
+                                ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
+                                 (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
+                                 -z,
+                                 (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
+                                 (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
+                                 decor))
 def draw_weather(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
-    spr, x, y, z, w, h = decor, 1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20, 1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20, 1+z, w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10), h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10)
+    spr, x, y, z, w, h = decor,\
+                         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,\
+                         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,\
+                         1+z,\
+                         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),\
+                         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10)
     Renderer.weather_list.append((x / window_size[0] * 2, (y) / window_size[1] * 2, z, w / window_size[0] * 2, h / window_size[1] * 2, spr))
-    Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2, -z, (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2, decor))
+    Renderer.tile_list.insert(0,
+                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
+                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
+                               -z,
+                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
+                               (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
+                               decor))
 
 def draw_structure(decor, x, y, z, w, h, screen_coords):
     # render sprite texture using tile coords relitive to the world
@@ -325,7 +353,12 @@ def draw_structure(decor, x, y, z, w, h, screen_coords):
         w * tile_size,
         h * tile_size)
     if w * h == 0:
-        Renderer.tile_list.insert(0, ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2, (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2, -z, (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2, decor))
+        Renderer.tile_list.insert(0,
+                                  ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2,
+                                   (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2,
+                                   -z,
+                                   (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2,
+                                   decor))
 
 
 velocity = [0, 0]
@@ -397,9 +430,6 @@ char_direction = 0
 char_speed = 0
 char_anim = 0
 steptime = curtime
-req = []
-#req = grequests.post("http://cabbageserver.ddns.net:27448/player_update", data={str(player_number):str([pos[0], pos[1], char_direction, char_anim, char_speed])}, timeout=2)
-#req.send()
 world_text = {}
 player_text = {}
 last_server_update = 0
@@ -417,7 +447,6 @@ def main():
     global selected_item_slot
     global steptime
     global char_anim
-    global req
     global world_text
     global player_text
     global last_server_update
@@ -674,9 +703,21 @@ def main():
     draw_structure(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1, screen_coords)
     #draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
     for c in range(10):
-        draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100, screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100, 1, 100*(int(c)%2*2-1), 100*(int(c//2)%2*2-1), screen_coords)
+        draw_shadow(get_tex("cloud", 0),
+                    screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
+                    screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100,
+                    1,
+                    100*(int(c)%2*2-1),
+                    100*(int(c//2)%2*2-1),
+                    screen_coords)
     for c in range(5):
-        draw_weather(get_tex("cloud", 0), screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100, screen_coords[1] / tile_size + (time.time()/40+873356*c-screen_coords[1] / tile_size)%(300+c)-100, 1, 100*(int(c)%2*2-1), 100*(int(c//2)%2*2-1), screen_coords)
+        draw_weather(get_tex("cloud", 0),
+                     screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
+                     screen_coords[1] / tile_size + (time.time()/40+873356*c-screen_coords[1] / tile_size)%(300+c)-100,
+                     1,
+                     100*(int(c)%2*2-1),
+                     100*(int(c//2)%2*2-1),
+                     screen_coords)
 
     #draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size+20, screen_coords[1] / tile_size+8, 1, 1000, 1000, screen_coords)
 
