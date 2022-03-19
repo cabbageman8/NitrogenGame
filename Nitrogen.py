@@ -1,6 +1,11 @@
 # Nitrogen Alpha
+
 # to compile; run
 # py -m nuitka --standalone --include-data-dir=data=data --include-data-dir=save=save Nitrogen.py
+
+# to build Docker image of server; run
+# docker build -t cabbageman/nitrogenserver .
+
 import pygame
 from pygame.locals import *
 from PIL import Image
@@ -157,7 +162,7 @@ try:
     player_number = data['player_number']
     sav.close()
     text.append('loaded local save')
-except:
+except FileNotFoundError:
     pos = [pi, tau]
     hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
     player_number = int(seeded_random(time.time()%100000000)*10000)
@@ -166,6 +171,7 @@ except:
     pickle.dump(data, sav)
     sav.close()
     text.append('could not find local save, blank save loaded')
+
 screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
 # get server data
 map = root_node()
@@ -218,23 +224,16 @@ def save_game():
     pickle.dump(data, sav)
     sav.close()
     if len(map.save_buffer) > 0:
-        #try:
         sock.sendto(str('save_to_server'+str(base64.b64encode(pickle.dumps(map.save_buffer)))).encode('utf-8'), server_address)
         map.save_buffer.clear()
-        #except:
-        #    print("error saving data to server")
 selected_item_slot = 0
 
 def construct_overlay():
     overlay.fill((0, 0, 0, 0))
     overlay.blit(textures_img[texd["selection"][0]], (0, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2))
     for i in range(9):
-        #overlay.blit(textures_img[texd["block"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
-        #overlay.blit(textures_img[texd["selection"][0]], (0, 110 * i - 110 * 4.5 + overlay.get_size()[1] / 2))
         if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
-        #overlay.blit(textures_img[1], (100*i-450+overlay.get_size()[0]/2, overlay.get_size()[1]-100))
-    #overlay.blit(silombol.render(str(selected_tile), True, (0, 0, 0)), mouse_pos)
     slot = hotbar[int(selected_item_slot)]
     if slot[0] != None and slot[2] > 0:
         t = str(slot[0])
@@ -570,12 +569,11 @@ def main():
                     mat = get_mat(tile_coords[0], tile_coords[1])
                     index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
                     if (mat in animated):
-                        matindex = index+(curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1])
+                        matindex = int(index+(curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1]))
                     elif (mat == "hexpavers"):
                         matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
                         matindex = index
-
                     Renderer.tile_list.append(geom_tile(x2, y2, 0.0, get_tex(mat, matindex)))
 
                     decor = decorate(tile_coords[0], tile_coords[1], mat)
@@ -629,14 +627,16 @@ def main():
         try:
             sock.sendto(str("player_update"+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
             data, address = sock.recvfrom(8192)
-            player_text = pickle.loads(data)
-            world_text = pickle.loads(data)
+            text = data.decode('utf-8')
+            text = text.split("&")
+            world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
+            player_text = pickle.loads(base64.b64decode(text[0][2:-1]))
             for key in world_text.keys():
                 map.apply_data(key[0], key[1], world_text[key])
             server_fails = 0
-        except:
+        except BlockingIOError:
             server_fails += 1
-            if server_fails > 60*5:
+            if server_fails > 60:
                 render_text(["Error reaching server", "progress will not be saved"])
                 server_fails = 0
         last_server_update = time.time()
