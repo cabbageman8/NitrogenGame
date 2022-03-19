@@ -30,7 +30,6 @@ for i in range(pygame.joystick.get_count()):
     joystick.init()
     gamepads.append(joystick)
 
-
 FPS=60
 clock = pygame.time.Clock()
 #window_size=(1000, 1000)
@@ -119,7 +118,7 @@ pygame.mixer.music.play(-1)
 shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
 shovel_sfx.set_volume(0.5)
 grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
-grass_step_sfx.set_volume(0.5)
+grass_step_sfx.set_volume(0.2)
 hit_sfx = pygame.mixer.Sound('data/hit.wav')
 hit_sfx.set_volume(0.5)
 fish_sfx = pygame.mixer.Sound('data/fish.wav')
@@ -167,6 +166,7 @@ except:
     pickle.dump(data, sav)
     sav.close()
     text.append('could not find local save, blank save loaded')
+screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
 # get server data
 map = root_node()
 try:
@@ -244,11 +244,19 @@ def construct_overlay():
     Renderer.update_overlay(overlay)
 
 biome_size = 100
+last_biome = (None, None, None)
 def get_biome(x, y):
-    temp = sin(0.70688 * y/biome_size) * sin(0.08321 * y/biome_size) * sin(1.20191 * y/biome_size + 1.07952 * x/biome_size) + cos(1.83391 * x/biome_size / 5 - 1.00643 * y/biome_size / 5) * cos(0.27705 * x/biome_size / 5)
-    moisture = sin(0.56554 * y/biome_size) * sin(0.49491 * y/biome_size) * sin(1.63167 * y/biome_size + 1.36682 * x/biome_size) + cos(1.19063 * x/biome_size / 7 - 1.52815 * y/biome_size / 7) * cos(0.13701 * x/biome_size / 7)
-    biome = biomes[int(point_to_random(int((temp+1)/2*len(biomes)), int((moisture+1)/2*len(biomes)))*len(biomes))]
-    return biome
+    global last_biome
+    if last_biome[0] == x and last_biome[1] == y:
+        return last_biome[2]
+    else:
+        x /= biome_size
+        y /= biome_size
+        temp = sin(0.70688 * y) * sin(0.08321 * y) * sin(1.20191 * y + 1.07952 * x) + sin(1.83391 * x / 5 - 1.00643 * y / 5) * sin(0.27705 * x / 5)
+        moisture = sin(0.56554 * y) * sin(0.49491 * y) * sin(1.63167 * y + 1.36682 * x) + sin(1.19063 * x / 7 - 1.52815 * y / 7) * sin(0.13701 * x / 7)
+        biome = biomes[int(point_to_random(int((temp+1)/2*len(biomes)), int((moisture+1)/2*len(biomes)))*len(biomes))]
+        last_biome = (x,y, biome)
+        return biome
 def get_mat(x, y):
     map_data = map.get_data(int(x), int(y))
     if (map_data != None):
@@ -281,85 +289,59 @@ def get_tile_info(x, y):
     dec = decorate(x, y, mat)
     return (mat, dec)
 
-def draw_tile(mat, x, y, screen_coords):
-    # render material texture using int tile coords relitive to the screen
-    Renderer.tile_list.append(((1 - screen_coords[0] % tile_size + tile_size * x)/window_size[0]*2,
-                               (1 - screen_coords[1] % tile_size + tile_size * y)/window_size[1]*2,
-                               0.0, tile_size/window_size[0]*2, tile_size/window_size[1]*2, mat))
-def draw_sprite(spr, x, y, z, w, h):
-    # render sprite texture using float pixel coords relitive to the screen
-    Renderer.vert_list.append((x/window_size[0]*2, (y)/window_size[1]*2, z, w/window_size[0]*2, h/window_size[1]*2, spr))
-def draw_object(decor, x, y, z, w, h, screen_coords):
-    # render sprite texture using tile coords relitive to the world
-    draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,
-        z+sin(x+y*y)/50,
-        w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
-        h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
-def draw_object_foreground(decor, x, y, z, w, h, screen_coords):
-    # render sprite texture using tile coords relitive to the world
-    draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,
-        1+z,
-        w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),
-        h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))
-    Renderer.tile_list.insert(0,
-                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
-                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
-                               -z,
-                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2, (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
-                               decor))
-def draw_shadow(decor, x, y, z, w, h, screen_coords):
-    # render sprite texture using tile coords relitive to the world
-    Renderer.tile_list.insert(0,
-                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
-                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
-                               -z,
-                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
-                               (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
-                               decor))
-    Renderer.shadow_list.insert(0,
-                                ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
-                                 (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
-                                 -z,
-                                 (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
-                                 (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
-                                 decor))
-def draw_weather(decor, x, y, z, w, h, screen_coords):
-    # render sprite texture using tile coords relitive to the world
-    spr, x, y, z, w, h = decor,\
-                         1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20,\
-                         1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20,\
-                         1+z,\
-                         w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10),\
-                         h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10)
-    Renderer.weather_list.append((x / window_size[0] * 2, (y) / window_size[1] * 2, z, w / window_size[0] * 2, h / window_size[1] * 2, spr))
-    Renderer.tile_list.insert(0,
-                              ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size - cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 20)/window_size[0]*2,
-                               (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size - sin(curtime / 300  + (x+y*y)%1024) * tile_size / 20)/window_size[1]*2,
-                               -z,
-                               (w * tile_size + int(cos(curtime / 1000 + (x+y*y)%1024) * tile_size / 10))/window_size[0]*2,
-                               (h * tile_size + int(sin(curtime / 300 + (x+y*y)%1024) * tile_size / 10))/window_size[1]*2,
-                               decor))
+def screen_transform(x, y, z, w, h, tex):
+    # convert pixel coords to shader coords
+    return (x/window_size[0]*2,
+            y/window_size[1]*2,
+            z,
+            w/window_size[0]*2,
+            h/window_size[1]*2,
+            tex)
 
-def draw_structure(decor, x, y, z, w, h, screen_coords):
-    # render sprite texture using tile coords relitive to the world
-    draw_sprite( decor,
-        1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size,
-        1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size,
-        z,
-        w * tile_size,
-        h * tile_size)
+def geom_tile(x, y, z, tex):
+    # return element for rendering a tile using int tile coords relitive to the screen
+    global screen_coords
+    return screen_transform((1 - screen_coords[0] % tile_size + tile_size * x),
+                            (1 - screen_coords[1] % tile_size + tile_size * y),
+                            z,
+                            tile_size,
+                            tile_size,
+                            tex)
+
+def geom_structure(x, y, z, w, h, tex):
+    # return element for rendering a texture using int tile coords relitive to the world
+    global screen_coords
+    return screen_transform(1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size,
+                            1 - screen_coords[1] % tile_size + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size,
+                            z,
+                            w * tile_size,
+                            h * tile_size,
+                            tex)
+
+def geom_object(x, y, z, w, h, tex):
+    # return element for rendering a texture using int tile coords relitive to the world with added sway
+    sway_translation = (x + y * y) % 1024
+    return geom_structure(x - cos(curtime / 1000 + sway_translation) / 80,
+                            y - sin(curtime / 700 + sway_translation) / 80,
+                            z,
+                            w + (cos(curtime / 1000 + sway_translation) / 10),
+                            h + (sin(curtime / 700 + sway_translation) / 10),
+                            tex)
+
+def draw_object(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_object(x, y, z + sin(x + y * y) / 50, w, h, tex))
+def draw_object_foreground(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_object(x, y, 1+z, w, h, tex))
+    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+def draw_shadow(tex, x, y, z, w, h):
+    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex))
+def draw_weather(tex, x, y, z, w, h):
+    Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex))
+def draw_structure(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_structure(x, y, z, w, h, tex))
     if w * h == 0:
-        Renderer.tile_list.insert(0,
-                                  ((1 - screen_coords[0] % tile_size + tile_size*(x-w/2+0.5)-screen_coords[0]//tile_size*tile_size)/window_size[0]*2,
-                                   (1 - screen_coords[1] % tile_size + tile_size*(y-h/2+0.5)-screen_coords[1]//tile_size*tile_size)/window_size[1]*2,
-                                   -z,
-                                   (w * tile_size)/window_size[0]*2, (h * tile_size )/window_size[1]*2,
-                                   decor))
-
+        Renderer.tile_list.insert(0, geom_structure(x, y, -z, w, h, tex))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -440,6 +422,7 @@ def main():
     global velocity
     global curtime
     global tile_size
+    global screen_coords
     global selected_tile
     global char_direction
     global overlay
@@ -450,7 +433,6 @@ def main():
     global world_text
     global player_text
     global last_server_update
-    global server_address
     global server_fails
     frame += 1
     dt = pygame.time.get_ticks() - curtime
@@ -593,44 +575,44 @@ def main():
                         matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
                     else:
                         matindex = index
-                        #index = (tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)
-                    draw_tile(get_tex(mat, matindex), x2, y2, screen_coords)
+
+                    Renderer.tile_list.append(geom_tile(x2, y2, 0.0, get_tex(mat, matindex)))
 
                     decor = decorate(tile_coords[0], tile_coords[1], mat)
                     if decor == None:
                         pass
                     elif decor == "mushrooms":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "normaltree" or decor == "birchtreelog":
-                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
+                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree" or decor == "treelog":
-                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
+                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "birchtreestump":
-                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
-                        draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
+                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
                     elif decor == "treestump":
-                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1, screen_coords)
-                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1, screen_coords)
+                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
                     elif decor in blocks:
                         wall = get_tex(decor, 0)
-                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0, screen_coords)
-                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.13, 0, 1, screen_coords)
-                        draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1, screen_coords)
+                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0)
+                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.13, 0, 1)
+                        draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1)
                     elif decor in roofing:
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1, screen_coords)
+                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1)
                     elif decor == "cactus":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "lillypad":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1), screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "talldrygrass":
-                        draw_structure(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1, screen_coords)
+                        draw_structure(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1), screen_coords)
+                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1))
                     else:
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.035, -2, -2, screen_coords)
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.05, 2, 2, screen_coords)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.035, -2, -2)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.05, 2, 2)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -646,12 +628,9 @@ def main():
             save_game()
         try:
             sock.sendto(str("player_update"+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
-            #time.sleep(0.01)
             data, address = sock.recvfrom(8192)
-            text = data.decode('utf-8')
-            text = text.split("&")
-            world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
-            player_text = pickle.loads(base64.b64decode(text[0][2:-1]))
+            player_text = pickle.loads(data)
+            world_text = pickle.loads(data)
             for key in world_text.keys():
                 map.apply_data(key[0], key[1], world_text[key])
             server_fails = 0
@@ -676,12 +655,13 @@ def main():
                 dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
             else:
                 dx, dy = dt*speed*cos(direc*tau/8+tau/4), dt*speed*sin(direc*tau/8-tau/4)
-            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2, screen_coords)
-            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2, screen_coords)
-            draw_object(get_tex("charhead"+str(direc), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, screen_coords)
-    draw_sprite(get_tex("charlegs"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size)
-    draw_sprite(get_tex("charhands"+str(char_direction),char_anim), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size)
-    draw_sprite(get_tex("charhead"+str(char_direction),player_number), window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size)
+            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2)
+            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
+            draw_object(get_tex("charhead"+str(direc), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
+    # add player textures to vertex list
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(char_direction),player_number)))
     for y in range(14 + window_size[1] // tile_size):
         for x in range(18 + window_size[0] // tile_size):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 9,
@@ -690,36 +670,31 @@ def main():
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == "normaltree":
                 tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
-                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
-                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
-                draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
-                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
+                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
+                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
             if decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
                 tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
-                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1, screen_coords)
-                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0, screen_coords)
-                draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1, screen_coords)
-                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1), screen_coords)
-    draw_structure(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1, screen_coords)
-    #draw_tile(get_tex("selection",0), selected_tile[0] - screen_coords[0]//tile_size, selected_tile[1] - screen_coords[1]//tile_size, screen_coords)
+                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
+                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
+    draw_structure(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
     for c in range(10):
-        draw_shadow(get_tex("cloud", 0),
+        draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
                     screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100,
                     1,
                     100*(int(c)%2*2-1),
-                    100*(int(c//2)%2*2-1),
-                    screen_coords)
+                    100*(int(c//2)%2*2-1))
     for c in range(5):
-        draw_weather(get_tex("cloud", 0),
+        draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+873356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      1,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1),
-                     screen_coords)
-
-    #draw_shadow(get_tex("cloud", 0), screen_coords[0] / tile_size+20, screen_coords[1] / tile_size+8, 1, 1000, 1000, screen_coords)
+                     100*(int(c//2)%2*2-1))
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     pygame.display.flip()

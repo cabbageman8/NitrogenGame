@@ -63,10 +63,9 @@ while True:
             player_num = header[0]
             if player_num not in player_inbox.keys():
                 player_inbox.update({player_num: {}})
-            downloads = base64.b64encode(pickle.dumps(player_inbox[player_num]))
+            downloads = pickle.dumps(player_inbox[player_num])
             player_inbox.update({player_num: {}})
-            response = str(str(base64.b64encode(pickle.dumps(players))) + "&" + str(downloads)).encode('utf-8')
-
+            response = pickle.dumps(players)+downloads
             s.sendto(response, client_address)
 
         elif header[:14] == "save_to_server":
