@@ -35,18 +35,46 @@ for i in range(pygame.joystick.get_count()):
     joystick.init()
     gamepads.append(joystick)
 
-FPS=60
 clock = pygame.time.Clock()
-#window_size=(1000, 1000)
-window_size=(1920, 1080)
-#window_size=(2560, 1440)
+text = ["connecting to server"]
+
+try:
+    sav = open(os.path.join("save", "settings.txt"), 'r')
+    txt = sav.read()
+    sav.close()
+except FileNotFoundError:
+    txt = '''FPS = 60
+window_size = 1920, 1080
+fullscreen = True
+vsyncenabled = True
 tile_size = 75
+ip = cabbageserver.ddns.net
+port = 27448'''
+    sav = open(os.path.join("save", "settings.txt"), 'w')
+    sav.write(txt)
+    sav.close()
+    text.append('could not find settings file, defaults loaded')
 
-pygame.display.set_mode(size=window_size, flags=DOUBLEBUF|OPENGL, vsync=True)
+try:
+    txt = txt.replace(" ", "").replace("\n\n", '\n')
+    print(txt)
+    txt = {line.split('=')[0] : line.split('=')[1] for line in txt.split('\n') }
+    FPS = int(txt["FPS"])
+    window_size = (int(txt["window_size"].split(',')[0]), int(txt["window_size"].split(',')[1]))
+    fullscreen = txt["fullscreen"] != "False"
+    vsyncenabled = txt["vsyncenabled"] != "False"
+    tile_size = int(txt["tile_size"])
+    ip = txt["ip"]
+    port = int(txt["port"])
+except:
+    print("improper settings file")
 
-pygame.display.toggle_fullscreen()
-window_size = pygame.display.get_window_size()
-overlay = pygame.Surface(window_size).convert_alpha()
+pygame.display.set_mode(size=window_size, flags=DOUBLEBUF|OPENGL, vsync=vsyncenabled)
+
+if fullscreen:
+    pygame.display.toggle_fullscreen()
+    window_size = pygame.display.get_window_size()
+    overlay = pygame.Surface(window_size).convert_alpha()
 
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
 textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
@@ -54,10 +82,10 @@ textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "c
             "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
             "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
-            "freshwater", "axe", "spade", "cloud", "talldrygrass", "glass"]
+            "freshwater", "axe", "spade", "cloud", "talldrygrass", "glass", "greencactus", "hole"]
 textures_img = []
 texd = {}
-solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus"}
+solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus", "greencactus"}
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
 animated = {"water", "freshwater"}
 blocks = {"block", "wall"}
@@ -69,7 +97,7 @@ biomes = ((("freshwater","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("no
             (("bottlebrushdirt","roughseedgrass"), ("grass",), ("normaltree", "bottlebrushtree",)),
             (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("deadtree", "sheoaktree", "sheoaktree",)),
             (("freshwater","weeds","freshwater"), ("grass", "bush", "flytrap", "lillypad",), ("normaltree",)),
-            (("sand", "fossil"), ("grass","grass", "cactus",), ("normaltree",)),
+            (("sand", "fossil"), ("grass","grass", "cactus", "greencactus",), ("normaltree",)),
             (("water","stones"), (None, ), (None, )))
 def load_textures():
     global texd
@@ -110,7 +138,6 @@ for i, m in enumerate(textures_img):
 pygame.image.save(texpack, "texpack.png")
 overlay = pygame.Surface(window_size).convert_alpha()
 overlay.fill((255,255,255,155))
-text = ["connecting to server"]
 for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer = glrenderer(texpack, overlay)
@@ -143,9 +170,6 @@ def seeded_random(a):
 def point_to_random(x, y):
     return seeded_random(x + x * x * y * y * y + y * y)
 
-#ip = "localhost"
-ip = "cabbageserver.ddns.net"
-port = int(27448)
 server_address = (ip, port)
 
 # Create socket for server
@@ -155,8 +179,8 @@ sock.setblocking(False)
 text = ["visit cabbage.moe", "Nitrogen Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "RM place decoration", "press h to start"]
 # get local data
 try:
-    sav = open(os.path.join("save", "savedata.pickle"), 'rb')
-    data = pickle.load(sav)
+    sav = open(os.path.join("save", "savedata.pickle"), 'r')
+    data = pickle.loads(base64.b64decode(sav.read()))
     pos = data['pos']
     hotbar = data['hotbar']
     player_number = data['player_number']
@@ -168,7 +192,7 @@ except FileNotFoundError:
     player_number = int(seeded_random(time.time()%100000000)*10000)
     sav = open(os.path.join("save", "savedata.pickle") , 'wb')
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
-    pickle.dump(data, sav)
+    sav.write(base64.b64encode(pickle.dumps(data)))
     sav.close()
     text.append('could not find local save, blank save loaded')
 
@@ -176,7 +200,7 @@ screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - 
 # get server data
 map = root_node()
 try:
-    sock.sendto('world_download'.encode('utf-8'), server_address)
+    sock.sendto('world_download '.encode('utf-8'), server_address)
     downl_time = time.time()
     while time.time() - downl_time < 1:
         try:
@@ -216,15 +240,15 @@ render_text(text)
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["glass", 1, 9999]
 #hotbar[1] = ["spade", 1, 1]
-#hotbar[1] = ["talldrygrass", 1, 999]
+#hotbar[1] = ["hole", 1, 999]
 def save_game():
     print("saving game")
     sav = open(os.path.join("save", "savedata.pickle"), 'wb')
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
-    pickle.dump(data, sav)
+    sav.write(base64.b64encode(pickle.dumps(data)))
     sav.close()
     if len(map.save_buffer) > 0:
-        sock.sendto(str('save_to_server'+str(base64.b64encode(pickle.dumps(map.save_buffer)))).encode('utf-8'), server_address)
+        sock.sendto(str('save_to_server '+str(base64.b64encode(pickle.dumps(map.save_buffer)))).encode('utf-8'), server_address)
         map.save_buffer.clear()
 selected_item_slot = 0
 
@@ -598,12 +622,14 @@ def main():
                         draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1)
                     elif decor in roofing:
                         draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1)
-                    elif decor == "cactus":
+                    elif decor == "cactus" or decor == "greencactus":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "lillypad":
                         draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "talldrygrass":
                         draw_structure(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1)
+                    elif decor == "hole":
+                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 2, 2)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
@@ -625,7 +651,7 @@ def main():
         if len(map.save_buffer) > 0:
             save_game()
         try:
-            sock.sendto(str("player_update"+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
+            sock.sendto(str("player_update "+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
             data, address = sock.recvfrom(8192)
             text = data.decode('utf-8')
             text = text.split("&")

@@ -1,1 +1,7 @@
-This will be used to store game settings in plaintext
+FPS = 60
+window_size = 1920, 1080
+fullscreen = True
+vsyncenabled = True
+tile_size = 75
+ip = cabbageserver.ddns.net
+port = 27448

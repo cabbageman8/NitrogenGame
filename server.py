@@ -49,15 +49,15 @@ while True:
     if client_address[0] not in blacklist:
         header = data.decode('utf-8')
 
-        if header == "world_download":
+        if header == "world_download ":
             print("processing world_download", "from", client_address)
             for chunk in dict_chunks(map):
                 print(chunk)
                 response = pickle.dumps(chunk)
                 s.sendto(response, client_address)
 
-        elif header[:13] == "player_update":
-            header = header[13:].split(',')
+        elif header[:14] == "player_update ":
+            header = header[14:].split(',')
             print("processing player_update", "from", client_address, "player", header[0])
             players.update({header[0] : header[1:]})
             player_num = header[0]
@@ -68,9 +68,9 @@ while True:
             response = str(str(base64.b64encode(pickle.dumps(players))) + "&" + str(downloads)).encode('utf-8')
             s.sendto(response, client_address)
 
-        elif header[:14] == "save_to_server":
+        elif header[:15] == "save_to_server ":
             print("processing save_to_server", "from", client_address)
-            header = pickle.loads(base64.b64decode(header[16:-1]))
+            header = pickle.loads(base64.b64decode(header[17:-1]))
             for key, value in header.items():
                 payload = (key, value)
                 for k in list(player_inbox):
