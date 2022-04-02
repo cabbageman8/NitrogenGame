@@ -18,6 +18,8 @@ players = {}
 player_inbox = {}
 blacklist = {}
 
+try: os.mkdir("save")
+except: pass
 try:
     sav = open(os.path.join("save", "serverdata.pickle"), 'rb')
     data = pickle.load(sav)

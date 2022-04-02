@@ -1,4 +1,4 @@
-# Nitrogen Alpha
+# Nitrogen Alpha 0.00
 
 # to compile; run
 # py -m nuitka --standalone --include-data-dir=data=data --include-data-dir=save=save Nitrogen.py
@@ -19,6 +19,7 @@ import os
 import time
 import socket
 import base64
+from objects import *
 
 logfile = open("log.txt", 'w')
 sys.stderr = logfile
@@ -38,6 +39,8 @@ for i in range(pygame.joystick.get_count()):
 clock = pygame.time.Clock()
 text = ["connecting to server"]
 
+try: os.mkdir("save")
+except: pass
 try:
     sav = open(os.path.join("save", "settings.txt"), 'r')
     txt = sav.read()
@@ -56,7 +59,7 @@ port = 27448'''
     text.append('could not find settings file, defaults loaded')
 
 try:
-    txt = txt.replace(" ", "").replace("\n\n", '\n')
+    txt = txt.replace(" ", "").replace("\n\n", '\n').replace("\n\n", '\n')
     print(txt)
     txt = {line.split('=')[0] : line.split('=')[1] for line in txt.split('\n') }
     FPS = int(txt["FPS"])
@@ -77,28 +80,9 @@ if fullscreen:
     overlay = pygame.Surface(window_size).convert_alpha()
 
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
-textures = ["None", "selection", "water", "planks", "dirt", "tiles", "weeds", "cabbage", "grass", "deadtree", "normaltree",
-            "treelog", "treestump", "treetrunk", "wall", "block", "hexpavers", "roughseedgrass", "stones",
-            "lushundergrowth", "gravillearobustadirt", "basil", "bottlebrushdirt", "sheoakdirt", "mushrooms", "fern",
-            "bush", "tarragon", "lawn", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "fossil", "sand", "cactus",
-            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad",
-            "freshwater", "axe", "spade", "cloud", "talldrygrass", "glass", "greencactus", "hole"]
 textures_img = []
 texd = {}
-solids = {"deadtree", "normaltree", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "treelog", "birchtreelog", "treestump", "birchtreestump", "wall", "cactus", "greencactus"}
-entities = ["charhands","charhandstouch", "charhead", "charlegs"]
-animated = {"water", "freshwater"}
-blocks = {"block", "wall"}
-roofing = {"tiles", "planks", "glass"}
-difficult_terrain = {"water", "flytrap", "freshwater"}
-#          materials,                             shrubs,               trees
-biomes = ((("freshwater","weeds","dirt","weeds","dirt"), ("grass", "bush"), ("normaltree",)),
-            (("gravillearobustadirt", "roughseedgrass"), ("grass", "fern"), ("normaltree", "gravilearobustatree",)),
-            (("bottlebrushdirt","roughseedgrass"), ("grass",), ("normaltree", "bottlebrushtree",)),
-            (("sheoakdirt","roughseedgrass"), ("mushrooms", "fern"), ("deadtree", "sheoaktree", "sheoaktree",)),
-            (("freshwater","weeds","freshwater"), ("grass", "bush", "flytrap", "lillypad",), ("normaltree",)),
-            (("sand", "fossil"), ("grass","grass", "cactus", "greencactus",), ("normaltree",)),
-            (("water","stones"), (None, ), (None, )))
+
 def load_textures():
     global texd
     global textures_img
@@ -111,6 +95,7 @@ def load_textures():
             frame_list.append(len(textures_img))
             textures_img.append(frame)
         texd.update({mat : frame_list})
+        file.close()
 
     for e in entities:
         file = Image.open(os.path.join("data", "entities", e+".png")).convert("RGBA")
@@ -128,6 +113,8 @@ def load_textures():
                 frame_list.append(len(textures_img))
                 textures_img.append(frame)
             texd.update({e+str(i*2+1): frame_list})
+        file.close()
+        fileb.close()
 load_textures()
 def get_tex(name, index):
     return texd[name][int(index)%len(texd[name])]
@@ -135,7 +122,7 @@ def get_tex(name, index):
 texpack = pygame.Surface((min(128*128, 128*(len(textures_img))), 128*(1+len(textures_img)//128)), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(textures_img):
     texpack.blit(m, (128*(i%128),128*(i//128)))
-pygame.image.save(texpack, "texpack.png")
+
 overlay = pygame.Surface(window_size).convert_alpha()
 overlay.fill((255,255,255,155))
 for i, t in enumerate(text):
@@ -240,7 +227,8 @@ render_text(text)
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["glass", 1, 9999]
 #hotbar[1] = ["spade", 1, 1]
-#hotbar[1] = ["hole", 1, 999]
+#hotbar[1] = ["dirt", 0, 999]
+print("hotbar:", hotbar)
 def save_game():
     print("saving game")
     sav = open(os.path.join("save", "savedata.pickle"), 'wb')
@@ -259,6 +247,7 @@ def construct_overlay():
         if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
     slot = hotbar[int(selected_item_slot)]
+    overlay.blit(silombol.render(get_biome(pos[0], pos[1])[0]+str(get_climate(pos[0], pos[1])), True, (0, 0, 0)), (0, 0))
     if slot[0] != None and slot[2] > 0:
         t = str(slot[0])
         if slot[2] > 1:
@@ -266,18 +255,29 @@ def construct_overlay():
         overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
     Renderer.update_overlay(overlay)
 
+last_climate = (None, None, None)
 biome_size = 100
+def get_climate(x, y):
+    global last_climate
+    if last_climate[0] == x and last_climate[1] == y:
+        return last_climate[2]
+    else:
+        x /= biome_size
+        y /= biome_size
+        temp     = ((sin(0.70688 * y) * sin(0.08321 * y) * sin(1.20191 * y + 1.07952 * x) + sin(1.83391 * x / 5 - 1.00643 * y / 5) * sin(0.27705 * x / 5))/2+0.5)
+        moisture = ((sin(0.56554 * y) * sin(0.49491 * y) * sin(1.63167 * y + 1.36682 * x) + sin(1.19063 * x / 7 - 1.52815 * y / 7) * sin(0.13701 * x / 7))/2+0.5)
+        temp, moisture = max(0, min(0.999, temp))*35+10, max(0, min(0.999, moisture))*75
+        last_climate = (x, y, (temp, moisture))
+        return temp, moisture
 last_biome = (None, None, None)
 def get_biome(x, y):
     global last_biome
     if last_biome[0] == x and last_biome[1] == y:
         return last_biome[2]
     else:
-        x /= biome_size
-        y /= biome_size
-        temp = sin(0.70688 * y) * sin(0.08321 * y) * sin(1.20191 * y + 1.07952 * x) + sin(1.83391 * x / 5 - 1.00643 * y / 5) * sin(0.27705 * x / 5)
-        moisture = sin(0.56554 * y) * sin(0.49491 * y) * sin(1.63167 * y + 1.36682 * x) + sin(1.19063 * x / 7 - 1.52815 * y / 7) * sin(0.13701 * x / 7)
-        biome = biomes[int(point_to_random(int((temp+1)/2*len(biomes)), int((moisture+1)/2*len(biomes)))*len(biomes))]
+        temp, moisture = get_climate(x, y)
+        biome_num = biome_map[int(temp/45*4)][int(moisture/100*6)]
+        biome = biomes[biome_num]
         last_biome = (x,y, biome)
         return biome
 def get_mat(x, y):
@@ -287,24 +287,29 @@ def get_mat(x, y):
     else:
         local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
         biome = get_biome(x, y)
-        mat = biome[0][int((local+1)/2*(len(biome[0])-1))]
-        map.cache_data(int(x), int(y), (mat, -1))
+        temp, moisture = get_climate(x, y)
+        mat_list = biome[1][int(len(biome[1])*point_to_random(int(temp / 45 * len(biome[1])), int(moisture / 100 * len(biome[1])) ))]
+        mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
     return mat
+
 def decorate(x, y, mat):
     map_data = map.get_data(int(x), int(y))
     dec = None
-    if (map_data != None and map_data[1] != -1):
-        dec = map_data[1]
+    if map_data != None:
+        if len(map_data) > 1:
+            dec = map_data[1]
     else:
         r = point_to_random(x, y)
-        biome = get_biome(x, y)
-        if ((r < 0.7 and (mat == "weeds" or mat == "roughseedgrass"))) or (r < 0.1 and ("dirt" in mat or "sand" in mat)) or "water" in mat:
-            dec = biome[1][int(r * 100) % len(biome[1])]
-            if "water" in mat and dec != "lillypad" or not "water" in mat and dec == "lillypad":
+        if r < 0.5:
+            r *= 2
+            dec = list(OBJ)[int(r*len(OBJ))]
+            temp, moisture = get_climate(x, y)
+            if mat not in OBJ[dec]["substrate"] or temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1]:
                 dec = None
-        if r > 0.98 and "dirt" in mat:
-            dec = biome[2][int(r * 100) % len(biome[2])]
-        map.cache_data(int(x), int(y), (mat, dec))
+        if dec == None:
+            map.cache_data(int(x), int(y), (mat, ))
+        else:
+            map.cache_data(int(x), int(y), (mat, dec))
     return dec
 
 def get_tile_info(x, y):
@@ -331,7 +336,7 @@ def geom_tile(x, y, z, tex):
                             tile_size,
                             tex)
 
-def geom_structure(x, y, z, w, h, tex):
+def geom_object(x, y, z, w, h, tex):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
     return screen_transform(1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size,
@@ -341,30 +346,30 @@ def geom_structure(x, y, z, w, h, tex):
                             h * tile_size,
                             tex)
 
-def geom_object(x, y, z, w, h, tex):
+def geom_shrub(x, y, z, w, h, tex):
     # return element for rendering a texture using int tile coords relitive to the world with added sway
     sway_translation = (x + y * y) % 1024
-    return geom_structure(x - cos(curtime / 1000 + sway_translation) / 80,
+    return geom_object(x - cos(curtime / 1000 + sway_translation) / 80,
                             y - sin(curtime / 700 + sway_translation) / 80,
                             z,
                             w + (cos(curtime / 1000 + sway_translation) / 10),
                             h + (sin(curtime / 700 + sway_translation) / 10),
                             tex)
 
-def draw_object(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_object(x, y, z + sin(x + y * y) / 50, w, h, tex))
-def draw_object_foreground(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_object(x, y, 1+z, w, h, tex))
-    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+def draw_shrub(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_shrub(x, y, z + sin(x + y * y) / 50, w, h, tex))
+def draw_shrub_foreground(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_shrub(x, y, 1+z, w, h, tex))
+    Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
 def draw_shadow(tex, x, y, z, w, h):
-    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
-    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex))
+    Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
+    Renderer.shadow_list.append(geom_shrub(x, y, -z, w, h, tex))
 def draw_weather(tex, x, y, z, w, h):
-    Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex))
-def draw_structure(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_structure(x, y, z, w, h, tex))
+    Renderer.weather_list.append(geom_shrub(x, y, 1+z, w, h, tex))
+def draw_object(tex, x, y, z, w, h):
+    Renderer.vert_list.append(geom_object(x, y, z, w, h, tex))
     if w * h == 0:
-        Renderer.tile_list.insert(0, geom_structure(x, y, -z, w, h, tex))
+        Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -389,6 +394,8 @@ def handle_keys():
                 save_game()
                 running = False
             keydown_set.add(event.key)
+            if (event.key in (pygame.K_F2,)):
+                keydown_set.add("press"+str(event.key))
         elif event.type == pygame.KEYUP and event.key != pygame.K_F4:
             keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -546,16 +553,18 @@ def main():
         if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
         else:
-            if selected_data != None and selected_data[1] != None:
+            if selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
                 if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[1] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 1):
                     shovel_sfx.play()
+                    print("get dec")
                     hotbar[int(selected_item_slot)] = [selected_data[1], 1, hotbar[int(selected_item_slot)][2] + 1]
-                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], None))
-            elif selected_data != None and selected_data[0] != None:
+                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], ))
+            else:
                 if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[0] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 0):
                     shovel_sfx.play()
+                    print("get mat")
                     hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
-                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_biome(int(selected_tile[0]), int(selected_tile[1]))[0][0], None))
+                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_biome(int(selected_tile[0]), int(selected_tile[1]))[1][0][0], ))
         construct_overlay()
         if "click1" in keydown_set:
             keydown_set.remove("click1")
@@ -566,11 +575,12 @@ def main():
         if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
             if hotbar[int(selected_item_slot)][1] == 0:
                 hit_sfx.play()
-                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0], selected_data[1]))
-            if hotbar[int(selected_item_slot)][1] == 1:
+                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
+                hotbar[int(selected_item_slot)][2] -= 1
+            if hotbar[int(selected_item_slot)][1] == 1 and selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"]:
                 crumple_sfx.play()
-                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0]))
-            hotbar[int(selected_item_slot)][2] -= 1
+                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0], time.time()))
+                hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot-1)%9
@@ -604,39 +614,39 @@ def main():
                     if decor == None:
                         pass
                     elif decor == "mushrooms":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "normaltree" or decor == "birchtreelog":
-                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_object(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree" or decor == "treelog":
-                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_object(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                     elif decor == "birchtreestump":
-                        draw_structure(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
-                        draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
+                        draw_object(get_tex("birchtreelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_object(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
                     elif decor == "treestump":
-                        draw_structure(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
-                        draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
+                        draw_object(get_tex("treelog", 0), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                        draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], 0.05, 1, 1)
                     elif decor in blocks:
                         wall = get_tex(decor, 0)
-                        draw_structure(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0)
-                        draw_structure(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.13, 0, 1)
-                        draw_structure(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1)
+                        draw_object(wall, tile_coords[0], tile_coords[1]-((y2>window_size[1]//tile_size//2)-.5), 0.13, 1, 0)
+                        draw_object(wall, tile_coords[0]-((x2>window_size[0]//tile_size//2)-.5), tile_coords[1], 0.13, 0, 1)
+                        draw_object(wall, tile_coords[0], tile_coords[1], 0.13, 1, 1)
                     elif decor in roofing:
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 1.13, 1, 1)
                     elif decor == "cactus" or decor == "greencactus":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1))
+                        draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 2*(int(index+tile_coords[0])%2*2-1), 2*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "lillypad":
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1))
+                        draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.001, 1.5*(int(index+tile_coords[0])%2*2-1), 1.5*(int(index+tile_coords[1])%2*2-1))
                     elif decor == "talldrygrass":
-                        draw_structure(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1)
+                        draw_object(get_tex(decor, index), tile_coords[0]+cos(curtime/1000)/10, tile_coords[1]+sin(curtime/1000)/10, 0.05, 1, 1)
                     elif decor == "hole":
-                        draw_structure(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 2, 2)
+                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.01, 2, 2)
                     elif decor == "flytrap":
                         if i==1 and j==1 and y==ceil((2+i2+window_size[1] // tile_size) / 2)-2 and x==ceil((2+j2+window_size[0] // tile_size) / 2)-2:
                             index = curtime/200+tile_coords[0]*tile_coords[0]+tile_coords[1]
-                        draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1))
+                        draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], 0.03, 1.5*(tile_coords[0]%2*2-1), 1.5*(tile_coords[1]%2*2-1))
                     else:
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.035, -2, -2)
-                        draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.05, 2, 2)
+                        draw_shrub(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.035, -2, -2)
+                        draw_shrub(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0.05, 2, 2)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -681,9 +691,9 @@ def main():
                 dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
             else:
                 dx, dy = dt*speed*cos(direc*tau/8+tau/4), dt*speed*sin(direc*tau/8-tau/4)
-            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2)
-            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
-            draw_object(get_tex("charhead"+str(direc), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
+            draw_shrub(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2)
+            draw_shrub(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
+            draw_shrub(get_tex("charhead"+str(direc), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
     # add player textures to vertex list
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
@@ -696,17 +706,17 @@ def main():
             decor = decorate(tile_coords[0], tile_coords[1], mat)
             if decor == "normaltree":
                 tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
-                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
-                draw_structure(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
-                draw_structure(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
-                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
+                draw_object(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
+                draw_object(get_tex("birchtreetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                draw_object(get_tex("birchtreestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
             if decor == "gravilearobustatree" or decor == "bottlebrushtree" or decor == "sheoaktree" or decor == "deadtree":
                 tree_height = 0.4 + sin(tile_coords[0] + tile_coords[1] * tile_coords[1]) / 20
-                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
-                draw_structure(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
-                draw_structure(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
-                draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
-    draw_structure(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
+                draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
+                draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, 8*(tile_coords[0]%2*2-1), 8*(tile_coords[1]%2*2-1))
+    draw_object(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
@@ -721,8 +731,17 @@ def main():
                      1,
                      100*(int(c)%2*2-1),
                      100*(int(c//2)%2*2-1))
+    Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("sky", 0)))
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
+    if "press"+str(pygame.K_F2) in keydown_set:
+        try: os.mkdir("screenshots")
+        except: pass
+        file_name = os.path.join("screenshots", "screenshot"+str(int(time.time()))+".png")
+        file = open(file_name, "wb")
+        pygame.image.save(pygame.transform.flip(pygame.image.fromstring(Renderer.ctx.screen.read(), Renderer.ctx.screen.size, "RGB"), False, True), file, "PNG")
+        file.close()
+        keydown_set.remove("press"+str(pygame.K_F2))
     pygame.display.flip()
     clock.tick(FPS)
 

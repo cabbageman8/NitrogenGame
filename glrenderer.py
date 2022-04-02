@@ -69,6 +69,7 @@ precision mediump float;
 uniform sampler2D texpack;
 uniform sampler2D overlay;
 uniform vec2 mouse_pos;
+uniform vec2 screen_size;
 uniform float time;
 in vec2 v_text;
 in float thetexnum;
@@ -80,8 +81,8 @@ float mouse_dist_2;
 float seethrough;
 void main() {
     incolour = texture(texpack,v_text);
-    mid_dist_2 = (screenpos.x)*(screenpos.x)+(screenpos.y)*(screenpos.y);
-    mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y);
+    mid_dist_2 = (screenpos.x)*(screenpos.x)*screen_size.x/screen_size.y+(screenpos.y)*(screenpos.y)*screen_size.y/screen_size.x;
+    mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)*screen_size.x/screen_size.y+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y)*screen_size.y/screen_size.x;
     seethrough = (screenpos.z < -1.0) ? incolour.a*mid_dist_2*mouse_dist_2*50.0 : incolour.a;
     f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3*incolour.a, seethrough)));
 }
@@ -207,6 +208,7 @@ void main() {
         #self.prog['time'].value = curtime/1000.0
         self.prog['mouse_pos'].value = mouse_pos
         self.prog['tile_size'].value = tile_size/100.0
+        self.prog['screen_size'].value = self.ctx.screen.size
         self.shadowprog['tile_size'].value = tile_size/100.0
         self.write_vert_data(self.tile_list)
         self.vao.render(instances=len(self.tile_list)) # render tiles (unordered)

@@ -13,7 +13,8 @@ log.txt
 Nitrogen.dist/log.txt
 .DS_Store
 
-save/savedata.pickle
-save/serverdata.pickle
-Nitrogen.dist/save/savedata.pickle
-Nitrogen.dist/save/serverdata.pickle
+save/
+Nitrogen.dist/save/
+
+screenshots/
+Nitrogen.dist/screenshots/

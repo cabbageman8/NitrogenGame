@@ -102,7 +102,7 @@ class root_node():
                 result = self.children[2].get_data(x, y, -self.size, self.size, self.size)
             else:
                 result = self.children[0].get_data(x, y, -self.size, -self.size, self.size)
-        self.cache_data(x, y, result)
+        self.cache_data(int(x), int(y), result)
         return result
     def cache_data(self, x, y, data):
         if len(self.cache) > 2**16:

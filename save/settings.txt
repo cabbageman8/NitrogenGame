@@ -1,5 +1,6 @@
+version = 0.0
 FPS = 60
-window_size = 1920, 1080
+window_size = 2560, 1440
 fullscreen = True
 vsyncenabled = True
 tile_size = 75
