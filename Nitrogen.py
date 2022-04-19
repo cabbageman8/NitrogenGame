@@ -226,7 +226,7 @@ render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["glass", 1, 9999]
-hotbar[1] = ["spade", 1, 1]
+#hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["wall", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
@@ -656,8 +656,8 @@ def main():
                 elif model == "singleobj":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleobj":
-                    draw_object(get_tex("treelog", 0), tile_coords[0], tile_coords[1], height, w,h)
-                    draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0, w,h)
+                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "block":
                     wall = get_tex(decor, index)
                     draw_object(wall, tile_coords[0], tile_coords[1]-((y>window_size[1]//tile_size//2)-.5), height, 1, 0)
@@ -703,7 +703,7 @@ def main():
             values = player_text[number]
             coords = [float(values[0])-.5, float(values[1])-.5]
             direc = int(values[2])
-            look = float(values[3])
+            look = int(values[3])
             anim = float(values[4])
             speed = float(values[5])
             t = float(values[6])
@@ -720,6 +720,9 @@ def main():
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number)))
+    item = hotbar[int(selected_item_slot)]
+    if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
+        Renderer.light_list.append(((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
     draw_object(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),

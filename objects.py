@@ -9,7 +9,7 @@ textures = [
             #objects
             "grass", "deadtree", "normaltree", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
             "fern", "bush", "tarragon", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "cactus", "greencactus",
-            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass",
+            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
             ]
 
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
@@ -235,5 +235,12 @@ OBJ = {
                  "model": "block",
                  "size": 1,
                  "height": 0.15
+             },
+            "candle": {
+                 "flags": {None,},
+                 "model": "doubleobj",
+                 "size": 1,
+                 "height": 0.01,
+                 "lightemit": lambda t,x,y: (0.08+(t/300+x/7+y/5)%1*0.02, 0.04+sin(x+y)*0.01, 0.0)
              },
 }

@@ -100,9 +100,8 @@ void main() {
         if (-screenpos.z <= lightpos[i].z) {
             light_dist = 0.1+((lightpos[i].x-screenpos.x)*(lightpos[i].x-screenpos.x)*(screen_size.x/screen_size.y)/(tile_size*tile_size)+(lightpos[i].y-screenpos.y)*(lightpos[i].y-screenpos.y)*(screen_size.y/screen_size.x)/(tile_size*tile_size))*5.0;
             light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist), light_value.g + lighthue[i].g*(1.0/light_dist), light_value.b + lighthue[i].b*(1.0/light_dist));
-		}
-	}
-    
+        }
+    }
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), min(incolour.a,max(0.3*incolour.a, seethrough)));
 }
 ''')
@@ -230,11 +229,11 @@ void main() {
         self.prog['mouse_pos'].value = mouse_pos
         self.prog['tile_size'].value = tile_size/100.0
         self.prog['screen_size'].value = self.ctx.screen.size
-        r = max(sin((time.time()*tau)/60/1),0)
+        r = max(sin((time.time()*tau)/60/10)+0.16,0)
         g = r**2
         b = g**2
         self.prog['sunlight'].value = (max(r,0.03), max(g,0.05), max(b,0.06))
-        self.prog['lightnum'].value = len(self.light_list)
+        self.prog['lightnum'].value = min(len(self.light_list), 128)
         self.prog['lightpos'].value = (list(l[0] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
         self.prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
         self.shadowprog['tile_size'].value = tile_size/100.0
