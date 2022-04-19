@@ -647,7 +647,7 @@ def main():
                 else:
                     w,h = size,size
                 if "lightemit" in OBJ[decor].keys():
-                    Renderer.light_list.append(geom_light(tile_coords[0], tile_coords[1], height, w,h, OBJ[decor]["lightemit"]))
+                    Renderer.light_list.append(geom_light(tile_coords[0], tile_coords[1], height, w,h, OBJ[decor]["lightemit"](curtime,tile_coords[0], tile_coords[1])))
                 if model == "singleshrub":
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleshrub":

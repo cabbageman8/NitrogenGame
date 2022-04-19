@@ -93,7 +93,7 @@ OBJ = {
                  "model": "singleshrub",
                  "size": 1,
                  "height": 0.01,
-                 "lightemit": (0.05, 0.0, 0.08)
+                 "lightemit": lambda t,x,y: (0.05+sin(t/600+x+y)*0.01, 0.02+sin(x+y)*0.02, 0.08+sin(t/600+x+y)*0.01)
              },
              "fern": {
                  "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
