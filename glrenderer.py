@@ -2,6 +2,7 @@ import struct
 import moderngl
 import glcontext
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil
+import time
 import pygame
 
 class glrenderer():
@@ -10,6 +11,7 @@ class glrenderer():
         self.shadow_list = []
         self.weather_list = []
         self.tile_list = []
+        self.light_list = []
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.simple_prog = self.ctx.program(
@@ -69,8 +71,13 @@ precision mediump float;
 uniform sampler2D texpack;
 uniform sampler2D overlay;
 uniform vec2 mouse_pos;
+uniform float tile_size;
 uniform vec2 screen_size;
 uniform float time;
+uniform vec3 sunlight;
+uniform int lightnum;
+uniform vec3 lightpos[128];
+uniform vec3 lighthue[128];
 in vec2 v_text;
 in float thetexnum;
 in vec3 screenpos;
@@ -79,12 +86,24 @@ vec4 incolour;
 float mid_dist_2;
 float mouse_dist_2;
 float seethrough;
+float light_dist;
+int i;
+vec3 light_value;
 void main() {
     incolour = texture(texpack,v_text);
     mid_dist_2 = (screenpos.x)*(screenpos.x)*screen_size.x/screen_size.y+(screenpos.y)*(screenpos.y)*screen_size.y/screen_size.x;
-    mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)*screen_size.x/screen_size.y+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y)*screen_size.y/screen_size.x;
+    mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)*(screen_size.x/screen_size.y)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y)*(screen_size.y/screen_size.x);
     seethrough = (screenpos.z < -1.0) ? incolour.a*mid_dist_2*mouse_dist_2*50.0 : incolour.a;
-    f_color = vec4(incolour.r, incolour.g, incolour.b, min(incolour.a,max(0.3*incolour.a, seethrough)));
+    
+    light_value = sunlight;
+    for(i=0;i<lightnum;i++){
+        if (-screenpos.z <= lightpos[i].z) {
+            light_dist = 0.1+((lightpos[i].x-screenpos.x)*(lightpos[i].x-screenpos.x)*(screen_size.x/screen_size.y)/(tile_size*tile_size)+(lightpos[i].y-screenpos.y)*(lightpos[i].y-screenpos.y)*(screen_size.y/screen_size.x)/(tile_size*tile_size))*5.0;
+            light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist), light_value.g + lighthue[i].g*(1.0/light_dist), light_value.b + lighthue[i].b*(1.0/light_dist));
+		}
+	}
+    
+    f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), min(incolour.a,max(0.3*incolour.a, seethrough)));
 }
 ''')
         self.shadowprog = self.ctx.program(
@@ -117,13 +136,14 @@ void main() {
 #version 300 es
 precision mediump float;
 uniform sampler2D texpack;
+uniform vec3 sunlight;
 in vec2 v_text;
 in vec3 screenpos;
 vec4 incolour;
 out vec4 f_color;
 void main() {
     incolour = texture(texpack,v_text);
-    f_color = vec4(0, 0.02, 0.05, min(incolour.a,min(0.5, incolour.a)));
+    f_color = vec4(0, 0.02*sunlight.g, 0.05*sunlight.b, min(incolour.a,min(0.4, sunlight.r)));
 }
 ''')
         self.frag_texpack = self.prog['texpack']
@@ -189,18 +209,19 @@ void main() {
         self.overlay_texture.write(texture_data)
 
     def write_vert_data(self, vert_list):
+        enum_list = range(len(vert_list))
         self.instance_data_pos.write(b''.join(struct.pack(
             '3f',
             x, y, z
-        ) for x, y, z, w, h, tex in vert_list))
+        ) for x, y, z in [vert_list[i][0:3] for i in enum_list]))
         self.instance_data_size.write(b''.join(struct.pack(
             '2f',
             w, h
-        ) for x, y, z, w, h, tex in vert_list))
+        ) for w, h in [vert_list[i][3:5] for i in enum_list]))
         self.instance_data_texnum.write(b''.join(struct.pack(
             '1f',
             tex
-        ) for x, y, z, w, h, tex in vert_list))
+        ) for tex in [vert_list[i][5] for i in enum_list]))
 
     def render(self, mouse_pos, tile_size):
         self.ctx.clear()
@@ -209,7 +230,15 @@ void main() {
         self.prog['mouse_pos'].value = mouse_pos
         self.prog['tile_size'].value = tile_size/100.0
         self.prog['screen_size'].value = self.ctx.screen.size
+        r = max(sin((time.time()*tau)/60/1),0)
+        g = r**2
+        b = g**2
+        self.prog['sunlight'].value = (max(r,0.03), max(g,0.05), max(b,0.06))
+        self.prog['lightnum'].value = len(self.light_list)
+        self.prog['lightpos'].value = (list(l[0] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
+        self.prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
         self.shadowprog['tile_size'].value = tile_size/100.0
+        self.shadowprog['sunlight'].value = (max(r, 0.03), max(g, 0.05), max(b, 0.06))
         self.write_vert_data(self.tile_list)
         self.vao.render(instances=len(self.tile_list)) # render tiles (unordered)
 
@@ -217,7 +246,8 @@ void main() {
         self.write_vert_data(self.vert_list)
         #print(len(self.vert_list),"instances")
         self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
-        self.shadowvao.render(instances=len(self.vert_list)) # render object shadows (ordered)
+        if r >= 0.03:
+            self.shadowvao.render(instances=len(self.vert_list)) # render object shadows (ordered)
         self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
         self.vao.render(instances=len(self.vert_list)) # render objects (ordered)
         self.write_vert_data(self.shadow_list)
@@ -232,3 +262,4 @@ void main() {
         self.shadow_list = []
         self.weather_list = []
         self.tile_list = []
+        self.light_list = []

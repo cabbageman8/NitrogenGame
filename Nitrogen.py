@@ -343,6 +343,13 @@ def screen_transform(x, y, z, w, h, tex):
             h/window_size[1]*2,
             tex)
 
+def geom_light(x, y, z, w, h, hue):
+    # return element for lighting using tile coords
+    global screen_coords
+    return (( -1+(1 - screen_coords[0] % tile_size + tile_size * (x + abs(w) // 2 + 0.5) - screen_coords[0] // tile_size * tile_size) / window_size[0] * 2,
+              +1-(1 - screen_coords[1] % tile_size + tile_size * (y + abs(h) // 2 + 0.5) - screen_coords[1] // tile_size * tile_size) / window_size[1] * 2,
+            1), hue)
+
 def geom_tile(x, y, z, tex):
     # return element for rendering a tile using int tile coords relitive to the screen
     global screen_coords
@@ -356,8 +363,8 @@ def geom_tile(x, y, z, tex):
 def geom_object(x, y, z, w, h, tex):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
-    return screen_transform(1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size,
-                            1 - screen_coords[1] % tile_size + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size,
+    return screen_transform((1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size),
+                            (1 - screen_coords[1] % tile_size + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size),
                             z,
                             w * tile_size,
                             h * tile_size,
@@ -453,7 +460,6 @@ def handle_keys():
                 gamepad_set.add("d-pady"+str(y))
 
 running=True
-frame = 0
 curtime = pygame.time.get_ticks()
 char_direction = 0
 char_speed = 0
@@ -465,7 +471,6 @@ last_server_update = 0
 server_fails = 0
 
 def main():
-    global frame
     global velocity
     global curtime
     global tile_size
@@ -481,7 +486,6 @@ def main():
     global player_text
     global last_server_update
     global server_fails
-    frame += 1
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
     #frag_time.value = curtime
@@ -634,6 +638,7 @@ def main():
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
                 draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/1.5, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
                 draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
             else:
                 height = OBJ[decor]["height"]
@@ -641,6 +646,8 @@ def main():
                     w,h = size*(int(index+tile_coords[0])%2*2-1), size*(int(index+tile_coords[1])%2*2-1)
                 else:
                     w,h = size,size
+                if "lightemit" in OBJ[decor].keys():
+                    Renderer.light_list.append(geom_light(tile_coords[0], tile_coords[1], height, w,h, OBJ[decor]["lightemit"]))
                 if model == "singleshrub":
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleshrub":
@@ -658,7 +665,6 @@ def main():
                     draw_object(wall, tile_coords[0], tile_coords[1], height, 1, 1)
                 elif model == "roof":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 1+height, 1, 1)
-
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime

@@ -92,7 +92,8 @@ OBJ = {
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
                  "size": 1,
-                 "height": 0.01
+                 "height": 0.01,
+                 "lightemit": (0.05, 0.0, 0.08)
              },
              "fern": {
                  "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
