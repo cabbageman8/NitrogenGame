@@ -1,15 +1,15 @@
 from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log
 textures = [
             #special
-            "None", "selection", "axe", "spade", "cloud", "sky", "hole",
+            "None", "selection", "axe", "spade", "cloud", "sky", "hole", "moon",
             #materials
             "water", "planks", "dirt", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
-            "stones", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn", "fossil", "sand", "freshwater",
+            "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
             "glass",
             #objects
-            "grass", "deadtree", "normaltree", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
-            "fern", "bush", "tarragon", "gravilearobustatree", "bottlebrushtree", "sheoaktree", "cactus", "greencactus",
-            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
+            "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
+            "fern", "bush", "tarragon", "silkyoak", "bottlebrushtree", "sheoaktree", "cactus", "greencactus",
+            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle", "greymangrove", "silverwattle",
             ]
 
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
@@ -19,12 +19,13 @@ difficult_terrain = {"water", "flytrap", "freshwater"}
 #          biome name, material lists
 biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("steppe", (("lawn", "lushundergrowth", "weeds", "stones"),)),
-          ("wetforest", (("freshwater", "weeds", "freshwater"), ("freshwater", "dirt", "freshwater"), ("freshwater", "gravillearobustadirt", "freshwater") )),
+          ("wetforest", (("freshwater", "weeds", "freshwater"), ("freshwater", "dirt", "freshwater"), ("freshwater", "silkyoakdirt", "freshwater") )),
           ("moistforest", (("freshwater", "weeds", "dirt", "weeds", "dirt"),)),
           ("desertscrub", (("dirt", "sand", "roughseedgrass"),)),
-          ("dryforest", (("gravillearobustadirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("sheoakdirt", "roughseedgrass"))),
+          ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("sheoakdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass",),)),
-          ("desert", (("sand", "fossil"),)))
+          ("desert", (("sand", "fossil"),)),
+          ("sea", (("water", "stones"),("water", "sand"),("water",),)))
 
 #            temp over humidity
 biome_map = ((3, 2, 2, 1, 1, 0),# cold
@@ -35,47 +36,25 @@ biome_map = ((3, 2, 2, 1, 1, 0),# cold
 
 OBJ = {
              "grass": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass", "stones", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn", "sand", "freshwater"),
+                 "substrate": ("dirt", "weeds", "roughseedgrass", "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn", "sand", "freshwater"),
                  "moisture": (5, 100),
                  "rootsize": "shallow",
                  "nutreants": (10, 70),
                  "temperiture": (0, 35),
+                 "salinity": (0, 100),
                  "lightlevel": "high",
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
                  "size": 2,
                  "height": 0.05
              },
-             "deadtree": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
-                 "moisture": (0, 50),
-                 "rootsize": "deep",
-                 "nutreants": (0, 100),
-                 "temperiture": (0, 80),
-                 "lightlevel": "any",
-                 "flags": {"plant", "native", "flip", "solid"},
-                 "model": "tree",
-                 "size": 8,
-                 "height": lambda x,y: 0.4+sin(x+y*y)/20
-             },
-             "normaltree": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass"),
-                 "moisture": (20, 75),
-                 "rootsize": "deep",
-                 "nutreants": (20, 75),
-                 "temperiture": (15, 80),
-                 "lightlevel": "any",
-                 "flags": {"plant", "native", "flip", "solid"},
-                 "model": "tree",
-                 "size": 8,
-                 "height": lambda x,y: 0.4+sin(x+y*y)/20
-             },
              "basil": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (5, 50),
                  "rootsize": "moderate",
                  "nutreants": (10, 70),
                  "temperiture": (20, 40),
+                 "salinity": (0, 50),
                  "lightlevel": "high",
                  "flags": {"plant", "flip"},
                  "model": "doubleshrub",
@@ -83,11 +62,12 @@ OBJ = {
                  "height": 0.05
              },
              "mushrooms": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (40, 100),
                  "rootsize": "shallow",
                  "nutreants": (0, 50),
                  "temperiture": (10, 30),
+                 "salinity": (0, 50),
                  "lightlevel": "low",
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
@@ -96,11 +76,12 @@ OBJ = {
                  "lightemit": lambda t,x,y: (0.05+sin(t/600+x+y)*0.01, 0.02+sin(x+y)*0.02, 0.08+sin(t/600+x+y)*0.01)
              },
              "fern": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (40, 90),
                  "rootsize": "shallow",
                  "nutreants": (10, 70),
                  "temperiture": (20, 40),
+                 "salinity": (0, 50),
                  "lightlevel": "moderate",
                  "flags": {"plant", "native", "flip"},
                  "model": "doubleshrub",
@@ -108,11 +89,12 @@ OBJ = {
                  "height": 0.05
              },
              "bush": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "roughseedgrass", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (40, 90),
                  "rootsize": "moderate",
                  "nutreants": (10, 70),
                  "temperiture": (20, 40),
+                 "salinity": (0, 100),
                  "lightlevel": "moderate",
                  "flags": {"plant", "native", "flip", "slow"},
                  "model": "doubleshrub",
@@ -120,25 +102,27 @@ OBJ = {
                  "height": 0.05
              },
              "tarragon": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (20, 50),
                  "rootsize": "moderate",
                  "nutreants": (50, 70),
                  "temperiture": (20, 40),
+                 "salinity": (0, 60),
                  "lightlevel": "high",
                  "flags": {"plant", "flip"},
                  "model": "doubleshrub",
                  "size": 2,
                  "height": 0.05
              },
-             "gravilearobustatree": {
-                 "substrate": ("gravillearobustadirt", ),
+             "silkyoak": {
+                 "substrate": ("silkyoakdirt", ),
                  "moisture": (20, 75),
                  "rootsize": "deep",
                  "nutreants": (20, 75),
                  "temperiture": (15, 80),
+                 "salinity": (0, 90),
                  "lightlevel": "any",
-                 "creates": "gravillearobustadirt",
+                 "creates": "silkyoakdirt",
                  "flags": {"plant", "native", "flip", "solid"},
                  "model": "tree",
                  "size": 8,
@@ -150,6 +134,7 @@ OBJ = {
                  "rootsize": "deep",
                  "nutreants": (20, 75),
                  "temperiture": (15, 80),
+                 "salinity": (0, 90),
                  "lightlevel": "any",
                  "creates": "bottlebrushdirt",
                  "flags": {"plant", "native", "flip", "solid"},
@@ -163,8 +148,34 @@ OBJ = {
                  "rootsize": "deep",
                  "nutreants": (20, 75),
                  "temperiture": (15, 80),
+                 "salinity": (0, 120),
                  "lightlevel": "any",
                  "creates": "sheoakdirt",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 8,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/20
+             },
+             "greymangrove": {
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "moisture": (20, 50),
+                 "rootsize": "deep",
+                 "temperiture": (15, 80),
+                 "salinity": (90, 130),
+                 "lightlevel": "any",
+                 "creates": "mangrovedirt",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 8,
+                 "height": lambda x,y: 0.1+sin(x+y*y)/20
+             },
+             "silverwattle": {
+                 "substrate": ( "wattledirt", ),
+                 "moisture": (20, 80),
+                 "rootsize": "deep",
+                 "temperiture": (15, 80),
+                 "salinity": (0, 90),
+                 "creates": "wattledirt",
                  "flags": {"plant", "native", "flip", "solid"},
                  "model": "tree",
                  "size": 8,
@@ -176,6 +187,7 @@ OBJ = {
                  "rootsize": "moderate",
                  "nutreants": (5, 70),
                  "temperiture": (20, 50),
+                 "salinity": (0, 100),
                  "lightlevel": "high",
                  "flags": {"plant", "flip", "solid"},
                  "model": "singleshrub",
@@ -183,11 +195,12 @@ OBJ = {
                  "height": 0.03
              },
              "flytrap": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (50, 90),
                  "rootsize": "shallow",
                  "nutreants": (10, 60),
                  "temperiture": (30, 40),
+                 "salinity": (0, 40),
                  "lightlevel": "high",
                  "flags": {"plant", "flip", "slow"},
                  "model": "singleshrub",
@@ -200,6 +213,7 @@ OBJ = {
                  "rootsize": "moderate",
                  "nutreants": (10, 60),
                  "temperiture": (30, 40),
+                 "salinity": (0, 50),
                  "lightlevel": "high",
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
@@ -207,11 +221,12 @@ OBJ = {
                  "height": 0.001
              },
              "talldrygrass": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass", "gravillearobustadirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "roughseedgrass", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (70, 100),
                  "rootsize": "shallow",
                  "nutreants": (10, 70),
                  "temperiture": (0, 45),
+                 "salinity": (0, 100),
                  "lightlevel": "high",
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
@@ -224,6 +239,7 @@ OBJ = {
                  "rootsize": "moderate",
                  "nutreants": (5, 70),
                  "temperiture": (20, 50),
+                 "salinity": (0, 50),
                  "lightlevel": "high",
                  "flags": {"plant", "flip", "solid"},
                  "model": "singleshrub",
@@ -241,6 +257,6 @@ OBJ = {
                  "model": "doubleobj",
                  "size": 1,
                  "height": 0.01,
-                 "lightemit": lambda t,x,y: (0.08+(t/300+x/7+y/5)%1*0.02, 0.04+sin(x+y)*0.01, 0.0)
+                 "lightemit": lambda t,x,y: (0.08+(t/300+x/7+y/5)%1*0.02, 0.02+sin(x+y)*0.01, 0.0)
              },
 }

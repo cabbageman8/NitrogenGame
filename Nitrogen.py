@@ -80,6 +80,7 @@ if fullscreen:
     overlay = pygame.Surface(window_size).convert_alpha()
 
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
+silombol2 = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/64))
 textures_img = []
 texd = {}
 
@@ -142,6 +143,8 @@ hit_sfx = pygame.mixer.Sound('data/hit.wav')
 hit_sfx.set_volume(0.5)
 fish_sfx = pygame.mixer.Sound('data/fish.wav')
 fish_sfx.set_volume(0.2)
+seasplash_sfx = pygame.mixer.Sound('data/seasplash.wav')
+seasplash_sfx.set_volume(0.2)
 crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
 crumple_sfx.set_volume(0.5)
 jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
@@ -226,7 +229,7 @@ render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[0] = ["glass", 1, 9999]
-#hotbar[1] = ["candle", 1, 999]
+hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["wall", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
@@ -247,7 +250,15 @@ def construct_overlay():
         if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
     slot = hotbar[int(selected_item_slot)]
-    overlay.blit(silombol.render(get_biome(pos[0], pos[1])[0]+str(get_climate(pos[0], pos[1])), True, (0, 0, 0)), (0, 0))
+    if slot[0] == "candle" and slot[2] > 0:
+        for x,y in list_tiles_on_screen(8):
+            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                           ceil(screen_coords[1] / tile_size) + y - 1]
+            mat = get_mat(tile_coords[0], tile_coords[1])
+            biome = get_biome(tile_coords[0], tile_coords[1])
+            #overlay.blit(silombol2.render(biome[0], True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32)%tile_size))
+            climate = get_climate(tile_coords[0], tile_coords[1])
+            overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
     if slot[0] != None and slot[2] > 0:
         t = str(slot[0])
         if slot[2] > 1:
@@ -266,20 +277,26 @@ def get_climate(x, y):
         y /= biome_size
         temp     = ((sin(0.70688 * y) * sin(0.08321 * y) * sin(1.20191 * y + 1.07952 * x) + cos(1.83391 * x / 5 - 1.00643 * y / 5) * cos(0.27705 * x / 5))/2+0.5)
         moisture = ((sin(0.56554 * y) * sin(0.49491 * y) * sin(1.63167 * y + 1.36682 * x) + cos(1.19063 * x / 7 - 1.52815 * y / 7) * cos(0.13701 * x / 7))/2+0.5)
-        temp, moisture = max(0, min(0.999, temp))*35+10, max(0, min(0.999, moisture))*75
-        last_climate = (x, y, (temp, moisture))
-        return temp, moisture
+        altitude = ((sin(0.48967 * y/2) * sin(0.32156 * y/2) * sin(1.78655 * y/2 + 1.68442 * x/2) + cos(1.18567 * x / 9 - 1.36988 * y / 9) * cos(0.15346 * x / 9))/2+0.5)
+        temp, moisture, altitude = max(0.001, min(0.999, temp))*35+10, max(0.001, min(0.999, moisture))*75, max(0.001, min(0.999, altitude))*100
+        last_climate = (x, y, (temp, moisture, altitude))
+        return temp, moisture, altitude
 last_biome = (None, None, None)
 def get_biome(x, y):
     global last_biome
     if last_biome[0] == x and last_biome[1] == y:
         return last_biome[2]
     else:
-        temp, moisture = get_climate(x, y)
+        temp, moisture, altitude = get_climate(x, y)
+        if altitude < 20:
+            return biomes[8]
         biome_num = biome_map[int(temp/45*4)][int(moisture/100*6)]
         biome = biomes[biome_num]
         last_biome = (x,y, biome)
         return biome
+def get_local(temp, moisture, altitude, biome):
+    return biome[1][int(len(biome[1]) * point_to_random(int(temp / 45 * len(biome[1]))+int(altitude / 130 * len(biome[1])), int(moisture / 100 * len(biome[1]))))]
+
 def get_mat(x, y):
     map_data = map.get_data(int(x), int(y))
     if (map_data != None):
@@ -287,8 +304,8 @@ def get_mat(x, y):
     else:
         local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
         biome = get_biome(x, y)
-        temp, moisture = get_climate(x, y)
-        mat_list = biome[1][int(len(biome[1])*point_to_random(int(temp / 45 * len(biome[1])), int(moisture / 100 * len(biome[1])) ))]
+        temp, moisture, altitude = get_climate(x, y)
+        mat_list = get_local(temp, moisture, altitude, biome)
         mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
     return mat
 
@@ -304,8 +321,9 @@ def decorate(x, y, mat):
             r *= 2
             dec = list(OBJ)[int(r*len(OBJ))]
             if "plant" in OBJ[dec]["flags"] and "native" in OBJ[dec]["flags"]:
-                temp, moisture = get_climate(x, y)
-                if mat not in OBJ[dec]["substrate"] or temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1]:
+                temp, moisture, altitude = get_climate(x, y)
+                salinity = max(0, 100/(altitude/30)-moisture)
+                if mat not in OBJ[dec]["substrate"] or temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
                     dec = None
             else:
                 dec = None
@@ -383,7 +401,7 @@ def geom_shrub(x, y, z, w, h, tex):
 def draw_shrub(tex, x, y, z, w, h):
     Renderer.vert_list.append(geom_shrub(x, y, z + sin(x + y * y) / 50, w, h, tex))
 def draw_shrub_foreground(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_shrub(x, y, 1+z, w, h, tex))
+    Renderer.foreground_list.append(geom_shrub(x, y, 1+z, w, h, tex))
     Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
 def draw_shadow(tex, x, y, z, w, h):
     Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
@@ -486,6 +504,7 @@ def main():
     global player_text
     global last_server_update
     global server_fails
+    global pos
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
     #frag_time.value = curtime
@@ -522,14 +541,6 @@ def main():
         elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration
             char_direction = 6
-    if pygame.K_UP in keydown_set or "d-padx1" in gamepad_set:
-        tile_size += 2
-        if (tile_size > 75):
-            tile_size = 75
-    if pygame.K_DOWN in keydown_set or "d-padx-1" in gamepad_set:
-        tile_size -= 2
-        if (tile_size < 10):
-            tile_size = 10
     if pygame.K_h in keydown_set:
         construct_overlay()
     if pygame.K_c in keydown_set:
@@ -540,6 +551,8 @@ def main():
         overlay = pygame.Surface(window_size).convert_alpha()
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
+    if pygame.K_F9 in keydown_set:
+        pos = [seeded_random(pos[0])*10**10, seeded_random(pos[1])*10**10]
 
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
     spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
@@ -586,7 +599,9 @@ def main():
                     shovel_sfx.play()
                     print("get mat")
                     hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
-                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_biome(int(selected_tile[0]), int(selected_tile[1]))[1][0][0], ))
+                    biome = get_biome(int(selected_tile[0]), int(selected_tile[1]))
+                    temp, moisture, altitude = get_climate(int(selected_tile[0]), int(selected_tile[1]))
+                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_local(temp, moisture, altitude, biome)[0], ))
         construct_overlay()
         if "click1" in keydown_set:
             keydown_set.remove("click1")
@@ -638,7 +653,7 @@ def main():
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
                 draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
-                draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/1.5, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
+                #draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/1.5, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
                 draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
             else:
                 height = OBJ[decor]["height"]
@@ -668,7 +683,10 @@ def main():
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
-        if "water" in get_mat(ceil(pos[0]-1), ceil(pos[1]-1)):
+        mat = get_mat(ceil(pos[0]-1), ceil(pos[1]-1))
+        if mat == "water":
+            seasplash_sfx.play()
+        elif mat == "freshwater":
             fish_sfx.play()
         else:
             grass_step_sfx.play()
@@ -717,12 +735,14 @@ def main():
             draw_shrub(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
             draw_shrub(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
     # add player textures to vertex list
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
+    mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
+    if mat != "water":
+        Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number)))
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
-        Renderer.light_list.append(((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
+        Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
     draw_object(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
@@ -738,7 +758,11 @@ def main():
                      1,
                      100*(int(c)%2*2-1),
                      100*(int(c//2)%2*2-1))
-    Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("sky", 0)))
+    r = max(sin((time.time() * tau) / 60 / 10) + 0.16, 0)
+    if r >= 0.03:
+        Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("sky", 0)))
+    else:
+        Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("moon", 0)))
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     if "press"+str(pygame.K_F2) in keydown_set:
