@@ -146,6 +146,7 @@ in vec2 size;
 in float texnum;
 uniform float tile_size;
 uniform sampler2D texpack;
+uniform float sunangle;
 out vec2 v_text;
 out float thetexnum;
 out vec3 screenpos;
@@ -155,7 +156,7 @@ void main() {
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)+0.3*(zpos*tile_size), (1.0-pos.y-vert.y*size.y)+0.3*(zpos*tile_size), -pos.z);
+    screenpos = vec3((pos.x+vert.x*size.x-1.0)+sunangle*(zpos*tile_size), (1.0-pos.y-vert.y*size.y)+0.3*(zpos*tile_size), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);

@@ -105,11 +105,12 @@ class glrenderer():
     def render(self, mouse_pos, tile_size):
         self.ctx.clear()
         self.texpack_texture.use()
-        self.r = max(sin((time.time() * tau) / 60 / 10) + 0.16, 0)
+        self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
         self.foreground_prog['mouse_pos'].value = mouse_pos
         self.normal_prog['tile_size'].value = self.foreground_prog['tile_size'].value = self.shadow_prog['tile_size'].value = tile_size/100.0
         self.normal_prog['screen_size'].value = self.foreground_prog['screen_size'].value = self.ctx.screen.size
         self.normal_prog['sunlight'].value = self.foreground_prog['sunlight'].value = self.shadow_prog['sunlight'].value = (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
+        self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
         self.normal_prog['lightnum'].value = min(len(self.light_list), 128)
         self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]

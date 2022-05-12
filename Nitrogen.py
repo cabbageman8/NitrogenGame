@@ -552,7 +552,7 @@ def main():
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
     if pygame.K_F9 in keydown_set:
-        pos = [seeded_random(pos[0])*10**10, seeded_random(pos[1])*10**10]
+        pos = [seeded_random(pos[0])*10**10+pi, seeded_random(pos[1])*10**10+tau]
 
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
     spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
