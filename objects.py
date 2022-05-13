@@ -8,7 +8,7 @@ textures = [
             "glass",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
-            "fern", "bush", "tarragon", "silkyoak", "bottlebrushtree", "sheoaktree", "cactus", "greencactus",
+            "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "norfolkislandpine", "cactus", "greencactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle", "greymangrove", "silverwattle",
             ]
 
@@ -36,7 +36,7 @@ biome_map = ((3, 2, 2, 1, 1, 0),# cold
 
 OBJ = {
              "grass": {
-                 "substrate": ("dirt", "weeds", "roughseedgrass", "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn", "sand", "freshwater"),
+                 "substrate": ("dirt", "weeds", "roughseedgrass", "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "sand", "freshwater"),
                  "moisture": (5, 100),
                  "rootsize": "shallow",
                  "nutreants": (10, 70),
@@ -62,7 +62,7 @@ OBJ = {
                  "height": 0.05
              },
              "mushrooms": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn"),
                  "moisture": (40, 100),
                  "rootsize": "shallow",
                  "nutreants": (0, 50),
@@ -128,7 +128,7 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
-             "bottlebrushtree": {
+             "weepingbottlebrush": {
                  "substrate": ("bottlebrushdirt", ),
                  "moisture": (20, 75),
                  "rootsize": "deep",
@@ -142,7 +142,7 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
-             "sheoaktree": {
+             "norfolkislandpine": {
                  "substrate": ("sheoakdirt", ),
                  "moisture": (20, 75),
                  "rootsize": "deep",
@@ -152,9 +152,9 @@ OBJ = {
                  "lightlevel": "any",
                  "creates": "sheoakdirt",
                  "flags": {"plant", "native", "flip", "solid"},
-                 "model": "tree",
+                 "model": "doubletree",
                  "size": 8,
-                 "height": lambda x,y: 0.4+sin(x+y*y)/20
+                 "height": lambda x,y: 0.5+sin(x+y*y)/20
              },
              "greymangrove": {
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
@@ -170,7 +170,7 @@ OBJ = {
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
              "silverwattle": {
-                 "substrate": ( "wattledirt", ),
+                 "substrate": ( "wattledirt", "roughseedgrass" ),
                  "moisture": (20, 80),
                  "rootsize": "deep",
                  "temperiture": (15, 80),
@@ -185,7 +185,6 @@ OBJ = {
                  "substrate": ("roughseedgrass", "sand"),
                  "moisture": (20, 60),
                  "rootsize": "moderate",
-                 "nutreants": (5, 70),
                  "temperiture": (20, 50),
                  "salinity": (0, 100),
                  "lightlevel": "high",

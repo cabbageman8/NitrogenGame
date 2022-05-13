@@ -228,8 +228,8 @@ def render_text(text):
 render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-#hotbar[0] = ["glass", 1, 9999]
-hotbar[1] = ["candle", 1, 999]
+#hotbar[8] = ["debug", 0, 0]
+#hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["wall", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
@@ -250,7 +250,7 @@ def construct_overlay():
         if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
     slot = hotbar[int(selected_item_slot)]
-    if slot[0] == "candle" and slot[2] > 0:
+    if slot[0] == "debug":
         for x,y in list_tiles_on_screen(8):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
@@ -323,7 +323,10 @@ def decorate(x, y, mat):
             if "plant" in OBJ[dec]["flags"] and "native" in OBJ[dec]["flags"]:
                 temp, moisture, altitude = get_climate(x, y)
                 salinity = max(0, 100/(altitude/30)-moisture)
-                if mat not in OBJ[dec]["substrate"] or temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+                if mat not in OBJ[dec]["substrate"] or \
+                        temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
+                        moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
+                        salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
                     dec = None
             else:
                 dec = None
@@ -647,13 +650,14 @@ def main():
         if decor in OBJ.keys():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
-            if model == "tree":
+            if model == "tree" or model == "doubletree":
                 draw_object(get_tex("treelog", index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                 tree_height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
                 draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
                 draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
-                #draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/1.5, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
+                if model == "doubletree":
+                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
                 draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
             else:
                 height = OBJ[decor]["height"]
