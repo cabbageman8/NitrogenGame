@@ -5,11 +5,13 @@ textures = [
             #materials
             "water", "planks", "dirt", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
-            "glass",
+            "glass", "eucalyptusdirt",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
             "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "norfolkislandpine", "cactus", "greencactus",
-            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle", "greymangrove", "silverwattle",
+            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
+            "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
+            "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern", "bluegumeucalyptus"
             ]
 
 entities = ["charhands","charhandstouch", "charhead", "charlegs"]
@@ -22,7 +24,7 @@ biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("wetforest", (("freshwater", "weeds", "freshwater"), ("freshwater", "dirt", "freshwater"), ("freshwater", "silkyoakdirt", "freshwater") )),
           ("moistforest", (("freshwater", "weeds", "dirt", "weeds", "dirt"),)),
           ("desertscrub", (("dirt", "sand", "roughseedgrass"),)),
-          ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("sheoakdirt", "roughseedgrass"))),
+          ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("sheoakdirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass",),)),
           ("desert", (("sand", "fossil"),)),
           ("sea", (("water", "stones"),("water", "sand"),("water",),)))
@@ -79,7 +81,6 @@ OBJ = {
                  "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
                  "moisture": (40, 90),
                  "rootsize": "shallow",
-                 "nutreants": (10, 70),
                  "temperiture": (20, 40),
                  "salinity": (0, 50),
                  "lightlevel": "moderate",
@@ -87,6 +88,44 @@ OBJ = {
                  "model": "doubleshrub",
                  "size": 2,
                  "height": 0.05
+             },
+             "birdsnestfern": {
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
+                 "moisture": (40, 90),
+                 "rootsize": "shallow",
+                 "temperiture": (20, 40),
+                 "salinity": (0, 50),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip"},
+                 "model": "doubleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
+             "blacktreefern": {
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "sheoakdirt"),
+                 "moisture": (50, 100),
+                 "rootsize": "moderate",
+                 "temperiture": (10, 40),
+                 "salinity": (0, 40),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip"},
+                 "model": "tree",
+                 "trunk": "blacktreeferntrunk",
+                 "size": 4,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/5
+             },
+             "tasmaniantreefern": {
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "sheoakdirt"),
+                 "moisture": (50, 100),
+                 "rootsize": "moderate",
+                 "temperiture": (10, 40),
+                 "salinity": (0, 40),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip"},
+                 "model": "tree",
+                 "trunk": "blacktreeferntrunk",
+                 "size": 4,
+                 "height": lambda x,y: 0.3+sin(x+y*y)/15
              },
              "bush": {
                  "substrate": ("dirt", "weeds", "roughseedgrass", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
@@ -128,6 +167,19 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
+             "bluegumeucalyptus": {
+                 "substrate": ("eucalyptusdirt", "roughseedgrass"),
+                 "moisture": (20, 75),
+                 "rootsize": "deep",
+                 "temperiture": (15, 80),
+                 "salinity": (0, 90),
+                 "lightlevel": "any",
+                 "creates": "eucalyptusdirt",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 8,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/20
+             },
              "weepingbottlebrush": {
                  "substrate": ("bottlebrushdirt", ),
                  "moisture": (20, 75),
@@ -156,6 +208,18 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.5+sin(x+y*y)/20
              },
+             "breadpalm": {
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "sheoakdirt"),
+                 "moisture": (40, 75),
+                 "rootsize": "deep",
+                 "temperiture": (30, 80),
+                 "salinity": (0, 60),
+                 "lightlevel": "any",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 8,
+                 "height": lambda x,y: 0.3+sin(x+y*y)/20
+             },
              "greymangrove": {
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
@@ -164,10 +228,24 @@ OBJ = {
                  "salinity": (90, 130),
                  "lightlevel": "any",
                  "creates": "mangrovedirt",
-                 "flags": {"plant", "native", "flip", "solid"},
+                 "flags": {"plant", "native", "flip"},
                  "model": "tree",
+                 "trunk": "greymangrovetrunk",
                  "size": 8,
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
+             },
+             "horsetailcasuarina": {
+                 "substrate": ( "dirt", "sand", "sheoakdirt", "roughseedgrass" ),
+                 "moisture": (20, 50),
+                 "rootsize": "deep",
+                 "temperiture": (15, 80),
+                 "salinity": (60, 130),
+                 "lightlevel": "any",
+                 "flags": {"plant", "native", "flip"},
+                 "model": "tree",
+                 "trunk": "horsetailcasuarinatrunk",
+                 "size": 8,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "silverwattle": {
                  "substrate": ( "wattledirt", "roughseedgrass" ),
@@ -177,6 +255,17 @@ OBJ = {
                  "salinity": (0, 90),
                  "creates": "wattledirt",
                  "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 8,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/20
+             },
+             "papermulberry": {
+                 "substrate": ( "dirt" ),
+                 "moisture": (10, 90),
+                 "rootsize": "deep",
+                 "temperiture": (15, 60),
+                 "salinity": (0, 80),
+                 "flags": {"plant", "flip", "solid"},
                  "model": "tree",
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
@@ -221,10 +310,10 @@ OBJ = {
              },
              "talldrygrass": {
                  "substrate": ("dirt", "weeds", "roughseedgrass", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
-                 "moisture": (70, 100),
+                 "moisture": (0, 20),
                  "rootsize": "shallow",
                  "nutreants": (10, 70),
-                 "temperiture": (0, 45),
+                 "temperiture": (30, 45),
                  "salinity": (0, 100),
                  "lightlevel": "high",
                  "flags": {"plant", "native", "flip"},

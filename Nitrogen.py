@@ -651,11 +651,16 @@ def main():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
             if model == "tree" or model == "doubletree":
-                draw_object(get_tex("treelog", index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                if "solid" in OBJ[decor]["flags"]:
+                    draw_object(get_tex("treelog", index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                 tree_height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
-                draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 0, -1)
-                draw_object(get_tex("treetrunk", 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
-                draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                trunk = "treetrunk"
+                if "trunk" in OBJ[decor].keys():
+                    trunk = OBJ[decor]["trunk"]
+                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], tree_height, 0, 1)
+                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                if "solid" in OBJ[decor]["flags"]:
+                    draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
                 if model == "doubletree":
                     draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
                 draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
