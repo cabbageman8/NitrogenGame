@@ -123,7 +123,7 @@ def get_tex(name, index):
 texpack = pygame.Surface((min(128*128, 128*(len(textures_img))), 128*(1+len(textures_img)//128)), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(textures_img):
     texpack.blit(m, (128*(i%128),128*(i//128)))
-
+pygame.image.save(texpack, "texpack.png")
 overlay = pygame.Surface(window_size).convert_alpha()
 overlay.fill((255,255,255,155))
 for i, t in enumerate(text):
@@ -317,8 +317,7 @@ def decorate(x, y, mat):
             dec = map_data[1]
     else:
         r = point_to_random(x, y)
-        if r < 0.5:
-            r *= 2
+        if r > 0.0:
             dec = list(OBJ)[int(r*len(OBJ))]
             if "plant" in OBJ[dec]["flags"] and "native" in OBJ[dec]["flags"]:
                 temp, moisture, altitude = get_climate(x, y)
@@ -571,7 +570,7 @@ def main():
         if (spr2 in OBJ.keys() and "solid" in OBJ[spr2]["flags"]):
             velocity = [0, 0]
         else:
-            if (mat in difficult_terrain or spr2 != None and spr2 in difficult_terrain):
+            if (mat in difficult_terrain or spr2 in OBJ.keys() and "slow" in OBJ[spr2]["flags"]):
                 dnom = 2
             else:
                 dnom = 3
@@ -767,7 +766,7 @@ def main():
                      1,
                      100*(int(c)%2*2-1),
                      100*(int(c//2)%2*2-1))
-    r = max(sin((time.time() * tau) / 60 / 10) + 0.16, 0)
+    r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
     if r >= 0.03:
         Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("sky", 0)))
     else:
