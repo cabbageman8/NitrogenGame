@@ -1,8 +1,9 @@
-version = 0.0
 FPS = 60
-window_size = 2560, 1440
+window_size = 1920, 1080
 fullscreen = True
+spawnkey = worldspawn
 vsyncenabled = True
 tile_size = 75
+fontsize = 45
 ip = cabbageserver.ddns.net
 port = 27448
