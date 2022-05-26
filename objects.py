@@ -11,7 +11,7 @@ textures = [
             "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "norfolkislandpine", "cactus", "greencactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
             "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
-            "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern", "bluegumeucalyptus", "truemulga"
+            "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern", "bluegumeucalyptus", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog"
             ]
 
 entities = ["charhands", "charhead", "charlegs"]
@@ -113,7 +113,7 @@ OBJ = {
                  "model": "tree",
                  "trunk": "blacktreeferntrunk",
                  "size": 4,
-                 "height": lambda x,y: 0.4+sin(x+y*y)/5
+                 "height": lambda x,y: 0.4+sin(x*+y*y)/5
              },
              "tasmaniantreefern": {
                  "substrate": ("wetdirt", "weeds", "lushundergrowth", "sheoakdirt"),
@@ -127,6 +127,21 @@ OBJ = {
                  "trunk": "blacktreeferntrunk",
                  "size": 4,
                  "height": lambda x,y: 0.3+sin(x+y*y)/15
+             },
+             "australiangrasstree": {
+                 "substrate": ["sand", "roughseedgrass",]+any_dirt,
+                 "moisture": (5, 60),
+                 "rootsize": "moderate",
+                 "temperiture": (10, 45),
+                 "salinity": (40, 80),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "qtree",
+                 "trunk": "australiangrasstreetrunk",
+                 "log": "australiangrasstreelog",
+                 "stump": "australiangrasstreelog",
+                 "size": 3,
+                 "height": lambda x,y: 0.1+sin(x+y*y)/15
              },
              "truemulga": {
                  "substrate": ["weeds", "roughseedgrass",]+any_dirt,

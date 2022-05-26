@@ -121,7 +121,7 @@ class glrenderer():
         self.render_vert_list(vert_list=self.vert_list, vao=self.vao, is_shadow=1, is_sorted=1)
         self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, is_sorted=1)
         self.render_vert_list(vert_list=self.shadow_list, vao=None, is_tex=0, is_shadow=1)
-        self.render_vert_list(vert_list=self.weather_list, vao=self.foregroundvao, is_ln=1, is_tex=0, is_shadow=1)
+        self.render_vert_list(vert_list=self.weather_list, vao=self.foregroundvao, is_ln=1, is_tex=1, is_shadow=1)
 
         self.texpack_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.overlay_texture.use()

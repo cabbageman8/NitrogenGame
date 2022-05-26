@@ -49,8 +49,10 @@ except FileNotFoundError:
     txt = '''FPS = 60
 window_size = 1920, 1080
 fullscreen = True
+spawnkey = worldspawn
 vsyncenabled = True
 tile_size = 75
+fontsize = 45
 ip = cabbageserver.ddns.net
 port = 27448'''
     sav = open(os.path.join("save", "settings.txt"), 'w')
@@ -65,8 +67,10 @@ try:
     FPS = int(txt["FPS"])
     window_size = (int(txt["window_size"].split(',')[0]), int(txt["window_size"].split(',')[1]))
     fullscreen = txt["fullscreen"] != "False"
+    spawnkey = txt["spawnkey"]
     vsyncenabled = txt["vsyncenabled"] != "False"
     tile_size = int(txt["tile_size"])
+    fontsize = int(txt["fontsize"])
     ip = txt["ip"]
     port = int(txt["port"])
 except:
@@ -79,8 +83,8 @@ if fullscreen:
     window_size = pygame.display.get_window_size()
     overlay = pygame.Surface(window_size).convert_alpha()
 
-silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/32))
-silombol2 = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), ceil(window_size[1]/64))
+silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize)
+silombol2 = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize*2)
 textures_img = []
 texd = {}
 
@@ -177,8 +181,9 @@ try:
     sav.close()
     text.append('loaded local save')
 except FileNotFoundError:
-    pos = [pi, tau]
-    hotbar = [[None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
+    spawn = seeded_random(int.from_bytes(spawnkey.encode('utf-8'), "big"))
+    pos = [10**10-spawn*10**10*2+pi, 10**10-seeded_random(spawn)*10**10*2+tau]
+    hotbar = [["candle", 1,1], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0], [None, 0,0]]
     player_number = int(seeded_random(time.time()%100000000)*10000)
     sav = open(os.path.join("save", "savedata.pickle") , 'wb')
     data = {'pos': pos, 'hotbar': hotbar, 'player_number':player_number}
@@ -243,27 +248,27 @@ def save_game():
         map.save_buffer.clear()
 selected_item_slot = 0
 
+def draw_text(surface, xy, t, has_bg=0):
+    if has_bg:
+        pygame.draw.rect(surface, (255, 255, 255, 128), pygame.Rect((xy[0]-3, xy[1]), silombol.size(t)))
+    surface.blit(silombol.render(t, True, (0, 0, 0)), xy)
+
 def construct_overlay():
     overlay.fill((0, 0, 0, 0))
     overlay.blit(textures_img[texd["selection"][0]], (0, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2))
     for i in range(9):
         if hotbar[i][0] != None and hotbar[i][2] > 0:
             overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (10, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), str(hotbar[i][2]), has_bg=True)
     slot = hotbar[int(selected_item_slot)]
     if slot[0] == "debug":
         for x,y in list_tiles_on_screen(8):
             tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
-            mat = get_mat(tile_coords[0], tile_coords[1])
-            biome = get_biome(tile_coords[0], tile_coords[1])
-            #overlay.blit(silombol2.render(biome[0], True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32)%tile_size))
             climate = get_climate(tile_coords[0], tile_coords[1])
             overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
     if slot[0] != None and slot[2] > 0:
-        t = str(slot[0])
-        if slot[2] > 1:
-            t += " " + str(slot[2])
-        overlay.blit(silombol.render(t, True, (0, 0, 0)), (10, 50+128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2+silombol.size(t)[1]))
+        draw_text(overlay, (100, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2), str(slot[0]), has_bg=True)
     Renderer.update_overlay(overlay)
 
 last_climate = (None, None, None)
@@ -395,13 +400,13 @@ def geom_shrub(x, y, z, w, h, tex):
     sway_translation = (x + y * y) % 1024
     return geom_object(x - cos(curtime / 1000 + sway_translation) / 80,
                             y - sin(curtime / 700 + sway_translation) / 80,
-                            z,
+                            z+point_to_random(x,y)/50,
                             w + (cos(curtime / 1000 + sway_translation) / 10),
                             h + (sin(curtime / 700 + sway_translation) / 10),
                             tex)
 
 def draw_shrub(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_shrub(x, y, z + sin(x + y * y) / 50, w, h, tex))
+    Renderer.vert_list.append(geom_shrub(x, y, z, w, h, tex))
 def draw_shrub_foreground(tex, x, y, z, w, h):
     Renderer.foreground_list.append(geom_shrub(x, y, 1+z, w, h, tex))
     Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
@@ -554,7 +559,7 @@ def main():
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
     if pygame.K_F9 in keydown_set:
-        pos = [seeded_random(pos[0])*10**10+pi, seeded_random(pos[1])*10**10+tau]
+        pos = [10**10-seeded_random(pos[0])*10**10*2+pi, 10**10-seeded_random(pos[1])*10**10*2+tau]
 
     mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
     spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
@@ -591,16 +596,36 @@ def main():
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
         else:
             if selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
-                if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[1] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 1):
+                # grab decoration from selected tile
+                first_blank = None
+                destination_item_slot = int(selected_item_slot)
+                for i in range(9):
+                    if selected_data[1] == hotbar[destination_item_slot][0]:
+                        break
+                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
+                        first_blank = destination_item_slot
+                    destination_item_slot = (destination_item_slot + 1) % 9
+                if selected_data[1] != hotbar[destination_item_slot][0] and first_blank != None:
+                    destination_item_slot = first_blank
+                if hotbar[destination_item_slot][2] == 0 or (selected_data[1] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1):
                     shovel_sfx.play()
-                    print("get dec")
-                    hotbar[int(selected_item_slot)] = [selected_data[1], 1, hotbar[int(selected_item_slot)][2] + 1]
+                    hotbar[destination_item_slot] = [selected_data[1], 1, hotbar[destination_item_slot][2] + 1]
                     map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], ))
             else:
-                if hotbar[int(selected_item_slot)][2] == 0 or (selected_data[0] == hotbar[int(selected_item_slot)][0] and hotbar[int(selected_item_slot)][1] == 0):
+                first_blank = None
+                destination_item_slot = int(selected_item_slot)
+                for i in range(9):
+                    if selected_data[0] == hotbar[destination_item_slot][0]:
+                        break
+                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
+                        first_blank = destination_item_slot
+                    destination_item_slot = (destination_item_slot + 1) % 9
+                if selected_data[0] != hotbar[destination_item_slot][0] and first_blank != None:
+                    destination_item_slot = first_blank
+                if hotbar[destination_item_slot][2] == 0 or (selected_data[0] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 0):
+                    # grab material from selected tile
                     shovel_sfx.play()
-                    print("get mat")
-                    hotbar[int(selected_item_slot)] = [selected_data[0], 0, hotbar[int(selected_item_slot)][2] + 1]
+                    hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
                     biome = get_biome(int(selected_tile[0]), int(selected_tile[1]))
                     temp, moisture, altitude = get_climate(int(selected_tile[0]), int(selected_tile[1]))
                     map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_local(temp, moisture, altitude, biome)[0], ))
@@ -613,10 +638,12 @@ def main():
     if "mouse3" in keydown_set or "button9" in gamepad_set:
         if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
             if hotbar[int(selected_item_slot)][1] == 0:
+                # place material in selected tile
                 hit_sfx.play()
                 map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
                 hotbar[int(selected_item_slot)][2] -= 1
             if hotbar[int(selected_item_slot)][1] == 1 and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] ):
+                # place decoration in selected tile
                 crumple_sfx.play()
                 map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0], time.time()))
                 hotbar[int(selected_item_slot)][2] -= 1
@@ -649,9 +676,12 @@ def main():
         if decor in OBJ.keys():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
-            if model == "tree" or model == "doubletree":
+            if model == "tree" or model == "doubletree" or model == "qtree":
                 if "solid" in OBJ[decor]["flags"]:
-                    draw_object(get_tex("treelog", index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                    log = "treelog"
+                    if "log" in OBJ[decor].keys():
+                        log = OBJ[decor]["log"]
+                    draw_object(get_tex(log, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
                 tree_height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
                 trunk = "treetrunk"
                 if "trunk" in OBJ[decor].keys():
@@ -659,10 +689,16 @@ def main():
                 draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], tree_height, 0, 1)
                 draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
                 if "solid" in OBJ[decor]["flags"]:
-                    draw_object(get_tex("treestump", 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                    stump = "treestump"
+                    if "stump" in OBJ[decor].keys():
+                        stump = OBJ[decor]["stump"]
+                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
                 if model == "doubletree":
                     draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
-                draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                if model == "qtree":
+                    draw_shrub(           get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                else:
+                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
             else:
                 height = OBJ[decor]["height"]
                 if "flip" in OBJ[decor]["flags"]:
