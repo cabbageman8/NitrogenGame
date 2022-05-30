@@ -246,7 +246,7 @@ render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[8] = ["debug", 0, 0]
-#hotbar[1] = ["candle", 1, 999]
+hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["wall", 1, 999]
 print("hotbar:", hotbar)
 def save_game():

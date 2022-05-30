@@ -116,7 +116,6 @@ class glrenderer():
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
 
         # shader progs are ready to use
-        #print("total poly = ",len(self.tile_list)+len(self.vert_list)+len(self.foreground_list)+len(self.shadow_list)+len(self.weather_list))
         self.render_vert_list(vert_list=self.tile_list, vao=self.vao)
         self.render_vert_list(vert_list=self.vert_list, vao=self.vao, is_shadow=1, is_sorted=1)
         self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, is_sorted=1)
