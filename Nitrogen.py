@@ -76,6 +76,18 @@ try:
 except:
     print("improper settings file")
 
+pygame.display.gl_set_attribute(
+    pygame.GL_CONTEXT_MAJOR_VERSION, 3
+)
+pygame.display.gl_set_attribute(
+    pygame.GL_CONTEXT_MINOR_VERSION, 3
+)
+pygame.display.gl_set_attribute(
+    pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE
+)
+pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
+pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)
+
 pygame.display.set_mode(size=window_size, flags=DOUBLEBUF|OPENGL, vsync=vsyncenabled)
 
 if fullscreen:

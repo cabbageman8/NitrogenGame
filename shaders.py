@@ -1,5 +1,5 @@
 simple_vertex_shader='''
-#version 300 es
+#version 330
 in vec2 vert;
 in vec2 in_text;
 uniform sampler2D overlay;
@@ -10,7 +10,7 @@ void main() {
 }
 '''
 simple_fragment_shader='''
-#version 300 es
+#version 330
 precision mediump float;
 uniform sampler2D overlay;
 in vec2 v_text;
@@ -22,7 +22,7 @@ void main() {
 }
 '''
 normal_vertex_shader='''
-#version 300 es
+#version 330
 in vec2 vert;
 in vec2 in_text;
 in vec3 pos;
@@ -48,7 +48,7 @@ void main() {
 }
 '''
 normal_fragment_shader='''
-#version 300 es
+#version 330
 precision mediump float;
 uniform sampler2D texpack;
 uniform sampler2D overlay;
@@ -82,7 +82,7 @@ void main() {
 }
 '''
 foreground_vertex_shader='''
-#version 300 es
+#version 330
 in vec2 vert;
 in vec2 in_text;
 in vec3 pos;
@@ -108,7 +108,7 @@ void main() {
 }
 '''
 foreground_fragment_shader='''
-#version 300 es
+#version 330
 precision mediump float;
 uniform sampler2D texpack;
 uniform sampler2D overlay;
@@ -138,7 +138,7 @@ void main() {
 }
 '''
 shadow_vertex_shader='''
-#version 300 es
+#version 330
 in vec2 vert;
 in vec2 in_text;
 in vec3 pos;
@@ -164,7 +164,7 @@ void main() {
 }
 '''
 shadow_fragment_shader='''
-#version 300 es
+#version 330
 precision mediump float;
 uniform sampler2D texpack;
 uniform vec3 sunlight;
