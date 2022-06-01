@@ -55,7 +55,7 @@ window_size = 1920, 1080
 # enable fullscreen at launch
 fullscreen = True
 
-# spawn key, change to the same as your friends if you want to spawn together
+# players with the same spawn key will spawn in the same place (remove or rename your savedata file to spawn as new character)
 spawnkey = worldspawn
 
 # vertical synchronisation
@@ -154,7 +154,7 @@ overlay.fill((255,255,255,155))
 for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
 Renderer = glrenderer(texpack, overlay)
-
+Renderer.ctx.screen.viewport = (0, 0, *window_size)
 Renderer.render((0, 0), tile_size)
 pygame.display.flip()
 
@@ -576,6 +576,7 @@ def main():
     if pygame.K_F4 in keydown_set:
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
+        Renderer.ctx.screen.viewport = (0, 0, *window_size)
         overlay = pygame.Surface(window_size).convert_alpha()
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
@@ -835,7 +836,7 @@ def main():
         except: pass
         file_name = os.path.join("screenshots", "screenshot"+str(int(time.time()))+".png")
         file = open(file_name, "wb")
-        pygame.image.save(pygame.transform.flip(pygame.image.fromstring(Renderer.ctx.screen.read(), Renderer.ctx.screen.size, "RGB"), False, True), file, "PNG")
+        pygame.image.save(pygame.transform.flip(pygame.image.fromstring(Renderer.ctx.screen.read(Renderer.ctx.screen.viewport), Renderer.ctx.screen.viewport[2:], "RGB"), False, True), file, "PNG")
         file.close()
         keydown_set.remove("press"+str(pygame.K_F2))
     pygame.display.flip()
