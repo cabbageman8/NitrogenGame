@@ -46,45 +46,54 @@ try:
     txt = sav.read()
     sav.close()
 except FileNotFoundError:
-    txt = '''FPS = 60
+    txt = '''# maximum frames per second
+FPS = 60
+
+# window size used for windowed mode and screenshot size
 window_size = 1920, 1080
+
+# enable fullscreen at launch
 fullscreen = True
+
+# spawn key, change to the same as your friends if you want to spawn together
 spawnkey = worldspawn
+
+# vertical synchronisation
 vsyncenabled = True
+
+# tile size effects the scale of gameplay objects
 tile_size = 75
+
+# font size effects the scale of ui elements
 fontsize = 45
+
+# ip address of game server
 ip = cabbageserver.ddns.net
-port = 27448'''
+
+# udp port number of game server
+port = 27448
+'''
     sav = open(os.path.join("save", "settings.txt"), 'w')
     sav.write(txt)
     sav.close()
     text.append('could not find settings file, defaults loaded')
 
-try:
-    txt = txt.replace(" ", "").replace("\n\n", '\n').replace("\n\n", '\n')
-    print(txt)
-    txt = {line.split('=')[0] : line.split('=')[1] for line in txt.split('\n') }
-    FPS = int(txt["FPS"])
-    window_size = (int(txt["window_size"].split(',')[0]), int(txt["window_size"].split(',')[1]))
-    fullscreen = txt["fullscreen"] != "False"
-    spawnkey = txt["spawnkey"]
-    vsyncenabled = txt["vsyncenabled"] != "False"
-    tile_size = int(txt["tile_size"])
-    fontsize = int(txt["fontsize"])
-    ip = txt["ip"]
-    port = int(txt["port"])
-except:
-    print("improper settings file")
+txt = txt.replace(" ", "").replace("\n\n", '\n').replace("\n\n", '\n')
+txt = {line.split('=')[0] : line.split('=')[1] for line in txt.split('\n') if len(line) > 0 and line[0] != '#'}
+print(txt)
+FPS = int(txt["FPS"])
+window_size = (int(txt["window_size"].split(',')[0]), int(txt["window_size"].split(',')[1]))
+fullscreen = txt["fullscreen"] != "False"
+spawnkey = txt["spawnkey"]
+vsyncenabled = txt["vsyncenabled"] != "False"
+tile_size = int(txt["tile_size"])
+fontsize = int(txt["fontsize"])
+ip = txt["ip"]
+port = int(txt["port"])
 
-pygame.display.gl_set_attribute(
-    pygame.GL_CONTEXT_MAJOR_VERSION, 3
-)
-pygame.display.gl_set_attribute(
-    pygame.GL_CONTEXT_MINOR_VERSION, 3
-)
-pygame.display.gl_set_attribute(
-    pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE
-)
+pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1)
 pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)
 
