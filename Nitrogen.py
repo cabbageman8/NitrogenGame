@@ -91,6 +91,8 @@ fontsize = int(txt["fontsize"])
 ip = txt["ip"]
 port = int(txt["port"])
 
+hud_size = (2560, 1440)
+
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
@@ -102,7 +104,6 @@ pygame.display.set_mode(size=window_size, flags=DOUBLEBUF|OPENGL, vsync=vsyncena
 if fullscreen:
     pygame.display.toggle_fullscreen()
     window_size = pygame.display.get_window_size()
-    overlay = pygame.Surface(window_size).convert_alpha()
 
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize)
 silombol2 = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize*2)
@@ -149,7 +150,7 @@ texpack = pygame.Surface((min(128*128, 128*(len(textures_img))), 128*(1+len(text
 for i, m in enumerate(textures_img):
     texpack.blit(m, (128*(i%128),128*(i//128)))
 pygame.image.save(texpack, "texpack.png")
-overlay = pygame.Surface(window_size).convert_alpha()
+overlay = pygame.Surface(hud_size).convert_alpha()
 overlay.fill((255,255,255,155))
 for i, t in enumerate(text):
     overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
@@ -246,7 +247,7 @@ def render_text(text):
     global Renderer
     overlay.fill((0, 0, 0, 0))
     file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
-    img = pygame.image.fromstring( file.resize(window_size, resample=Image.NEAREST).tobytes(), window_size, "RGBA").convert_alpha()
+    img = pygame.image.fromstring( file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(), overlay.get_size(), "RGBA").convert_alpha()
     overlay.blit(img, (0, 0))
     for i, t in enumerate(text):
         overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
@@ -577,7 +578,7 @@ def main():
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
         Renderer.ctx.screen.viewport = (0, 0, *window_size)
-        overlay = pygame.Surface(window_size).convert_alpha()
+        overlay = pygame.Surface(hud_size).convert_alpha()
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
     if pygame.K_F9 in keydown_set:
