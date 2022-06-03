@@ -1,9 +1,26 @@
+# maximum frames per second
 FPS = 60
-window_size = 2560, 1440
+
+# window size used for windowed mode and screenshot size
+window_size = 1920, 1080
+
+# enable fullscreen at launch
 fullscreen = True
-spawnkey = worldspawn
+
+# spawn key, change to the same as your friends if you want to spawn together
+spawnkey = squid
+
+# vertical synchronisation
 vsyncenabled = True
+
+# tile size effects the scale of gameplay objects
 tile_size = 75
+
+# font size effects the scale of ui elements
 fontsize = 45
+
+# ip address of game server
 ip = cabbageserver.ddns.net
+
+# udp port number of game server
 port = 27448

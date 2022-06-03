@@ -332,8 +332,15 @@ def get_mat(x, y):
         local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
         biome = get_biome(x, y)
         temp, moisture, altitude = get_climate(x, y)
-        mat_list = get_local(temp, moisture, altitude, biome)
-        mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
+        if temp % 10 > 9 and moisture % 10 > 9 and altitude < 40 and altitude > 20:
+            # is in structure
+            if x%5==0 or y%4==0:
+                mat = "hexpavers"
+            else:
+                mat = "farmland"
+        else:
+            mat_list = get_local(temp, moisture, altitude, biome)
+            mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
     return mat
 
 def decorate(x, y, mat):
@@ -344,18 +351,22 @@ def decorate(x, y, mat):
             dec = map_data[1]
     else:
         r = point_to_random(x, y)
-        if r > 0.0:
-            dec = list(OBJ)[int(r*len(OBJ))]
-            if "plant" in OBJ[dec]["flags"] and "native" in OBJ[dec]["flags"]:
-                temp, moisture, altitude = get_climate(x, y)
-                salinity = max(0, 100/(altitude/30)-moisture)
-                if mat not in OBJ[dec]["substrate"] or \
-                        temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
-                        moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
-                        salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+        if mat == "hexpavers":
+            if r < 0.4:
+                dec = "hexpavers"
+        else:
+            if r > 0.0:
+                dec = list(OBJ)[int(r*len(OBJ))]
+                if "plant" in OBJ[dec]["flags"] and ("native" in OBJ[dec]["flags"] or mat == "farmland"):
+                    temp, moisture, altitude = get_climate(x, y)
+                    salinity = max(0, 100/(altitude/30)-moisture)
+                    if (mat not in OBJ[dec]["substrate"] and (mat != "farmland" or r < 0.5)) or \
+                            temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
+                            moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
+                            salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+                        dec = None
+                else:
                     dec = None
-            else:
-                dec = None
         if dec == None:
             map.cache_data(int(x), int(y), (mat, ))
         else:
@@ -419,7 +430,7 @@ def geom_object(x, y, z, w, h, tex):
 
 def geom_shrub(x, y, z, w, h, tex):
     # return element for rendering a texture using int tile coords relitive to the world with added sway
-    sway_translation = (x + y * y) % 1024
+    sway_translation = (x + y * y) %(2**10)
     return geom_object(x - cos(curtime / 1000 + sway_translation) / 80,
                             y - sin(curtime / 700 + sway_translation) / 80,
                             z+point_to_random(x,y)/50,
@@ -433,10 +444,10 @@ def draw_shrub_foreground(tex, x, y, z, w, h):
     Renderer.foreground_list.append(geom_shrub(x, y, 1+z, w, h, tex))
     Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
 def draw_shadow(tex, x, y, z, w, h):
-    Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
-    Renderer.shadow_list.append(geom_shrub(x, y, -z, w, h, tex))
+    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex))
 def draw_weather(tex, x, y, z, w, h):
-    Renderer.weather_list.append(geom_shrub(x, y, 1+z, w, h, tex))
+    Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex))
 def draw_object(tex, x, y, z, w, h):
     Renderer.vert_list.append(geom_object(x, y, z, w, h, tex))
     if w * h == 0:
@@ -623,7 +634,7 @@ def main():
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
                 for i in range(9):
-                    if selected_data[1] == hotbar[destination_item_slot][0]:
+                    if selected_data[1] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1 and hotbar[destination_item_slot][2] > 0:
                         break
                     elif first_blank == None and hotbar[destination_item_slot][2] == 0:
                         first_blank = destination_item_slot
@@ -638,7 +649,7 @@ def main():
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
                 for i in range(9):
-                    if selected_data[0] == hotbar[destination_item_slot][0]:
+                    if selected_data[0] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 0 and hotbar[destination_item_slot][2] > 0:
                         break
                     elif first_blank == None and hotbar[destination_item_slot][2] == 0:
                         first_blank = destination_item_slot
@@ -821,7 +832,7 @@ def main():
     for c in range(5):
         draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
-                     screen_coords[1] / tile_size + (time.time()/40+873356*c-screen_coords[1] / tile_size)%(300+c)-100,
+                     screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      1,
                      100*(int(c)%2*2-1),
                      100*(int(c//2)%2*2-1))

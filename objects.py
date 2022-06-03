@@ -3,7 +3,7 @@ textures = [
             #special
             "None", "selection", "axe", "spade", "cloud", "sky", "hole", "moon",
             #materials
-            "water", "planks", "dirt", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
+            "water", "planks", "dirt", "farmland", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
             #objects
@@ -31,10 +31,10 @@ biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("sea", (("water", "stones"),("water", "sand"),("water",),)))
 
 #            temp over humidity
-biome_map = ((4, 3, 2, 1, 1, 0),# cold
+biome_map = ((4, 3, 2, 1, 2, 0),# cold
              (5, 5, 4, 4, 3, 3),
-             (7, 6, 5, 3 , 3, 2),
-             (6, 6, 6, 5, 5, 5))# hot
+             (7, 6, 5, 3, 3, 2),
+             (7, 6, 6, 5, 5, 5))# hot
 #             dry          wet
 
 OBJ = {
@@ -351,6 +351,12 @@ OBJ = {
                  "height": 0.03
              },
             "wall": {
+                 "flags": {"solid",},
+                 "model": "block",
+                 "size": 1,
+                 "height": 0.1
+             },
+            "hexpavers": {
                  "flags": {"solid",},
                  "model": "block",
                  "size": 1,
