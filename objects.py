@@ -7,7 +7,7 @@ textures = [
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
             #objects
-            "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms",
+            "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms", "rock", "sharprock", "crab",
             "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "norfolkislandpine", "cactus", "greencactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
             "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
@@ -369,4 +369,23 @@ OBJ = {
                  "height": 0.01,
                  "lightemit": lambda t,x,y: (0.08+(t/300+x/7+y/5)%1*0.02, 0.02+sin(x+y)*0.01, 0.0)
              },
+            "rock": {
+                 "substrate": ["roughseedgrass", "stones", "sand"]+any_dirt,
+                 "flags": { "flip",},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
+            "crab": {
+                 "substrate": ["stones", "sand"],
+                 "salinity": (100, 200),
+                 "flags": { "flip",},
+                 "model": "singleshrub",
+                 "size": 1,
+                 "height": 0.02
+             },
+}
+
+crafting = {
+    ("rock", "rock") : (1, "sharprock"),
 }

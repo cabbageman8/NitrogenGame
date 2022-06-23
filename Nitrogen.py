@@ -257,7 +257,7 @@ render_text(text)
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[8] = ["debug", 0, 0]
 #hotbar[1] = ["candle", 1, 999]
-#hotbar[1] = ["wall", 1, 999]
+#hotbar[1] = ["debug", 0, 0]
 print("hotbar:", hotbar)
 def save_game():
     print("saving game")
@@ -357,15 +357,19 @@ def decorate(x, y, mat):
         else:
             if r > 0.0:
                 dec = list(OBJ)[int(r*len(OBJ))]
-                if "plant" in OBJ[dec]["flags"] and ("native" in OBJ[dec]["flags"] or mat == "farmland"):
-                    temp, moisture, altitude = get_climate(x, y)
-                    salinity = max(0, 100/(altitude/30)-moisture)
-                    if (mat not in OBJ[dec]["substrate"] and (mat != "farmland" or r < 0.5)) or \
-                            temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
-                            moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
-                            salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+                temp, moisture, altitude = get_climate(x, y)
+                salinity = max(0, 100 / (altitude / 30) - moisture)
+                if "plant" in OBJ[dec]["flags"]:
+                    if "native" in OBJ[dec]["flags"] or mat == "farmland":
+                        if (mat not in OBJ[dec]["substrate"] and (mat != "farmland" or r < 0.5)) or \
+                                temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
+                                moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
+                                salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+                            dec = None
+                    else:
                         dec = None
-                else:
+                elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
+                        "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
                     dec = None
         if dec == None:
             map.cache_data(int(x), int(y), (mat, ))
