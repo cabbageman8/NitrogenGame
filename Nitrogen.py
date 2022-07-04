@@ -68,7 +68,7 @@ tile_size = 75
 fontsize = 45
 
 # ip address of game server
-ip = cabbageserver.ddns.net
+ip = server.cabbage.moe
 
 # udp port number of game server
 port = 27448
@@ -255,9 +255,11 @@ def render_text(text):
 render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-#hotbar[8] = ["debug", 0, 0]
+#hotbar[8] = ["farmland", 0, 999]
 #hotbar[1] = ["candle", 1, 999]
-#hotbar[1] = ["debug", 0, 0]
+#hotbar[1] = ["teabush", 1, 999]
+#hotbar[2] = ["teatree", 1, 999]
+#hotbar[3] = ["tealeaf", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
     print("saving game")
@@ -637,18 +639,26 @@ def main():
                 # grab decoration from selected tile
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
+                if "drops" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["drops"] == None:
+                    drop_num, dropped_item = 1, selected_data[1]
+                else:
+                    drop_num, dropped_item = OBJ[selected_data[1]]["drops"]
                 for i in range(9):
-                    if selected_data[1] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1 and hotbar[destination_item_slot][2] > 0:
+                    if dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1 and hotbar[destination_item_slot][2] > 0:
                         break
                     elif first_blank == None and hotbar[destination_item_slot][2] == 0:
                         first_blank = destination_item_slot
                     destination_item_slot = (destination_item_slot + 1) % 9
-                if selected_data[1] != hotbar[destination_item_slot][0] and first_blank != None:
+                if dropped_item != hotbar[destination_item_slot][0] and first_blank != None:
                     destination_item_slot = first_blank
-                if hotbar[destination_item_slot][2] == 0 or (selected_data[1] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1):
+                if hotbar[destination_item_slot][2] == 0 or ("drops" in OBJ[selected_data[1]] and OBJ[selected_data[1]]["drops"] == None) or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1):
                     shovel_sfx.play()
-                    hotbar[destination_item_slot] = [selected_data[1], 1, hotbar[destination_item_slot][2] + 1]
-                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], ))
+                    if "drops" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["drops"] != None:
+                        hotbar[destination_item_slot] = [dropped_item, 1, hotbar[destination_item_slot][2] + drop_num]
+                    if "leaves" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["leaves"] == None:
+                        map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], ))
+                    else:
+                        map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], OBJ[selected_data[1]]["leaves"]))
             else:
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
@@ -745,15 +755,18 @@ def main():
                     w,h = size,size
                 if "lightemit" in OBJ[decor].keys():
                     Renderer.light_list.append(geom_light(tile_coords[0], tile_coords[1], height, w,h, OBJ[decor]["lightemit"](curtime,tile_coords[0], tile_coords[1])))
+                bot = decor
+                if "bot" in OBJ[decor].keys():
+                    bot = OBJ[decor]["bot"]
                 if model == "singleshrub":
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleshrub":
-                    draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_shrub(get_tex(bot, index), tile_coords[0], tile_coords[1], height, w,h)
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, -w,-h)
                 elif model == "singleobj":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleobj":
-                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], 0, w,h)
+                    draw_object(get_tex(bot, 0), tile_coords[0], tile_coords[1], 0, w,h)
                     draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "block":
                     wall = get_tex(decor, index)
