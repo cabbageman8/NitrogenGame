@@ -220,16 +220,21 @@ map = root_node()
 try:
     sock.sendto('world_download '.encode('utf-8'), server_address)
     downl_time = time.time()
+    world_data = []
     while time.time() - downl_time < 1:
         try:
             byt, address = sock.recvfrom(2**16)
-            data = pickle.loads(byt)
-            print("received", len(data), "tiles (", len(byt), "bytes )")
-            for key, value in data.items():
-                payload = (key, value)
-                map.apply_data(payload[0][0], payload[0][1], payload[1])
+            print("received", len(byt), "bytes")
+            world_data.append(byt)
         except BlockingIOError:
             pass
+    for byt in world_data:
+        data = pickle.loads(byt)
+        for key, value in data.items():
+            payload = (key, value)
+            map.apply_data(payload[0][0], payload[0][1], payload[1])
+        print("loaded", len(data), "tiles")
+    del world_data
     text.append('loaded save from server')
 except ConnectionResetError:
     text.append('could not reach server')
@@ -256,9 +261,9 @@ def render_text(text):
 render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-hotbar[8] = ["farmland", 0, 999]
+#hotbar[8] = ["farmland", 0, 999]
 #hotbar[1] = ["candle", 1, 999]
-hotbar[1] = ["teabush", 1, 2]
+#hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["teatree", 1, 999]
 #hotbar[3] = ["tealeaf", 1, 999]
 print("hotbar:", hotbar)
@@ -381,9 +386,13 @@ def decorate(x, y, mat):
     return dec
 
 def get_tile_info(x, y):
+    map_data = map.get_data(int(x), int(y))
     mat = get_mat(x, y)
     dec = decorate(x, y, mat)
-    return (mat, dec)
+    tile_data = (mat, dec)
+    if map_data:
+        tile_data = tile_data + map_data[2:]
+    return tile_data
 
 def list_tiles_on_screen(dist):
     # returns an generator for every tile near the screen in order of manhattan distance
@@ -533,6 +542,7 @@ steptime = curtime
 world_text = {}
 player_text = {}
 last_server_update = 0
+last_random_tick = 0
 server_fails = 0
 
 def main():
@@ -550,6 +560,7 @@ def main():
     global world_text
     global player_text
     global last_server_update
+    global last_random_tick
     global server_fails
     global pos
     dt = pygame.time.get_ticks() - curtime
@@ -631,35 +642,54 @@ def main():
                      -screen_coords[1] % tile_size + tile_size * ceil(selected_tile[1] / tile_size) - window_size[1] // 2]
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
-    selected_data = get_tile_info(int(selected_tile[0]), int(selected_tile[1]))
+    selected_data = get_tile_info(*selected_tile)
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
         if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
             selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
         else:
-            if selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
+            if selected_data != None and len(selected_data) > 3 and selected_data[3] != None:
+                # grab item from selected tile
+                first_blank = None
+                destination_item_slot = int(selected_item_slot)
+                item = selected_data[3]
+                item_num = 1 if len(selected_data) <= 4 else selected_data[4]
+                for i in range(9):
+                    if item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 2 and hotbar[destination_item_slot][2] > 0:
+                        break
+                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
+                        first_blank = destination_item_slot
+                    destination_item_slot = (destination_item_slot + 1) % 9
+                if item != hotbar[destination_item_slot][0] and first_blank != None:
+                    destination_item_slot = first_blank
+                if hotbar[destination_item_slot][2] == 0 or (item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 2):
+                    shovel_sfx.play()
+                    hotbar[destination_item_slot] = [item, 2, hotbar[destination_item_slot][2] + item_num]
+                    print("picked up item such that:", hotbar[destination_item_slot])
+                    map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
+            elif selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
                 # grab decoration from selected tile
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
-                if "drops" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["drops"] == None:
-                    drop_num, dropped_item = 1, selected_data[1]
+                drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
+                if drops:
+                    drops = drops if len(drops) >= 3 else drops+(2,)
+                    drop_num, dropped_item, dropped_item_type = drops
                 else:
-                    drop_num, dropped_item = OBJ[selected_data[1]]["drops"]
+                    drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
                 for i in range(9):
-                    if dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1 and hotbar[destination_item_slot][2] > 0:
+                    if dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type and hotbar[destination_item_slot][2] > 0:
                         break
                     elif first_blank == None and hotbar[destination_item_slot][2] == 0:
                         first_blank = destination_item_slot
                     destination_item_slot = (destination_item_slot + 1) % 9
                 if dropped_item != hotbar[destination_item_slot][0] and first_blank != None:
                     destination_item_slot = first_blank
-                if hotbar[destination_item_slot][2] == 0 or ("drops" in OBJ[selected_data[1]] and OBJ[selected_data[1]]["drops"] == None) or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 1):
+                if hotbar[destination_item_slot][2] == 0 or drops == None or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type):
                     shovel_sfx.play()
-                    if "drops" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["drops"] != None:
-                        hotbar[destination_item_slot] = [dropped_item, 1, hotbar[destination_item_slot][2] + drop_num]
-                    if "leaves" not in OBJ[selected_data[1]] or OBJ[selected_data[1]]["leaves"] == None:
-                        map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], ))
-                    else:
-                        map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], OBJ[selected_data[1]]["leaves"]))
+                    if drops != None:
+                        hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
+                    leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
+                    map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
             else:
                 first_blank = None
                 destination_item_slot = int(selected_item_slot)
@@ -675,9 +705,9 @@ def main():
                     # grab material from selected tile
                     shovel_sfx.play()
                     hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
-                    biome = get_biome(int(selected_tile[0]), int(selected_tile[1]))
-                    temp, moisture, altitude = get_climate(int(selected_tile[0]), int(selected_tile[1]))
-                    map.set_data(int(selected_tile[0]), int(selected_tile[1]), (get_local(temp, moisture, altitude, biome)[0], ))
+                    biome = get_biome(*selected_tile)
+                    temp, moisture, altitude = get_climate(*selected_tile)
+                    map.set_data(*selected_tile, (get_local(temp, moisture, altitude, biome)[0], )+selected_data[1:])
         construct_overlay()
         if "click1" in keydown_set:
             keydown_set.remove("click1")
@@ -685,17 +715,24 @@ def main():
         hotbar[int(selected_item_slot)] = [selected_data[0], 0, 1]
         construct_overlay()
     if "mouse3" in keydown_set or "button9" in gamepad_set:
-        if hotbar[int(selected_item_slot)][2] > 0 and selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
-            if hotbar[int(selected_item_slot)][1] == 0:
-                # place material in selected tile
-                hit_sfx.play()
-                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
-                hotbar[int(selected_item_slot)][2] -= 1
-            if hotbar[int(selected_item_slot)][1] == 1 and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] ):
-                # place decoration in selected tile
+        if hotbar[int(selected_item_slot)][2] > 0:
+            if hotbar[int(selected_item_slot)][1] == 2:
+                # place item in selected tile
                 crumple_sfx.play()
-                map.set_data(int(selected_tile[0]), int(selected_tile[1]), (selected_data[0], hotbar[int(selected_item_slot)][0], time.time()))
-                hotbar[int(selected_item_slot)][2] -= 1
+                age = None if len(selected_data) < 3 else selected_data[2]
+                map.set_data(*selected_tile, (selected_data[0], selected_data[1], age) + (hotbar[int(selected_item_slot)][0], hotbar[int(selected_item_slot)][2]) + selected_data[5:])
+                hotbar[int(selected_item_slot)][2] = 0
+            elif selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
+                if hotbar[int(selected_item_slot)][1] == 0:
+                    # place material in selected tile
+                    hit_sfx.play()
+                    map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
+                    hotbar[int(selected_item_slot)][2] -= 1
+                elif hotbar[int(selected_item_slot)][1] == 1 and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] ):
+                    # place decoration in selected tile
+                    crumple_sfx.play()
+                    map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
+                    hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot-1)%9
@@ -707,28 +744,13 @@ def main():
         construct_overlay()
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
-    # do random tick in 190x190 square around player (at 60 fps this means 1 tick per tile per ingame day = 10 mins irl)
-    x, y = random.randint(-95, 95), random.randint(-95, 95)
-    tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                   ceil(screen_coords[1] / tile_size) + y - 1]
-    RT_data = get_tile_info(int(tile_coords[0]), int(tile_coords[1]))
-    if RT_data[1] in OBJ.keys():
-        if "becomes" in OBJ[RT_data[1]].keys():
-            map.set_data(int(tile_coords[0]), int(tile_coords[1]), (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()))
-        if "sheds" in OBJ[RT_data[1]].keys():
-            dest = (int(tile_coords[0]) + random.randint(-8, 8), int(tile_coords[1]) + random.randint(-8, 8))
-            dest_data = get_tile_info(*dest)
-            map.set_data(*dest, (OBJ[RT_data[1]]["sheds"],) + dest_data[1:])
-        if "creates" in OBJ[RT_data[1]].keys():
-            dest = (int(tile_coords[0])+random.randint(-2, 2), int(tile_coords[1])+random.randint(-2, 2))
-            dest_data = get_tile_info(*dest)
-            if dest_data[1] == None:
-                map.set_data(*dest, (dest_data[0], OBJ[RT_data[1]]["creates"], time.time()))
     # start loading the world into renderer
     for x, y in list_tiles_on_screen(8):
+        height = 0.0
         tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                        ceil(screen_coords[1] / tile_size) + y - 1]
-        mat = get_mat(tile_coords[0], tile_coords[1])
+        tile_data = get_tile_info(*tile_coords)
+        mat = tile_data[0]
         index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
         if (mat in animated):
             matindex = int(index+(curtime//200+tile_coords[0]*tile_coords[0]+tile_coords[1]))
@@ -736,9 +758,9 @@ def main():
             matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
         else:
             matindex = index
-        Renderer.tile_list.append(geom_tile(x, y, 0.0, get_tex(mat, matindex)))
+        Renderer.tile_list.append(geom_tile(x, y, height, get_tex(mat, matindex)))
 
-        decor = decorate(tile_coords[0], tile_coords[1], mat)
+        decor = tile_data[1]
         if decor in OBJ.keys():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
@@ -748,23 +770,23 @@ def main():
                     if "log" in OBJ[decor].keys():
                         log = OBJ[decor]["log"]
                     draw_object(get_tex(log, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
-                tree_height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
+                height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
                 trunk = "treetrunk"
                 if "trunk" in OBJ[decor].keys():
                     trunk = OBJ[decor]["trunk"]
-                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], tree_height, 0, 1)
-                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], tree_height, 1, 0)
+                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height, 0, 1)
+                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height, 1, 0)
                 if "solid" in OBJ[decor]["flags"]:
                     stump = "treestump"
                     if "stump" in OBJ[decor].keys():
                         stump = OBJ[decor]["stump"]
-                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], tree_height, 1, 1)
+                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height, 1, 1)
                 if model == "doubletree":
-                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
+                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
                 if model == "qtree":
-                    draw_shrub(           get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                    draw_shrub(           get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
                 else:
-                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], tree_height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
             else:
                 height = OBJ[decor]["height"]
                 if "flip" in OBJ[decor]["flags"]:
@@ -793,6 +815,11 @@ def main():
                     draw_object(wall, tile_coords[0], tile_coords[1], height, 1, 1)
                 elif model == "roof":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 1+height, 1, 1)
+        if len(tile_data) > 4:
+            item = tile_data[3]
+            if item != None and tile_data[4] > 0:
+                w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
+                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.01, w, h)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -809,12 +836,33 @@ def main():
     looking_direction = int(atan2((mouse_pos[0] - window_size[0] / 2), (mouse_pos[1] - window_size[1] / 2)) / tau * 8 + 4.5) % 8
     if looking_direction % 2:
         looking_direction = (looking_direction + 2) % 8
+    if last_random_tick + 5.0 < time.time():
+        # do random tick in 190x190 square around player (1 tick per tile per ingame day = 10 mins irl)
+        for i in range(300):
+            x, y = random.randint(-95, 95), random.randint(-95, 95)
+            RT_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                           ceil(screen_coords[1] / tile_size) + y - 1]
+            RT_data = get_tile_info(*RT_coords)
+            if RT_data[1] in OBJ.keys():
+                if "becomes" in OBJ[RT_data[1]].keys():
+                    map.set_data(*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()))
+                if "sheds" in OBJ[RT_data[1]].keys():
+                    dest = (RT_coords[0] + random.randint(-3, 3), RT_coords[1] + random.randint(-3, 3))
+                    dest_data = get_tile_info(*dest)
+                    map.set_data(*dest, (OBJ[RT_data[1]]["sheds"],) + dest_data[1:])
+                if "creates" in OBJ[RT_data[1]].keys():
+                    if len(RT_data) < 4 or RT_data[3] == None or RT_data[4] == 0:
+                        age = None if len(dest_data) < 3 else dest_data[2]
+                        map.set_data(*RT_coords, (RT_data[0], RT_data[1], age) + (OBJ[RT_data[1]]["creates"][1], OBJ[RT_data[1]]["creates"][0]) + RT_data[5:])
+        last_random_tick = time.time()
     if last_server_update+0.1 < time.time():
         if len(map.save_buffer) > 0:
             save_game()
         try:
-            sock.sendto(str("player_update "+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(looking_direction)+','+str(char_anim)+','+str(char_speed)+','+str(time.time())).encode('utf-8'), server_address)
+            my_player_text = "player_update "+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(looking_direction)+','+str(char_anim)+','+str(char_speed)
+            sock.sendto(my_player_text.encode('utf-8'), server_address)
             data, address = sock.recvfrom(8192)
+            print(address, server_address)
             text = data.decode('utf-8')
             text = text.split("&")
             world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
@@ -837,7 +885,6 @@ def main():
             look = int(values[3])
             anim = float(values[4])
             speed = float(values[5])
-            t = float(values[6])
             dt = 1000*(time.time()-last_server_update)
             anim += dt/20 * speed*20
             if direc%2:
