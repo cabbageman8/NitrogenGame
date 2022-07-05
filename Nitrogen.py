@@ -5,6 +5,7 @@
 
 # to build Docker image of server; run
 # docker build -t cabbageman/nitrogenserver .
+import random
 
 import pygame
 from pygame.locals import *
@@ -255,9 +256,9 @@ def render_text(text):
 render_text(text)
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-#hotbar[8] = ["farmland", 0, 999]
+hotbar[8] = ["farmland", 0, 999]
 #hotbar[1] = ["candle", 1, 999]
-#hotbar[1] = ["teabush", 1, 999]
+hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["teatree", 1, 999]
 #hotbar[3] = ["tealeaf", 1, 999]
 print("hotbar:", hotbar)
@@ -706,6 +707,23 @@ def main():
         construct_overlay()
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
+    # do random tick in 190x190 square around player (at 60 fps this means 1 tick per tile per ingame day = 10 mins irl)
+    x, y = random.randint(-95, 95), random.randint(-95, 95)
+    tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                   ceil(screen_coords[1] / tile_size) + y - 1]
+    RT_data = get_tile_info(int(tile_coords[0]), int(tile_coords[1]))
+    if RT_data[1] in OBJ.keys():
+        if "becomes" in OBJ[RT_data[1]].keys():
+            map.set_data(int(tile_coords[0]), int(tile_coords[1]), (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()))
+        if "sheds" in OBJ[RT_data[1]].keys():
+            dest = (int(tile_coords[0]) + random.randint(-8, 8), int(tile_coords[1]) + random.randint(-8, 8))
+            dest_data = get_tile_info(*dest)
+            map.set_data(*dest, (OBJ[RT_data[1]]["sheds"],) + dest_data[1:])
+        if "creates" in OBJ[RT_data[1]].keys():
+            dest = (int(tile_coords[0])+random.randint(-2, 2), int(tile_coords[1])+random.randint(-2, 2))
+            dest_data = get_tile_info(*dest)
+            if dest_data[1] == None:
+                map.set_data(*dest, (dest_data[0], OBJ[RT_data[1]]["creates"], time.time()))
     # start loading the world into renderer
     for x, y in list_tiles_on_screen(8):
         tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,

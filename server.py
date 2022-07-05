@@ -3,6 +3,7 @@ import pickle
 import base64
 import os
 from itertools import islice
+from time import time
 
 port = int(27448)
 ip = "0.0.0.0"
@@ -35,7 +36,7 @@ except:
     print('could not load local savefile, blank save loaded')
 
 def save_game():
-    print("saving map")
+    print(int(time()), "saving map")
     sav = open(os.path.join("save", "serverdata.pickle"), 'wb')
     data = {'map': map}
     pickle.dump(data, sav)
@@ -46,21 +47,22 @@ def dict_chunks(dict, size=1000):
     for i in range(0, len(dict), size):
         yield {k:dict[k] for k in islice(it, size)}
 
+last_save = time()
 while True:
     data, client_address = s.recvfrom(8192)
     if client_address[0] not in blacklist:
         header = data.decode('utf-8')
 
         if header == "world_download ":
-            print("processing world_download", "from", client_address)
+            print(int(time()), "processing world_download", "from", client_address)
             for chunk in dict_chunks(map):
-                print(chunk)
+                print("sending world chunk of size:",len(chunk))
                 response = pickle.dumps(chunk)
                 s.sendto(response, client_address)
 
         elif header[:14] == "player_update ":
             header = header[14:].split(',')
-            print("processing player_update", "from", client_address, "player", header[0])
+            print(int(time()), "processing player_update", "from", client_address, "player", header[0])
             players.update({header[0] : header[1:]})
             player_num = header[0]
             if player_num not in player_inbox.keys():
@@ -71,7 +73,7 @@ while True:
             s.sendto(response, client_address)
 
         elif header[:15] == "save_to_server ":
-            print("processing save_to_server", "from", client_address)
+            print(int(time()), "processing save_to_server", "from", client_address)
             header = pickle.loads(base64.b64decode(header[17:-1]))
             for key, value in header.items():
                 payload = (key, value)
@@ -83,4 +85,6 @@ while True:
                 for k in players.keys():
                     player_inbox[k].update({payload[0]: payload[1]})
                 map.update({payload[0]: payload[1]})
-            save_game()
+            if last_save + 60 < time():
+                save_game()
+                last_save = time()
