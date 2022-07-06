@@ -261,7 +261,7 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "bluegumeucalyptussapling": {
-                 "becomes": "bluegumeucalyptus",
+                 #"becomes": "bluegumeucalyptus",
                  "drops": (2, "wood"),
                  "sheds": "eucalyptusdirt",
                  "substrate": ("eucalyptusdirt", "roughseedgrass"),
@@ -466,13 +466,6 @@ OBJ = {
                  "size": 1,
                  "height": 0.02
              },
-            "sharprock": {
-                 "alias": "Sharp Rock",
-                 "flags": { "flip",},
-                 "model": "singleobj",
-                 "size": 1,
-                 "height": 0.02
-             },
             "crab": {
                  "substrate": ["stones", "sand"],
                  "salinity": (100, 200),
@@ -496,6 +489,13 @@ OBJ = {
                  "size": 1,
                  "height": 0.02
              },
+}
+
+ITEMS ={
+            "sharprock": {
+                 "alias": "Sharp Rock",
+                 "description": "Sharper than other rocks",
+            }
 }
 
 crafting = {

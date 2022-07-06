@@ -161,6 +161,15 @@ def draw_text(surface, xy, t, has_bg=0):
         pygame.draw.rect(surface, (255, 255, 255, 128), pygame.Rect((xy[0]-3, xy[1]), silombol.size(t)))
     surface.blit(silombol.render(t, True, (0, 0, 0)), xy)
 
+def get_alias(name):
+    alias = name if name not in OBJ.keys() or "alias" not in OBJ[name].keys() else OBJ[name]["alias"]
+    alias = alias if name not in ITEMS.keys() or "alias" not in ITEMS[name].keys() else ITEMS[name]["alias"]
+    return alias
+def get_description(name):
+    description = "" if name not in OBJ.keys() or "description" not in OBJ[name].keys() else OBJ[name]["description"]
+    description = description if name not in ITEMS.keys() or "description" not in ITEMS[name].keys() else ITEMS[name]["description"]
+    return description
+
 menu = 1
 def construct_overlay():
     global text
@@ -181,15 +190,14 @@ def construct_overlay():
                 climate = get_climate(tile_coords[0], tile_coords[1])
                 overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
         if slot[0] != None and slot[2] > 0 and menu == 0:
-            alias = str(slot[0]) if str(slot[0]) not in OBJ.keys() or "alias" not in OBJ[str(slot[0])].keys() else OBJ[str(slot[0])]["alias"]
-            draw_text(overlay, (100, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+            draw_text(overlay, (100, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2), get_alias(str(slot[0])), has_bg=True)
     if menu == 1: # title screen / help menu
         file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
         for i, t in enumerate(text):
-            overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1] * i))
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (128, 128+silombol.size(t)[1] * i))
     if menu == 2: # crafting menu
         file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
@@ -199,11 +207,11 @@ def construct_overlay():
         for i, recipe in enumerate(crafting.items()):
             product, ingredients = recipe[0], recipe[1]
             overlay.blit(textures_img[texd[product][0]], (128, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
-            alias = product if product not in OBJ.keys() or "alias" not in OBJ[product].keys() else OBJ[product]["alias"]
-            draw_text(overlay, (256, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+            draw_text(overlay, (256, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), get_alias(product), has_bg=True)
         selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
-        alias = selected_recipe if selected_recipe not in OBJ.keys() or "alias" not in OBJ[selected_recipe].keys() else OBJ[selected_recipe]["alias"]
-        draw_text(overlay, (650, 0-128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+        draw_text(overlay, (650, 0-128 * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe), has_bg=True)
+        draw_text(overlay, (650+128, fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe), has_bg=True)
+
         overlay.blit(textures_img[texd[selected_recipe][0]], (650, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
         draw_text(overlay, (650, 4*fontsize-128 * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
         for i, item in enumerate(crafting[selected_recipe]):
@@ -251,7 +259,7 @@ server_address = (ip, port)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 sock.setblocking(False)
 
-text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM place block", "RM place decoration", "Press H to start"]
+text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM place block", "RM place decoration", "Press C to craft", "Press H for help"]
 # get local data
 try:
     sav = open(os.path.join("save", "savedata.pickle"), 'r')
