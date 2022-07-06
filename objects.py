@@ -1,7 +1,7 @@
 from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log
 textures = [
             #special
-            "None", "selection", "cloud", "sky", "hole", "moon",
+            "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon",
             #materials
             "water", "planks", "dirt", "farmland", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
@@ -13,9 +13,9 @@ textures = [
             "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
-            "oats", "teabush", "teatree", "tealeaf", "chilipepper",
+            "oatgrass", "oats", "teabush", "teatree", "tealeaf", "chilibush",
             #items
-            "axe", "spade", "chili", "wood"
+            "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal",
             ]
 
 entities = ["charhands", "charhead", "charlegs"]
@@ -66,7 +66,10 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
-             "oats": {
+             "oatgrass": {
+                 "alias": "Oat Grass",
+                 "creates": (1, "oats"),
+                 "drops": None,
                  "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
                  "moisture": (5, 50),
                  "temperiture": (5, 30),
@@ -76,7 +79,20 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
+             "oats": {
+                 "becomes": "oatgrass",
+                 "drops": None,
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
              "teabush": {
+                 "alias": "Tea Bush",
                  "becomes": "teatree",
                  "creates": (1,"tealeaf"),
                  "drops": (4, "tealeaf", 2),
@@ -90,6 +106,7 @@ OBJ = {
                  "height": 0.05
              },
              "teatree": {
+                 "alias": "Tea Tree",
                  "leaves": "teabush",
                  "drops": (1, "teabush", 1),
                  "creates": (1, "tealeaf"),
@@ -103,13 +120,10 @@ OBJ = {
                  "size": 4,
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
-             "tealeaf": {
-                 "flags": {"flip",},
-                 "model": "singleobj",
-                 "size": 1,
-                 "height": 0.02
-             },
-             "chilipepper": {
+             "chilibush": {
+                 "alias": "Chilli Bush",
+                 "creates": (2, "chili"),
+                 "drops": None,
                  "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
                  "moisture": (10, 50),
                  "temperiture": (30, 50),
@@ -119,9 +133,16 @@ OBJ = {
                  "size": 1,
                  "height": 0.05
              },
-            "chili": {
-                 "flags": { "flip",},
-                 "model": "singleshrub",
+             "chiliseeds": {
+                 "alias": "Chilli Seeds",
+                 "drops": None,
+                 "becomes": "chilibush",
+                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (30, 50),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
                  "size": 1,
                  "height": 0.02
              },
@@ -445,6 +466,13 @@ OBJ = {
                  "size": 1,
                  "height": 0.02
              },
+            "sharprock": {
+                 "alias": "Sharp Rock",
+                 "flags": { "flip",},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
             "crab": {
                  "substrate": ["stones", "sand"],
                  "salinity": (100, 200),
@@ -471,5 +499,7 @@ OBJ = {
 }
 
 crafting = {
-    ("rock", "rock") : (1, "sharprock"),
+    "sharprock" : ((2, "rock", ),),
+    "chiliseeds" : ((4, "chili"), (1, "sharprock")),
+    "oatmeal" : ((4, "oats"), (2, "rock", )),
 }

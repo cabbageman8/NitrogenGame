@@ -152,11 +152,69 @@ for i, m in enumerate(textures_img):
     texpack.blit(m, (128*(i%128),128*(i//128)))
 pygame.image.save(texpack, "texpack.png")
 overlay = pygame.Surface(hud_size).convert_alpha()
-overlay.fill((255,255,255,155))
-for i, t in enumerate(text):
-    overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
+
 Renderer = glrenderer(texpack, overlay)
 Renderer.ctx.screen.viewport = (0, 0, *window_size)
+
+def draw_text(surface, xy, t, has_bg=0):
+    if has_bg:
+        pygame.draw.rect(surface, (255, 255, 255, 128), pygame.Rect((xy[0]-3, xy[1]), silombol.size(t)))
+    surface.blit(silombol.render(t, True, (0, 0, 0)), xy)
+
+menu = 1
+def construct_overlay():
+    global text
+    global overlay
+    global Renderer
+    overlay.fill((0, 0, 0, 0))
+    if menu == 0 or menu == 2: # game play hud
+        overlay.blit(textures_img[texd["selection"][0]], (0, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2))
+        for i in range(9):
+            if hotbar[i][0] != None and hotbar[i][2] > 0:
+                overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
+                draw_text(overlay, (10, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), str(hotbar[i][2]), has_bg=True)
+        slot = hotbar[int(selected_item_slot)]
+        if slot[0] == "debug":
+            for x,y in list_tiles_on_screen(8):
+                tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
+                               ceil(screen_coords[1] / tile_size) + y - 1]
+                climate = get_climate(tile_coords[0], tile_coords[1])
+                overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
+        if slot[0] != None and slot[2] > 0 and menu == 0:
+            alias = str(slot[0]) if str(slot[0]) not in OBJ.keys() or "alias" not in OBJ[str(slot[0])].keys() else OBJ[str(slot[0])]["alias"]
+            draw_text(overlay, (100, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+    if menu == 1: # title screen / help menu
+        file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
+        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
+                                      overlay.get_size(), "RGBA").convert_alpha()
+        overlay.blit(bgimg, (0, 0))
+        for i, t in enumerate(text):
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1] * i))
+    if menu == 2: # crafting menu
+        file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
+        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
+                                      overlay.get_size(), "RGBA").convert_alpha()
+        overlay.blit(bgimg, (0, 0))
+        pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((128, 128 * selected_crafting_slot - 128 * 4.5 + overlay.get_size()[1] / 2), (280, 128)))
+        for i, recipe in enumerate(crafting.items()):
+            product, ingredients = recipe[0], recipe[1]
+            overlay.blit(textures_img[texd[product][0]], (128, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
+            alias = product if product not in OBJ.keys() or "alias" not in OBJ[product].keys() else OBJ[product]["alias"]
+            draw_text(overlay, (256, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+        selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
+        alias = selected_recipe if selected_recipe not in OBJ.keys() or "alias" not in OBJ[selected_recipe].keys() else OBJ[selected_recipe]["alias"]
+        draw_text(overlay, (650, 0-128 * 4.5 + overlay.get_size()[1] / 2), alias, has_bg=True)
+        overlay.blit(textures_img[texd[selected_recipe][0]], (650, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
+        draw_text(overlay, (650, 4*fontsize-128 * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
+        for i, item in enumerate(crafting[selected_recipe]):
+            overlay.blit(textures_img[texd[item[1]][0]], (650+128*i, 5*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (660+128*i, 5*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
+        for i, t in enumerate(text):
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - 128 * 4.5 + overlay.get_size()[1] / 2))
+    Renderer.update_overlay(overlay)
+    if len(text)*fontsize > window_size[1]:
+        text = []
+construct_overlay()
 Renderer.render((0, 0), tile_size)
 pygame.display.flip()
 
@@ -193,7 +251,7 @@ server_address = (ip, port)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 sock.setblocking(False)
 
-text = ["visit cabbage.moe", "Nitrogen Alpha", "wasd for movement", "esc for save and quit", "F4 for fullscreen", "scroll to select item", "LM place block", "RM place decoration", "press h to start"]
+text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM place block", "RM place decoration", "Press H to start"]
 # get local data
 try:
     sav = open(os.path.join("save", "savedata.pickle"), 'r')
@@ -202,7 +260,7 @@ try:
     hotbar = data['hotbar']
     player_number = data['player_number']
     sav.close()
-    text.append('loaded local save')
+    text.append('Loaded local save')
 except FileNotFoundError:
     spawn = seeded_random(int.from_bytes(spawnkey.encode('utf-8'), "big"))
     pos = [10**10-spawn*10**10*2+pi, 10**10-seeded_random(spawn)*10**10*2+tau]
@@ -246,25 +304,11 @@ except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
 
-titlescreen = pygame.image.load(os.path.join("data", "titlescreen.png"))
-
-def render_text(text):
-    global overlay
-    global Renderer
-    overlay.fill((0, 0, 0, 0))
-    file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
-    img = pygame.image.fromstring( file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(), overlay.get_size(), "RGBA").convert_alpha()
-    overlay.blit(img, (0, 0))
-    for i, t in enumerate(text):
-        overlay.blit(silombol.render(t, True, (0, 0, 0)), (0, silombol.size(t)[1]*i))
-    Renderer.update_overlay(overlay)
-render_text(text)
-
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 #hotbar[8] = ["farmland", 0, 999]
 #hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["teabush", 1, 2]
-#hotbar[2] = ["teatree", 1, 999]
+#hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["tealeaf", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
@@ -277,29 +321,9 @@ def save_game():
         sock.sendto(str('save_to_server '+str(base64.b64encode(pickle.dumps(map.save_buffer)))).encode('utf-8'), server_address)
         map.save_buffer.clear()
 selected_item_slot = 0
+selected_crafting_slot = 0
 
-def draw_text(surface, xy, t, has_bg=0):
-    if has_bg:
-        pygame.draw.rect(surface, (255, 255, 255, 128), pygame.Rect((xy[0]-3, xy[1]), silombol.size(t)))
-    surface.blit(silombol.render(t, True, (0, 0, 0)), xy)
-
-def construct_overlay():
-    overlay.fill((0, 0, 0, 0))
-    overlay.blit(textures_img[texd["selection"][0]], (0, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2))
-    for i in range(9):
-        if hotbar[i][0] != None and hotbar[i][2] > 0:
-            overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (10, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), str(hotbar[i][2]), has_bg=True)
-    slot = hotbar[int(selected_item_slot)]
-    if slot[0] == "debug":
-        for x,y in list_tiles_on_screen(8):
-            tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                           ceil(screen_coords[1] / tile_size) + y - 1]
-            climate = get_climate(tile_coords[0], tile_coords[1])
-            overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
-    if slot[0] != None and slot[2] > 0:
-        draw_text(overlay, (100, 128 * selected_item_slot - 128 * 4.5 + overlay.get_size()[1] / 2), str(slot[0]), has_bg=True)
-    Renderer.update_overlay(overlay)
+construct_overlay()
 
 last_climate = (None, None, None)
 biome_size = 100
@@ -492,9 +516,9 @@ def handle_keys():
                 save_game()
                 running = False
             keydown_set.add(event.key)
-            if (event.key in (pygame.K_F2,)):
+            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c)):
                 keydown_set.add("press"+str(event.key))
-        elif event.type == pygame.KEYUP and event.key != pygame.K_F4:
+        elif event.type == pygame.KEYUP and event.key not in (pygame.K_F4, ):
             keydown_set.remove(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             keydown_set.add("mouse"+str(event.button))
@@ -533,6 +557,22 @@ def handle_keys():
             if y:
                 gamepad_set.add("d-pady"+str(y))
 
+# selected data in map format ie: mat, dec, age, item, count, roof, enc
+def find_destination_slot(item, item_type):
+    first_blank = None
+    destination_item_slot = int(selected_item_slot)
+    for i in range(9):
+        if item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == item_type and hotbar[destination_item_slot][2] > 0:
+            break
+        elif first_blank == None and hotbar[destination_item_slot][2] == 0:
+            first_blank = destination_item_slot
+        destination_item_slot = (destination_item_slot + 1) % 9
+    if item != hotbar[destination_item_slot][0] and first_blank != None:
+        destination_item_slot = first_blank
+    if hotbar[destination_item_slot][2] == 0 or (item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == item_type):
+        return destination_item_slot
+    return None
+
 running=True
 curtime = pygame.time.get_ticks()
 char_direction = 0
@@ -545,7 +585,7 @@ last_server_update = 0
 last_random_tick = 0
 server_fails = 0
 
-def main():
+def handle_controls(dt):
     global velocity
     global curtime
     global tile_size
@@ -563,10 +603,7 @@ def main():
     global last_random_tick
     global server_fails
     global pos
-    dt = pygame.time.get_ticks() - curtime
-    curtime = pygame.time.get_ticks()
-    #frag_time.value = curtime
-    handle_keys()
+    global menu
     # interpret inputs
     if pygame.K_w in keydown_set or "sticky1" in gamepad_set:
         if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
@@ -599,10 +636,20 @@ def main():
         elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration
             char_direction = 6
-    if pygame.K_h in keydown_set:
+    if "press"+str(pygame.K_h) in keydown_set:
+        if menu == 0:
+            menu = 1
+        else:
+            menu = 0
         construct_overlay()
-    if pygame.K_c in keydown_set:
-        map.cache.clear()
+        keydown_set.remove("press"+str(pygame.K_h))
+    if "press"+str(pygame.K_c) in keydown_set:
+        if menu == 0:
+            menu = 2
+        else:
+            menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_c))
     if pygame.K_F4 in keydown_set:
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
@@ -644,38 +691,28 @@ def main():
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     selected_data = get_tile_info(*selected_tile)
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
-        if Rect(0, overlay.get_size()[1] / 2 - 110 * 4.5, 110, 110*9).collidepoint(mouse_pos):
-            selected_item_slot = (mouse_pos[1]-(overlay.get_size()[1] / 2 - 110 * 4.5))//110
+        if Rect(0, window_size[1] / 2 - 128 * 4.5, 128, 128*9).collidepoint(mouse_pos):
+            selected_item_slot = (mouse_pos[1]-(window_size[1] / 2 - 128 * 4.5))//128
         else:
             if selected_data != None and len(selected_data) > 3 and selected_data[3] != None:
                 # grab item from selected tile
-                first_blank = None
-                destination_item_slot = int(selected_item_slot)
-                item = selected_data[3]
                 item_num = 1 if len(selected_data) <= 4 else selected_data[4]
-                for i in range(9):
-                    if item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 2 and hotbar[destination_item_slot][2] > 0:
-                        break
-                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
-                        first_blank = destination_item_slot
-                    destination_item_slot = (destination_item_slot + 1) % 9
-                if item != hotbar[destination_item_slot][0] and first_blank != None:
-                    destination_item_slot = first_blank
-                if hotbar[destination_item_slot][2] == 0 or (item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 2):
-                    shovel_sfx.play()
-                    hotbar[destination_item_slot] = [item, 2, hotbar[destination_item_slot][2] + item_num]
+                destination_item_slot = find_destination_slot(selected_data[3], 2)
+                if destination_item_slot != None:
+                    crumple_sfx.play()
+                    hotbar[destination_item_slot] = [selected_data[3], 2, hotbar[destination_item_slot][2] + item_num]
                     print("picked up item such that:", hotbar[destination_item_slot])
                     map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
             elif selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
                 # grab decoration from selected tile
-                first_blank = None
-                destination_item_slot = int(selected_item_slot)
                 drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
                 if drops:
                     drops = drops if len(drops) >= 3 else drops+(2,)
                     drop_num, dropped_item, dropped_item_type = drops
                 else:
                     drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
+                first_blank = None
+                destination_item_slot = int(selected_item_slot)
                 for i in range(9):
                     if dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type and hotbar[destination_item_slot][2] > 0:
                         break
@@ -691,17 +728,8 @@ def main():
                     leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
                     map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
             else:
-                first_blank = None
-                destination_item_slot = int(selected_item_slot)
-                for i in range(9):
-                    if selected_data[0] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 0 and hotbar[destination_item_slot][2] > 0:
-                        break
-                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
-                        first_blank = destination_item_slot
-                    destination_item_slot = (destination_item_slot + 1) % 9
-                if selected_data[0] != hotbar[destination_item_slot][0] and first_blank != None:
-                    destination_item_slot = first_blank
-                if hotbar[destination_item_slot][2] == 0 or (selected_data[0] == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == 0):
+                destination_item_slot = find_destination_slot(selected_data[0], 0)
+                if destination_item_slot != None:
                     # grab material from selected tile
                     shovel_sfx.play()
                     hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
@@ -716,23 +744,24 @@ def main():
         construct_overlay()
     if "mouse3" in keydown_set or "button9" in gamepad_set:
         if hotbar[int(selected_item_slot)][2] > 0:
-            if hotbar[int(selected_item_slot)][1] == 2:
+            if hotbar[int(selected_item_slot)][1] == 2 and hotbar[int(selected_item_slot)][0] not in OBJ.keys():
                 # place item in selected tile
                 crumple_sfx.play()
                 age = None if len(selected_data) < 3 else selected_data[2]
                 map.set_data(*selected_tile, (selected_data[0], selected_data[1], age) + (hotbar[int(selected_item_slot)][0], hotbar[int(selected_item_slot)][2]) + selected_data[5:])
                 hotbar[int(selected_item_slot)][2] = 0
-            elif selected_data[hotbar[int(selected_item_slot)][1]] != hotbar[int(selected_item_slot)][0]:
-                if hotbar[int(selected_item_slot)][1] == 0:
-                    # place material in selected tile
-                    hit_sfx.play()
-                    map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
-                    hotbar[int(selected_item_slot)][2] -= 1
-                elif hotbar[int(selected_item_slot)][1] == 1 and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] ):
-                    # place decoration in selected tile
-                    crumple_sfx.play()
-                    map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
-                    hotbar[int(selected_item_slot)][2] -= 1
+            elif hotbar[int(selected_item_slot)][1] == 0 and selected_data[0] != hotbar[int(selected_item_slot)][0]:
+                # place material in selected tile
+                hit_sfx.play()
+                map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
+                hotbar[int(selected_item_slot)][2] -= 1
+            elif selected_data[1] != hotbar[int(selected_item_slot)][0] and ( hotbar[int(selected_item_slot)][1] == 1 \
+                    and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] )\
+                    or hotbar[int(selected_item_slot)][1] == 2 and hotbar[int(selected_item_slot)][0] in OBJ.keys() ):
+                # place decoration in selected tile
+                crumple_sfx.play()
+                map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
+                hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot-1)%9
@@ -744,6 +773,91 @@ def main():
         construct_overlay()
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
+
+def handle_controls_crafting(dt):
+    global selected_crafting_slot
+    global menu
+    global hotbar
+    global text
+    if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
+        if Rect(128, window_size[1] / 2 - 128 * 4.5, 280, 128*9).collidepoint(mouse_pos):
+            selected_crafting_slot = int((mouse_pos[1]-(window_size[1] / 2 - 128 * 4.5))//128)%len(crafting)
+        construct_overlay()
+        if "click1" in keydown_set:
+            keydown_set.remove("click1")
+    if "press"+str(pygame.K_h) in keydown_set:
+        if menu == 0:
+            menu = 1
+        else:
+            menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_h))
+    if "press"+str(pygame.K_c) in keydown_set:
+        if menu == 0:
+            menu = 2
+        else:
+            menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_c))
+
+    if pygame.K_SPACE in keydown_set:
+        old_hotbar = [slot.copy() for slot in hotbar]
+        hotbar_items = [item for item, type, count in hotbar]
+        selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
+        try:
+            for count, item in crafting[selected_recipe]:
+                if item in hotbar_items and hotbar[hotbar_items.index(item)][2] >= count:
+                    hotbar[hotbar_items.index(item)][2] -= count
+                else:
+                    raise Exception("insufficent items")
+            destination_item_slot = find_destination_slot(selected_recipe, 1)
+            if destination_item_slot != None:
+                hotbar[destination_item_slot] = [selected_recipe, 1, hotbar[destination_item_slot][2] + 1]
+            else:
+                raise Exception("no free slots in hotbar")
+        except Exception as e:
+            hotbar = old_hotbar
+            text.append(str(e))
+        construct_overlay()
+    if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
+        selected_crafting_slot = int(selected_crafting_slot-1)%len(crafting)
+        construct_overlay()
+        if "unclick4" in keydown_set:
+            keydown_set.remove("unclick4")
+    if "unclick5" in keydown_set or "d-pady-1" in gamepad_set and not "d-pady-1" in old_gamepad_set:
+        selected_crafting_slot = int(selected_crafting_slot+1)%len(crafting)
+        construct_overlay()
+        if "unclick5" in keydown_set:
+            keydown_set.remove("unclick5")
+
+def main():
+    global velocity
+    global curtime
+    global tile_size
+    global screen_coords
+    global selected_tile
+    global char_direction
+    global overlay
+    global window_size
+    global selected_item_slot
+    global steptime
+    global char_anim
+    global world_text
+    global player_text
+    global last_server_update
+    global last_random_tick
+    global server_fails
+    global pos
+    global menu
+    dt = pygame.time.get_ticks() - curtime
+    curtime = pygame.time.get_ticks()
+    handle_keys()
+    if menu == 0:
+        handle_controls(dt)
+    elif menu == 1:
+        handle_controls(dt)
+    elif menu == 2:
+        handle_controls_crafting(dt)
     # start loading the world into renderer
     for x, y in list_tiles_on_screen(8):
         height = 0.0
@@ -801,7 +915,7 @@ def main():
                 if model == "singleshrub":
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
                 elif model == "doubleshrub":
-                    draw_shrub(get_tex(bot, index), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_shrub(get_tex(bot, index), tile_coords[0], tile_coords[1], height/2, w,h)
                     draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, -w,-h)
                 elif model == "singleobj":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
@@ -819,7 +933,9 @@ def main():
             item = tile_data[3]
             if item != None and tile_data[4] > 0:
                 w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
-                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.01, w, h)
+                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.02, w, h)
+        if tile_coords == selected_tile:
+            draw_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3+height, 1, 1)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -836,6 +952,7 @@ def main():
     looking_direction = int(atan2((mouse_pos[0] - window_size[0] / 2), (mouse_pos[1] - window_size[1] / 2)) / tau * 8 + 4.5) % 8
     if looking_direction % 2:
         looking_direction = (looking_direction + 2) % 8
+
     if last_random_tick + 5.0 < time.time():
         # do random tick in 190x190 square around player (1 tick per tile per ingame day = 10 mins irl)
         for i in range(300):
@@ -852,7 +969,7 @@ def main():
                     map.set_data(*dest, (OBJ[RT_data[1]]["sheds"],) + dest_data[1:])
                 if "creates" in OBJ[RT_data[1]].keys():
                     if len(RT_data) < 4 or RT_data[3] == None or RT_data[4] == 0:
-                        age = None if len(dest_data) < 3 else dest_data[2]
+                        age = None if len(RT_data) < 3 else RT_data[2]
                         map.set_data(*RT_coords, (RT_data[0], RT_data[1], age) + (OBJ[RT_data[1]]["creates"][1], OBJ[RT_data[1]]["creates"][0]) + RT_data[5:])
         last_random_tick = time.time()
     if last_server_update+0.1 < time.time():
@@ -862,7 +979,6 @@ def main():
             my_player_text = "player_update "+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(looking_direction)+','+str(char_anim)+','+str(char_speed)
             sock.sendto(my_player_text.encode('utf-8'), server_address)
             data, address = sock.recvfrom(8192)
-            print(address, server_address)
             text = data.decode('utf-8')
             text = text.split("&")
             world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
@@ -873,7 +989,9 @@ def main():
         except BlockingIOError:
             server_fails += 1
             if server_fails > 60:
-                render_text(["Error reaching server", "progress will not be saved"])
+                menu = 1
+                text.append("Error reaching server", "progress will not be saved")
+                construct_overlay()
                 server_fails = 0
         last_server_update = time.time()
 
@@ -903,7 +1021,7 @@ def main():
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
         Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
-    draw_object(get_tex("selection",0), selected_tile[0], selected_tile[1], 3, 1, 1)
+    draw_object(get_tex("selectionbot",0), selected_tile[0], selected_tile[1], 3, 1, 1)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
