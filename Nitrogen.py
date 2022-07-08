@@ -313,11 +313,11 @@ except pickle.UnpicklingError:
     text.append('progress will not be saved')
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-#hotbar[8] = ["farmland", 0, 999]
+hotbar[8] = ["farmland", 0, 999]
 #hotbar[1] = ["candle", 1, 999]
 #hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
-#hotbar[3] = ["tealeaf", 1, 999]
+#hotbar[3] = ["soybeans", 1, 999]
 print("hotbar:", hotbar)
 def save_game():
     print("saving game")
@@ -391,20 +391,24 @@ def decorate(x, y, mat):
             dec = map_data[1]
     else:
         r = point_to_random(x, y)
+        r2 = seeded_random(r)
         if mat == "hexpavers":
             if r < 0.4:
                 dec = "hexpavers"
         else:
             if r > 0.0:
-                dec = list(OBJ)[int(r*len(OBJ))]
+                dec = list(OBJ)[int(r2*len(OBJ))]
                 temp, moisture, altitude = get_climate(x, y)
                 salinity = max(0, 100 / (altitude / 30) - moisture)
                 if "plant" in OBJ[dec]["flags"]:
-                    if "native" in OBJ[dec]["flags"] or mat == "farmland":
-                        if (mat not in OBJ[dec]["substrate"] and (mat != "farmland" or r < 0.5)) or \
+                    if "native" in OBJ[dec]["flags"]:
+                        if mat not in OBJ[dec]["substrate"] or \
                                 temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
                                 moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
                                 salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
+                            dec = None
+                    elif mat == "farmland":
+                        if r < 0.4:
                             dec = None
                     else:
                         dec = None
@@ -818,9 +822,10 @@ def handle_controls_crafting(dt):
                     hotbar[hotbar_items.index(item)][2] -= count
                 else:
                     raise Exception("insufficent items")
-            destination_item_slot = find_destination_slot(selected_recipe, 1)
+            item_type = 2 if selected_recipe not in OBJ.keys() else 1
+            destination_item_slot = find_destination_slot(selected_recipe, item_type)
             if destination_item_slot != None:
-                hotbar[destination_item_slot] = [selected_recipe, 1, hotbar[destination_item_slot][2] + 1]
+                hotbar[destination_item_slot] = [selected_recipe, item_type, hotbar[destination_item_slot][2] + 1]
             else:
                 raise Exception("no free slots in hotbar")
         except Exception as e:

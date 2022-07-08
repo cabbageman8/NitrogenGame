@@ -13,15 +13,15 @@ textures = [
             "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
-            "oatgrass", "oats", "teabush", "teatree", "tealeaf", "chilibush",
+            "oatgrass", "oats", "teabush", "teatree", "tealeaf", "chilibush", "coffeebush", "coffeetree", "artichoke", "strawberryplant", "soybeans", "soybeanseedling", "soybeanmature", "soybeanfullymature", "soybeanfullymaturestem",
             #items
-            "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal",
+            "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal", "oatbread", "coffeecherries", "coffeebeans", "artichokehead", "strawberry", "strawberryseeds", "edamame"
             ]
 
 entities = ["charhands", "charhead", "charlegs"]
 animated = {"water", "freshwater"}
 difficult_terrain = {"water", "freshwater"}
-any_dirt = [obj for obj in textures if "dirt" in obj]
+any_dirt = [obj for obj in textures if "dirt" in obj]+["farmland",]
 
 #          biome name, material lists
 biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
@@ -70,7 +70,7 @@ OBJ = {
                  "alias": "Oat Grass",
                  "creates": (1, "oats"),
                  "drops": None,
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (5, 50),
                  "temperiture": (5, 30),
                  "salinity": (0, 50),
@@ -82,7 +82,7 @@ OBJ = {
              "oats": {
                  "becomes": "oatgrass",
                  "drops": None,
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (5, 50),
                  "temperiture": (5, 30),
                  "salinity": (0, 50),
@@ -96,7 +96,7 @@ OBJ = {
                  "becomes": "teatree",
                  "creates": (1,"tealeaf"),
                  "drops": (4, "tealeaf", 2),
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (40, 100),
                  "temperiture": (30, 50),
                  "salinity": (0, 50),
@@ -110,7 +110,7 @@ OBJ = {
                  "leaves": "teabush",
                  "drops": (1, "teabush", 1),
                  "creates": (1, "tealeaf"),
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (40, 100),
                  "temperiture": (30, 50),
                  "salinity": (0, 50),
@@ -120,11 +120,53 @@ OBJ = {
                  "size": 4,
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
+             "coffeebush": {
+                 "alias": "Coffee Bush",
+                 "drops": None,
+                 "becomes": "coffeetree",
+                 "substrate": ("farmland",),
+                 "moisture": (0, 40),
+                 "temperiture": (30, 50),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
+             "coffeetree": {
+                 "alias": "Coffee Tree",
+                 "drops": None,
+                 "leaves": "coffeecherries",
+                 "creates": (1, "coffeecherries"),
+                 "substrate": ("farmland",),
+                 "moisture": (0, 40),
+                 "temperiture": (30, 50),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "tree",
+                 "trunk": "horsetailcasuarinatrunk",
+                 "size": 4,
+                 "height": lambda x,y: 0.1+sin(x+y*y)/20
+             },
+             "coffeecherries": {
+                 "alias": "Coffee Cherries",
+                 "description": "Fruit if the coffee plant, contains two coffee seeds",
+                 "drops": None,
+                 "becomes": "coffeebush",
+                 "substrate": ("farmland",),
+                 "moisture": (0, 40),
+                 "temperiture": (30, 50),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
              "chilibush": {
                  "alias": "Chilli Bush",
                  "creates": (2, "chili"),
                  "drops": None,
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (10, 50),
                  "temperiture": (30, 50),
                  "salinity": (0, 50),
@@ -137,9 +179,108 @@ OBJ = {
                  "alias": "Chilli Seeds",
                  "drops": None,
                  "becomes": "chilibush",
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "farmland",),
+                 "substrate": ("farmland",),
                  "moisture": (10, 50),
                  "temperiture": (30, 50),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
+             "strawberryplant": {
+                 "alias": "Strawberry Plant",
+                 "creates": (3, "strawberry"),
+                 "drops": None,
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 1,
+                 "height": 0.02
+             },
+             "strawberryseeds": {
+                 "alias": "Strawberry",
+                 "drops": None,
+                 "becomes": "strawberryplant",
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
+             "soybeans": {
+                 "drops": None,
+                 "becomes": "soybeanseedling",
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.02
+             },
+             "soybeanseedling": {
+                 "drops": None,
+                 "becomes": "soybeanmature",
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.04
+             },
+             "soybeanmature": {
+                 "drops": (4, "edamame"),
+                 "becomes": "soybeanfullymature",
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "doubleshrub",
+                 "size": 2,
+                 "height": 0.06
+             },
+             "soybeanfullymature": {
+                 "drops": (12, "soybeans"),
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "qtree",
+                 "trunk": "soybeanfullymaturestem",
+                 "size": 1,
+                 "height": lambda x,y: 0.06+sin(x*+y*y)/50
+             },
+             "artichoke": {
+                 "alias": "Artichoke",
+                 "creates": (1, "artichokehead"),
+                 "drops": None,
+                 "substrate": ("farmland",),
+                 "moisture": (30, 60),
+                 "temperiture": (20, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
+             "artichokehead": {
+                 "alias": "Artichoke Head",
+                 "becomes": "artichoke",
+                 "substrate": ("farmland",),
+                 "moisture": (30, 60),
+                 "temperiture": (20, 30),
                  "salinity": (0, 50),
                  "flags": {"plant", "flip"},
                  "model": "singleobj",
@@ -372,7 +513,8 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "papermulberry": {
-                 "drops": (1, "wood"),
+                 "leaves": "treestump",
+                 "drops": (4, "wood"),
                  "substrate": ( "dirt" ),
                  "moisture": (10, 90),
                  "temperiture": (15, 60),
@@ -491,15 +633,38 @@ OBJ = {
              },
 }
 
-ITEMS ={
+ITEMS = {
             "sharprock": {
                  "alias": "Sharp Rock",
                  "description": "Sharper than other rocks",
+            },
+            "oatmeal": {
+                 "alias": "Oatmeal",
+                 "description": "Rolled oat seeds",
+            },
+            "oatbread": {
+                 "alias": "Oatmeal Bread",
+                 "description": "Delicous source of carbs",
+            },
+            "coffeebeans": {
+                 "alias": "Coffee Beans",
+                 "description": "Roasted seeds, high in caffeine",
+            },
+            "chiliseeds": {
+                 "alias": "Chilli Seeds",
+                 "description": "Used to grow chillies",
+            },
+            "strawberryseeds": {
+                 "alias": "Strawberry Seeds",
+                 "description": "Used to grow strawberries",
             }
 }
 
 crafting = {
-    "sharprock" : ((2, "rock", ),),
-    "chiliseeds" : ((4, "chili"), (1, "sharprock")),
-    "oatmeal" : ((4, "oats"), (2, "rock", )),
+    "sharprock": ((2, "rock", ),),
+    "chiliseeds": ((4, "chili"), (1, "sharprock")),
+    "strawberryseeds": ((3, "strawberry"), (1, "sharprock")),
+    "oatmeal": ((4, "oats"), (2, "rock", )),
+    "oatbread": ((6, "oatmeal"), ),
+    "coffeebeans": ((4, "coffeecherries"), (1, "sharprock")),
 }
