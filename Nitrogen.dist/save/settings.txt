@@ -7,8 +7,8 @@ window_size = 1920, 1080
 # enable fullscreen at launch
 fullscreen = True
 
-# spawn key, change to the same as your friends if you want to spawn together
-spawnkey = squid
+# players with the same spawn key will spawn in the same place (remove or rename your savedata file to spawn as new character)
+spawnkey = worldspawn
 
 # vertical synchronisation
 vsyncenabled = True
@@ -20,7 +20,7 @@ tile_size = 75
 fontsize = 45
 
 # ip address of game server
-ip = cabbageserver.ddns.net
+ip = server.cabbage.moe
 
 # udp port number of game server
 port = 27448
