@@ -49,6 +49,8 @@ class glrenderer():
             '2f', 0.0, 0.0)      * (2 ** 16))
         self.instance_data_texnum = self.ctx.buffer(struct.pack(
             '1f', 0.0)           * (2 ** 16))
+        self.instance_data_sway = self.ctx.buffer(struct.pack(
+            '1f', 0.0)           * (2 ** 16))
 
         self.vbo = self.ctx.buffer(struct.pack('8f', 0, 0, 1, 0,
                                                      0, 1, 1, 1))
@@ -64,7 +66,8 @@ class glrenderer():
             (self.uvmap, '2f', 'in_text'),
             (self.instance_data_pos, '3f/i', 'pos'),
             (self.instance_data_size, '2f/i', 'size'),
-            (self.instance_data_texnum, 'f/i', 'texnum')
+            (self.instance_data_texnum, 'f/i', 'texnum'),
+            (self.instance_data_sway, 'f/i', 'sway')
         ]
         self.vao = self.ctx.vertex_array(self.normal_prog, self.vao_content, self.ibo)
         self.shadowvao = self.ctx.vertex_array(self.shadow_prog, self.vao_content, self.ibo)
@@ -84,9 +87,10 @@ class glrenderer():
         self.overlay_texture.write(texture_data)
 
     def write_vert_data(self, vert_list):
-        self.instance_data_pos.write(b''.join(struct.pack( '3f', x, y, z ) for x, y, z, w, h, tex in vert_list))
-        self.instance_data_size.write(b''.join(struct.pack( '2f', w, h ) for x, y, z, w, h, tex in vert_list))
-        self.instance_data_texnum.write(b''.join(struct.pack( '1f', tex ) for x, y, z, w, h, tex in vert_list))
+        self.instance_data_pos.write(b''.join(struct.pack( '3f', x, y, z ) for x, y, z, w, h, tex, sway in vert_list))
+        self.instance_data_size.write(b''.join(struct.pack( '2f', w, h ) for x, y, z, w, h, tex, sway in vert_list))
+        self.instance_data_texnum.write(b''.join(struct.pack( '1f', tex ) for x, y, z, w, h, tex, sway in vert_list))
+        self.instance_data_sway.write(b''.join(struct.pack('1f', sway) for x, y, z, w, h, tex, sway in vert_list))
 
     def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0, is_sorted=0):
         if is_sorted:
@@ -107,10 +111,11 @@ class glrenderer():
         self.ctx.clear()
         self.texpack_texture.use()
         self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
+        self.normal_prog['tile_size'].value =   self.foreground_prog['tile_size'].value =   self.shadow_prog['tile_size'].value =   tile_size/100.0
+        self.normal_prog['time'].value =        self.foreground_prog['time'].value =        self.shadow_prog['time'].value =        (time.time()*1000)%2**16
+        self.normal_prog['screen_size'].value = self.foreground_prog['screen_size'].value = self.shadow_prog['screen_size'].value = self.ctx.screen.size
+        self.normal_prog['sunlight'].value =    self.foreground_prog['sunlight'].value =    self.shadow_prog['sunlight'].value =    (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
         self.foreground_prog['mouse_pos'].value = mouse_pos
-        self.normal_prog['tile_size'].value = self.foreground_prog['tile_size'].value = self.shadow_prog['tile_size'].value = tile_size/100.0
-        self.normal_prog['screen_size'].value = self.foreground_prog['screen_size'].value = self.ctx.screen.size
-        self.normal_prog['sunlight'].value = self.foreground_prog['sunlight'].value = self.shadow_prog['sunlight'].value = (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
         self.normal_prog['lightnum'].value = min(len(self.light_list), 128)
         self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_list)+[(0, 0, 0),]*128)[:128]

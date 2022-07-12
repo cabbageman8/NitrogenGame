@@ -457,14 +457,14 @@ def list_tiles_on_screen(dist):
                 yield screen_size[0] - b, screen_size[1] + a-1
                 yield screen_size[0] - b, screen_size[1] - a
 
-def screen_transform(x, y, z, w, h, tex):
+def screen_transform(x, y, z, w, h, tex, sway):
     # convert pixel coords to shader coords
     return (x/window_size[0]*2,
             y/window_size[1]*2,
             z,
             w/window_size[0]*2,
             h/window_size[1]*2,
-            tex)
+            tex, sway)
 
 def geom_light(x, y, z, w, h, hue):
     # return element for lighting using tile coords
@@ -473,7 +473,7 @@ def geom_light(x, y, z, w, h, hue):
               +1-(1 - screen_coords[1] % tile_size + tile_size * (y + abs(h) // 2 + 0.5) - screen_coords[1] // tile_size * tile_size) / window_size[1] * 2,
             1), hue)
 
-def geom_tile(x, y, z, tex):
+def geom_tile(x, y, z, tex, sway):
     # return element for rendering a tile using int tile coords relitive to the screen
     global screen_coords
     return screen_transform((1 - screen_coords[0] % tile_size + tile_size * x),
@@ -481,9 +481,9 @@ def geom_tile(x, y, z, tex):
                             z,
                             tile_size,
                             tile_size,
-                            tex)
+                            tex, sway)
 
-def geom_object(x, y, z, w, h, tex):
+def geom_object(x, y, z, w, h, tex, sway):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
     return screen_transform((1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size),
@@ -491,32 +491,19 @@ def geom_object(x, y, z, w, h, tex):
                             z,
                             w * tile_size,
                             h * tile_size,
-                            tex)
-
-def geom_shrub(x, y, z, w, h, tex):
-    # return element for rendering a texture using int tile coords relitive to the world with added sway
-    sway_translation = (x + y * y) %(2**10)
-    return geom_object(x - cos(curtime / 1000 + sway_translation) / 80,
-                            y - sin(curtime / 700 + sway_translation) / 80,
-                            z+point_to_random(x,y)/50,
-                            w + (cos(curtime / 1000 + sway_translation) / 10),
-                            h + (sin(curtime / 700 + sway_translation) / 10),
-                            tex)
-
-def draw_shrub(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_shrub(x, y, z, w, h, tex))
-def draw_shrub_foreground(tex, x, y, z, w, h):
-    Renderer.foreground_list.append(geom_shrub(x, y, 1+z, w, h, tex))
-    Renderer.reflection_list.append(geom_shrub(x, y, -z, w, h, tex))
-def draw_shadow(tex, x, y, z, w, h):
-    Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex))
-    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex))
-def draw_weather(tex, x, y, z, w, h):
-    Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex))
-def draw_object(tex, x, y, z, w, h):
-    Renderer.vert_list.append(geom_object(x, y, z, w, h, tex))
+                            tex, sway)
+def draw_object(tex, x, y, z, w, h, sway):
+    Renderer.vert_list.append(geom_object(x, y, z, w, h, tex, sway))
     if w * h == 0:
-        Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex))
+        Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
+def draw_object_foreground(tex, x, y, z, w, h, sway):
+    Renderer.foreground_list.append(geom_object(x, y, 1+z, w, h, tex, sway))
+    Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
+def draw_shadow(tex, x, y, z, w, h, sway):
+    Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
+    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex, sway))
+def draw_weather(tex, x, y, z, w, h, sway):
+    Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex, sway))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -906,7 +893,7 @@ def main():
             matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
         else:
             matindex = index
-        Renderer.tile_list.append(geom_tile(x, y, height, get_tex(mat, matindex)))
+        Renderer.tile_list.append(geom_tile(x, y, height, get_tex(mat, matindex), 0))
 
         decor = tile_data[1]
         if decor in OBJ.keys():
@@ -917,24 +904,24 @@ def main():
                     log = "treelog"
                     if "log" in OBJ[decor].keys():
                         log = OBJ[decor]["log"]
-                    draw_object(get_tex(log, index), tile_coords[0], tile_coords[1], 0.01, 1, 1)
+                    draw_object(get_tex(log, index), tile_coords[0], tile_coords[1], 0.01, 1, 1, 0)
                 height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
                 trunk = "treetrunk"
                 if "trunk" in OBJ[decor].keys():
                     trunk = OBJ[decor]["trunk"]
-                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height, 0, 1)
-                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height, 1, 0)
+                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height, 0, 1, 0)
+                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height, 1, 0, 0)
                 if "solid" in OBJ[decor]["flags"]:
                     stump = "treestump"
                     if "stump" in OBJ[decor].keys():
                         stump = OBJ[decor]["stump"]
-                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height, 1, 1)
+                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height, 1, 1, 0)
                 if model == "doubletree":
-                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1))
+                    draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1), 1)
                 if model == "qtree":
-                    draw_shrub(           get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                    draw_object(           get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1), 1)
                 else:
-                    draw_shrub_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1))
+                    draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height, size*(tile_coords[0]%2*2-1), size*(tile_coords[1]%2*2-1), 1)
             else:
                 height = OBJ[decor]["height"]
                 if "flip" in OBJ[decor]["flags"]:
@@ -947,29 +934,29 @@ def main():
                 if "bot" in OBJ[decor].keys():
                     bot = OBJ[decor]["bot"]
                 if model == "singleshrub":
-                    draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h, 1)
                 elif model == "doubleshrub":
-                    draw_shrub(get_tex(bot, index), tile_coords[0], tile_coords[1], height/2, w,h)
-                    draw_shrub(get_tex(decor, index), tile_coords[0], tile_coords[1], height, -w,-h)
+                    draw_object(get_tex(bot, index), tile_coords[0], tile_coords[1], height/2, w,h, 1)
+                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, -w,-h, 1)
                 elif model == "singleobj":
-                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w,h, 0)
                 elif model == "doubleobj":
-                    draw_object(get_tex(bot, 0), tile_coords[0], tile_coords[1], 0, w,h)
-                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w,h)
+                    draw_object(get_tex(bot, 0), tile_coords[0], tile_coords[1], 0, w,h, 0)
+                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w,h, 0)
                 elif model == "block":
                     wall = get_tex(decor, index)
-                    draw_object(wall, tile_coords[0], tile_coords[1]-((y>window_size[1]//tile_size//2)-.5), height, 1, 0)
-                    draw_object(wall, tile_coords[0]-((x>window_size[0]//tile_size//2)-.5), tile_coords[1], height, 0, 1)
-                    draw_object(wall, tile_coords[0], tile_coords[1], height, 1, 1)
+                    draw_object(wall, tile_coords[0], tile_coords[1]-((y>window_size[1]//tile_size//2)-.5), height, 1, 0, 0)
+                    draw_object(wall, tile_coords[0]-((x>window_size[0]//tile_size//2)-.5), tile_coords[1], height, 0, 1, 0)
+                    draw_object(wall, tile_coords[0], tile_coords[1], height, 1, 1, 0)
                 elif model == "roof":
-                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 1+height, 1, 1)
+                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 1+height, 1, 1, 0)
         if len(tile_data) > 4:
             item = tile_data[3]
             if item != None and tile_data[4] > 0:
                 w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
-                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.02, w, h)
+                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.02, w, h, 0)
         if tile_coords == selected_tile:
-            draw_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3+height, 1, 1)
+            draw_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3+height, 1, 1, 0)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -1039,38 +1026,38 @@ def main():
                 dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
             else:
                 dx, dy = dt*speed*cos(direc*tau/8+tau/4), dt*speed*sin(direc*tau/8-tau/4)
-            draw_shrub(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2)
-            draw_shrub(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
-            draw_shrub(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
+            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2, 1)
+            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2, 1)
+            draw_object(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, 1)
     # add player textures to vertex list
     mat = player_tile_info[0]
     if mat != "water":
-        Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number)))
+        Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim), 0))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim), 0))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number), 0))
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
         Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
-    draw_object(get_tex("selectionbot",0), selected_tile[0], selected_tile[1], 3, 1, 1)
+    draw_object(get_tex("selectionbot",0), selected_tile[0], selected_tile[1], 3, 1, 1, 0)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
                     screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100,
                     1,
                     100*(int(c)%2*2-1),
-                    100*(int(c//2)%2*2-1))
+                    100*(int(c//2)%2*2-1), 2)
     for c in range(5):
         draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      1,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1))
+                     100*(int(c//2)%2*2-1), 2)
     r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
     if r >= 0.03:
-        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("sky", 0)))
+        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("sky", 0), 0))
     else:
-        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("moon", 0)))
+        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("moon", 0), 0))
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     if "press"+str(pygame.K_F2) in keydown_set:

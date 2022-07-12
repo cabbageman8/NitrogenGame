@@ -28,18 +28,30 @@ in vec2 in_text;
 in vec3 pos;
 in vec2 size;
 in float texnum;
+in float sway;
+uniform vec2 screen_size;
 uniform float tile_size;
+uniform float time;
 uniform sampler2D texpack;
 out vec2 v_text;
 out float thetexnum;
 out vec3 screenpos;
 vec2 packsize;
 float zpos;
+vec2 trans_pos;
+vec2 trans_size;
+float sway_translation;
+vec2 sway_factor;
 void main() {
+    sway_translation = texnum+sway;
+    sway_factor = vec2(sway/screen_size.x*tile_size*7.0*cos(time/700.0+sway_translation), 
+                       sway/screen_size.y*tile_size*7.0*sin(time/700.0+sway_translation));
+    trans_pos = vec2(pos.x-sway_factor.x, pos.y-sway_factor.y);
+    trans_size = vec2(size.x+2.0*sway_factor.x, size.y+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*tile_size), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*tile_size), -pos.z);
+    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)*(1.0+zpos*tile_size), (1.0-trans_pos.y-vert.y*trans_size.y)*(1.0+zpos*tile_size), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
@@ -99,7 +111,6 @@ vec4 incolour;
 float mid_dist_2;
 float mouse_dist_2;
 float seethrough;
-int i;
 vec3 light_value;
 void main() {
     incolour = texture(texpack,v_text);
@@ -118,7 +129,10 @@ in vec2 in_text;
 in vec3 pos;
 in vec2 size;
 in float texnum;
+in float sway;
 uniform float tile_size;
+uniform vec2 screen_size;
+uniform float time;
 uniform sampler2D texpack;
 uniform float sunangle;
 out vec2 v_text;
@@ -126,11 +140,20 @@ out float thetexnum;
 out vec3 screenpos;
 vec2 packsize;
 float zpos;
+vec2 trans_pos;
+vec2 trans_size;
+float sway_translation;
+vec2 sway_factor;
 void main() {
+    sway_translation = texnum+sway;
+    sway_factor = vec2(sway/screen_size.x*tile_size*5.0*cos(time/700.0+sway_translation), 
+                       sway/screen_size.y*tile_size*5.0*sin(time/700.0+sway_translation));
+    trans_pos = vec2(pos.x-sway_factor.x, pos.y-sway_factor.y);
+    trans_size = vec2(size.x+2.0*sway_factor.x, size.y+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)+sunangle*(zpos*tile_size), (1.0-pos.y-vert.y*size.y)+0.3*(zpos*tile_size), -pos.z);
+    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+sunangle*(zpos*tile_size), (1.0-trans_pos.y-vert.y*trans_size.y)+0.3*(zpos*tile_size), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
