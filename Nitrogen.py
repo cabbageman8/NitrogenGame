@@ -38,7 +38,7 @@ for i in range(pygame.joystick.get_count()):
     gamepads.append(joystick)
 
 clock = pygame.time.Clock()
-text = ["connecting to server"]
+text = ["Connecting to server"]
 
 try: os.mkdir("save")
 except: pass
@@ -164,10 +164,12 @@ def draw_text(surface, xy, t, has_bg=0):
 def get_alias(name):
     alias = name if name not in OBJ.keys() or "alias" not in OBJ[name].keys() else OBJ[name]["alias"]
     alias = alias if name not in ITEMS.keys() or "alias" not in ITEMS[name].keys() else ITEMS[name]["alias"]
+    alias = alias if name not in TILES.keys() or "alias" not in TILES[name].keys() else TILES[name]["alias"]
     return alias
 def get_description(name):
     description = "" if name not in OBJ.keys() or "description" not in OBJ[name].keys() else OBJ[name]["description"]
     description = description if name not in ITEMS.keys() or "description" not in ITEMS[name].keys() else ITEMS[name]["description"]
+    description = description if name not in TILES.keys() or "description" not in TILES[name].keys() else TILES[name]["description"]
     return description
 
 menu = 1
@@ -204,19 +206,32 @@ def construct_overlay():
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
         pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((128, 128 * selected_crafting_slot - 128 * 4.5 + overlay.get_size()[1] / 2), (280, 128)))
-        for i, recipe in enumerate(crafting.items()):
-            product, ingredients = recipe[0], recipe[1]
-            overlay.blit(textures_img[texd[product][0]], (128, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (256, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), get_alias(product), has_bg=True)
+        for i, product in enumerate(crafting.keys()):
+            overlay.blit(textures_img[texd[product[1]][0]], (128, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (256, 128 * i - 128 * 4.5 + overlay.get_size()[1] / 2), get_alias(product[1]), has_bg=True)
         selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
-        draw_text(overlay, (650, 0-128 * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe), has_bg=True)
-        draw_text(overlay, (650+128, fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe), has_bg=True)
+        draw_text(overlay, (650, 0-128 * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe[1]), has_bg=True)
+        draw_text(overlay, (650+128, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), item_type_map[selected_recipe[2]], has_bg=True)
+        draw_text(overlay, (650+128, 2*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe[1]), has_bg=True)
 
-        overlay.blit(textures_img[texd[selected_recipe][0]], (650, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
+        overlay.blit(textures_img[texd[selected_recipe[1]][0]], (650, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
+        draw_text(overlay, (650, 1*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), str(selected_recipe[0]), has_bg=True)
         draw_text(overlay, (650, 4*fontsize-128 * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
-        for i, item in enumerate(crafting[selected_recipe]):
+        for i, item in enumerate(crafting[selected_recipe]["materials"]):
             overlay.blit(textures_img[texd[item[1]][0]], (650+128*i, 5*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2))
             draw_text(overlay, (660+128*i, 5*fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
+        if "workstation" in crafting[selected_recipe].keys():
+            draw_text(overlay, (650, 8 * fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), "Workstation:", has_bg=True)
+            for i, wrk in enumerate(crafting[selected_recipe]["workstation"]):
+                phrase = ""
+                for j, item in enumerate(wrk):
+                    if j == 0:
+                        if i > 0:
+                            phrase += "or "
+                    else:
+                        phrase += " and "
+                    phrase += item
+                draw_text(overlay, (700, (i+9) * fontsize - 128 * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
         for i, t in enumerate(text):
             overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - 128 * 4.5 + overlay.get_size()[1] / 2))
     Renderer.update_overlay(overlay)
@@ -250,8 +265,15 @@ def seeded_random(a):
     output = (64705634+34405431*output)%23928528
     output = (24300417+80810414*output)%10000
     return output/10000
+p2r_cache = {}
 def point_to_random(x, y):
-    return seeded_random(x + x * x * y * y * y + y * y)
+    if (x,y) in p2r_cache:
+        return p2r_cache[(x,y)]
+    r = seeded_random(seeded_random(x) + seeded_random(y))
+    p2r_cache.update({(x,y) :r})
+    if len(p2r_cache) > 2**16:
+        p2r_cache.clear()
+    return r
 
 server_address = (ip, port)
 
@@ -259,7 +281,7 @@ server_address = (ip, port)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 sock.setblocking(False)
 
-text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM place block", "RM place decoration", "Press C to craft", "Press H for help"]
+text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM destroy selected", "RM place from hotbar", "Press C to craft", "Press H to exit help menu"]
 # get local data
 try:
     sav = open(os.path.join("save", "savedata.pickle"), 'r')
@@ -365,70 +387,61 @@ def get_local(temp, moisture, altitude, biome):
     return biome[1][int(len(biome[1]) * point_to_random(int(temp / 45 * len(biome[1]))+int(altitude / 130 * len(biome[1])), int(moisture / 100 * len(biome[1]))))]
 
 def get_mat(x, y):
-    map_data = map.get_data(int(x), int(y))
-    if (map_data != None):
-        mat = map_data[0]
-    else:
-        local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
-        biome = get_biome(x, y)
-        temp, moisture, altitude = get_climate(x, y)
-        if temp % 10 > 9 and moisture % 10 > 9 and altitude < 40 and altitude > 20:
-            # is in structure
-            if x%5==0 or y%4==0:
-                mat = "hexpavers"
-            else:
-                mat = "farmland"
+    local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
+    biome = get_biome(x, y)
+    temp, moisture, altitude = get_climate(x, y)
+    if temp % 10 > 9 and moisture % 10 > 9 and altitude < 40 and altitude > 20:
+        # is in structure
+        if x%5==0 or y%4==0:
+            mat = "hexpavers"
         else:
-            mat_list = get_local(temp, moisture, altitude, biome)
-            mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
+            mat = "farmland"
+    else:
+        mat_list = get_local(temp, moisture, altitude, biome)
+        mat = mat_list[int((local+1)/2*(len(mat_list)-1))]
     return mat
 
 def decorate(x, y, mat):
-    map_data = map.get_data(int(x), int(y))
     dec = None
-    if map_data != None:
-        if len(map_data) > 1:
-            dec = map_data[1]
+    r = point_to_random(x, y)
+    r2 = seeded_random(r)
+    if mat == "hexpavers":
+        if r < 0.4:
+            dec = "hexpavers"
     else:
-        r = point_to_random(x, y)
-        r2 = seeded_random(r)
-        if mat == "hexpavers":
-            if r < 0.4:
-                dec = "hexpavers"
-        else:
-            if r > 0.0:
-                dec = list(OBJ)[int(r2*len(OBJ))]
-                temp, moisture, altitude = get_climate(x, y)
-                salinity = max(0, 100 / (altitude / 30) - moisture)
-                if "plant" in OBJ[dec]["flags"]:
-                    if "native" in OBJ[dec]["flags"]:
-                        if mat not in OBJ[dec]["substrate"] or \
-                                temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
-                                moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
-                                salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
-                            dec = None
-                    elif mat == "farmland":
-                        if r < 0.4:
-                            dec = None
-                    else:
+        if r > 0.0:
+            dec = list(OBJ)[int(r2*len(OBJ))]
+            temp, moisture, altitude = get_climate(x, y)
+            salinity = max(0, 100 / (altitude / 30) - moisture)
+            if "plant" in OBJ[dec]["flags"]:
+                if "native" in OBJ[dec]["flags"]:
+                    if mat not in OBJ[dec]["substrate"] or \
+                            temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
+                            moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
+                            salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
                         dec = None
-                elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
-                        "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
+                elif mat == "farmland":
+                    if r < 0.4:
+                        dec = None
+                else:
                     dec = None
-        if dec == None:
-            map.cache_data(int(x), int(y), (mat, ))
-        else:
-            map.cache_data(int(x), int(y), (mat, dec))
+            elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
+                    "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
+                dec = None
+    if dec == None:
+        map.cache_data(int(x), int(y), (mat, ))
+    else:
+        map.cache_data(int(x), int(y), (mat, dec))
     return dec
 
 def get_tile_info(x, y):
     map_data = map.get_data(int(x), int(y))
+    if map_data:
+        return tuple(map_data+(None,)*7)[:7]
     mat = get_mat(x, y)
     dec = decorate(x, y, mat)
     tile_data = (mat, dec)
-    if map_data:
-        tile_data = tile_data + map_data[2:]
-    return tile_data
+    return tuple(tile_data+(None,)*7)[:7]
 
 def list_tiles_on_screen(dist):
     # returns an generator for every tile near the screen in order of manhattan distance
@@ -494,16 +507,16 @@ def draw_shrub(tex, x, y, z, w, h):
     Renderer.vert_list.append(geom_shrub(x, y, z, w, h, tex))
 def draw_shrub_foreground(tex, x, y, z, w, h):
     Renderer.foreground_list.append(geom_shrub(x, y, 1+z, w, h, tex))
-    Renderer.tile_list.insert(0, geom_shrub(x, y, -z, w, h, tex))
+    Renderer.reflection_list.append(geom_shrub(x, y, -z, w, h, tex))
 def draw_shadow(tex, x, y, z, w, h):
-    Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+    Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex))
     Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex))
 def draw_weather(tex, x, y, z, w, h):
     Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex))
 def draw_object(tex, x, y, z, w, h):
     Renderer.vert_list.append(geom_object(x, y, z, w, h, tex))
     if w * h == 0:
-        Renderer.tile_list.insert(0, geom_object(x, y, -z, w, h, tex))
+        Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -596,6 +609,8 @@ player_text = {}
 last_server_update = 0
 last_random_tick = 0
 server_fails = 0
+selected_tile = [0, 0]
+player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
 
 def handle_controls(dt):
     global velocity
@@ -615,6 +630,7 @@ def handle_controls(dt):
     global last_random_tick
     global server_fails
     global pos
+    global player_tile_info
     global menu
     # interpret inputs
     if pygame.K_w in keydown_set or "sticky1" in gamepad_set:
@@ -672,21 +688,19 @@ def handle_controls(dt):
     if pygame.K_F9 in keydown_set:
         pos = [10**10-seeded_random(pos[0])*10**10*2+pi, 10**10-seeded_random(pos[1])*10**10*2+tau]
 
-    mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
-    spr = decorate(ceil(pos[0] - 1), ceil(pos[1] - 1), mat)
-    if (spr in OBJ.keys() and "solid" in OBJ[spr]["flags"]):
+    #player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
+    new_player_tile_info = get_tile_info(ceil(pos[0] - 1 + dt * velocity[0]), ceil(pos[1] - 1 + dt * velocity[1]))
+    if (player_tile_info[1] in OBJ.keys() and "solid" in OBJ[player_tile_info[1]]["flags"]):
         pos[1] += 1
         velocity = [0, 0]
     else:
-        mat2 = get_mat(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]))
-        spr2 = decorate(ceil(pos[0] - 1 + dt*velocity[0]), ceil(pos[1] - 1 + dt*velocity[1]), mat2)
-        if (not "water" in mat) and "water" in mat2:
+        if (not "water" in player_tile_info[0]) and "water" in new_player_tile_info[0]:
             jump_into_water_sfx.stop()
             jump_into_water_sfx.play()
-        if (spr2 in OBJ.keys() and "solid" in OBJ[spr2]["flags"]):
+        if (new_player_tile_info[1] in OBJ.keys() and "solid" in OBJ[new_player_tile_info[1]]["flags"]):
             velocity = [0, 0]
         else:
-            if (mat in difficult_terrain or spr2 in OBJ.keys() and "slow" in OBJ[spr2]["flags"]):
+            if (player_tile_info[0] in difficult_terrain or new_player_tile_info[1] in OBJ.keys() and "slow" in OBJ[new_player_tile_info[1]]["flags"]):
                 dnom = 2
             else:
                 dnom = 3
@@ -694,6 +708,7 @@ def handle_controls(dt):
             velocity[1] -= velocity[1] / dnom
             pos[0] += dt * velocity[0]
             pos[1] += dt * velocity[1]
+    player_tile_info = new_player_tile_info
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     selected_tile = [mouse_pos[0] + screen_coords[0] % tile_size,
                      mouse_pos[1] + screen_coords[1] % tile_size]
@@ -719,20 +734,10 @@ def handle_controls(dt):
                 # grab decoration from selected tile
                 drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
                 if drops:
-                    drops = drops if len(drops) >= 3 else drops+(2,)
                     drop_num, dropped_item, dropped_item_type = drops
                 else:
                     drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
-                first_blank = None
-                destination_item_slot = int(selected_item_slot)
-                for i in range(9):
-                    if dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type and hotbar[destination_item_slot][2] > 0:
-                        break
-                    elif first_blank == None and hotbar[destination_item_slot][2] == 0:
-                        first_blank = destination_item_slot
-                    destination_item_slot = (destination_item_slot + 1) % 9
-                if dropped_item != hotbar[destination_item_slot][0] and first_blank != None:
-                    destination_item_slot = first_blank
+                destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
                 if hotbar[destination_item_slot][2] == 0 or drops == None or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type):
                     shovel_sfx.play()
                     if drops != None:
@@ -752,27 +757,33 @@ def handle_controls(dt):
         if "click1" in keydown_set:
             keydown_set.remove("click1")
     if "mouse2" in keydown_set:
-        hotbar[int(selected_item_slot)] = [selected_data[0], 0, 1]
+        if len(selected_data) >= 4:
+            destination_item_slot = find_destination_slot(selected_data[3], 2)
+        elif len(selected_data) >= 2:
+            destination_item_slot = find_destination_slot(selected_data[1], 1)
+        else:
+            destination_item_slot = find_destination_slot(selected_data[0], 0)
+        selected_item_slot = selected_item_slot if destination_item_slot == None else destination_item_slot
         construct_overlay()
     if "mouse3" in keydown_set or "button9" in gamepad_set:
         if hotbar[int(selected_item_slot)][2] > 0:
-            if hotbar[int(selected_item_slot)][1] == 2 and hotbar[int(selected_item_slot)][0] not in OBJ.keys():
+            if hotbar[int(selected_item_slot)][1] == 2:
                 # place item in selected tile
                 crumple_sfx.play()
                 age = None if len(selected_data) < 3 else selected_data[2]
                 map.set_data(*selected_tile, (selected_data[0], selected_data[1], age) + (hotbar[int(selected_item_slot)][0], hotbar[int(selected_item_slot)][2]) + selected_data[5:])
                 hotbar[int(selected_item_slot)][2] = 0
+            elif (selected_data[1] == None and hotbar[int(selected_item_slot)][1] == 1 and
+                    ("plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or
+                      selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] )):
+                # place decoration in selected tile
+                crumple_sfx.play()
+                map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
+                hotbar[int(selected_item_slot)][2] -= 1
             elif hotbar[int(selected_item_slot)][1] == 0 and selected_data[0] != hotbar[int(selected_item_slot)][0]:
                 # place material in selected tile
                 hit_sfx.play()
                 map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
-                hotbar[int(selected_item_slot)][2] -= 1
-            elif selected_data[1] != hotbar[int(selected_item_slot)][0] and ( hotbar[int(selected_item_slot)][1] == 1 \
-                    and ( "plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] )\
-                    or hotbar[int(selected_item_slot)][1] == 2 and hotbar[int(selected_item_slot)][0] in OBJ.keys() ):
-                # place decoration in selected tile
-                crumple_sfx.play()
-                map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
                 hotbar[int(selected_item_slot)][2] -= 1
             construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
@@ -798,17 +809,11 @@ def handle_controls_crafting(dt):
         if "click1" in keydown_set:
             keydown_set.remove("click1")
     if "press"+str(pygame.K_h) in keydown_set:
-        if menu == 0:
-            menu = 1
-        else:
-            menu = 0
+        menu = 0
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_h))
     if "press"+str(pygame.K_c) in keydown_set:
-        if menu == 0:
-            menu = 2
-        else:
-            menu = 0
+        menu = 0
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
 
@@ -817,20 +822,23 @@ def handle_controls_crafting(dt):
         hotbar_items = [item for item, type, count in hotbar]
         selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
         try:
-            for count, item in crafting[selected_recipe]:
+            for count, item in crafting[selected_recipe]["materials"]:
                 if item in hotbar_items and hotbar[hotbar_items.index(item)][2] >= count:
                     hotbar[hotbar_items.index(item)][2] -= count
                 else:
                     raise Exception("insufficent items")
-            item_type = 2 if selected_recipe not in OBJ.keys() else 1
-            destination_item_slot = find_destination_slot(selected_recipe, item_type)
+            destination_item_slot = find_destination_slot(selected_recipe[1], selected_recipe[2])
             if destination_item_slot != None:
-                hotbar[destination_item_slot] = [selected_recipe, item_type, hotbar[destination_item_slot][2] + 1]
+                crumple_sfx.play()
+                hotbar[destination_item_slot] = [selected_recipe[1], selected_recipe[2], hotbar[destination_item_slot][2] + selected_recipe[0]]
             else:
                 raise Exception("no free slots in hotbar")
         except Exception as e:
             hotbar = old_hotbar
-            text.append(str(e))
+            if text[-1] == str(e):
+                del text[-1]
+            else:
+                text.append(str(e))
         construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_crafting_slot = int(selected_crafting_slot-1)%len(crafting)
@@ -842,6 +850,17 @@ def handle_controls_crafting(dt):
         construct_overlay()
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
+
+def handle_controls_help(dt):
+    global menu
+    if "press"+str(pygame.K_h) in keydown_set:
+        menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_h))
+    if "press"+str(pygame.K_c) in keydown_set:
+        menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_c))
 
 def main():
     global velocity
@@ -855,12 +874,14 @@ def main():
     global selected_item_slot
     global steptime
     global char_anim
+    global text
     global world_text
     global player_text
     global last_server_update
     global last_random_tick
     global server_fails
     global pos
+    global player_tile_info
     global menu
     dt = pygame.time.get_ticks() - curtime
     curtime = pygame.time.get_ticks()
@@ -868,7 +889,7 @@ def main():
     if menu == 0:
         handle_controls(dt)
     elif menu == 1:
-        handle_controls(dt)
+        handle_controls_help(dt)
     elif menu == 2:
         handle_controls_crafting(dt)
     # start loading the world into renderer
@@ -952,7 +973,7 @@ def main():
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
-        mat = get_mat(ceil(pos[0]-1), ceil(pos[1]-1))
+        mat = player_tile_info[0]
         if mat == "water":
             seasplash_sfx.play()
         elif mat == "freshwater":
@@ -975,11 +996,7 @@ def main():
             RT_data = get_tile_info(*RT_coords)
             if RT_data[1] in OBJ.keys():
                 if "becomes" in OBJ[RT_data[1]].keys():
-                    map.set_data(*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()))
-                if "sheds" in OBJ[RT_data[1]].keys():
-                    dest = (RT_coords[0] + random.randint(-3, 3), RT_coords[1] + random.randint(-3, 3))
-                    dest_data = get_tile_info(*dest)
-                    map.set_data(*dest, (OBJ[RT_data[1]]["sheds"],) + dest_data[1:])
+                    map.set_data(*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()) + RT_data[3:])
                 if "creates" in OBJ[RT_data[1]].keys():
                     if len(RT_data) < 4 or RT_data[3] == None or RT_data[4] == 0:
                         age = None if len(RT_data) < 3 else RT_data[2]
@@ -992,10 +1009,10 @@ def main():
             my_player_text = "player_update "+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(looking_direction)+','+str(char_anim)+','+str(char_speed)
             sock.sendto(my_player_text.encode('utf-8'), server_address)
             data, address = sock.recvfrom(8192)
-            text = data.decode('utf-8')
-            text = text.split("&")
-            world_text = pickle.loads(base64.b64decode(text[1][2:-1]))
-            player_text = pickle.loads(base64.b64decode(text[0][2:-1]))
+            data = data.decode('utf-8')
+            data = data.split("&")
+            world_text = pickle.loads(base64.b64decode(data[1][2:-1]))
+            player_text = pickle.loads(base64.b64decode(data[0][2:-1]))
             for key in world_text.keys():
                 map.apply_data(key[0], key[1], world_text[key])
             server_fails = 0
@@ -1026,7 +1043,7 @@ def main():
             draw_shrub(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2)
             draw_shrub(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2)
     # add player textures to vertex list
-    mat = get_mat(ceil(pos[0] - 1), ceil(pos[1] - 1))
+    mat = player_tile_info[0]
     if mat != "water":
         Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim)))
     Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim)))
@@ -1051,9 +1068,9 @@ def main():
                      100*(int(c//2)%2*2-1))
     r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
     if r >= 0.03:
-        Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("sky", 0)))
+        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("sky", 0)))
     else:
-        Renderer.tile_list.insert(0, (0, 0, 0, 2, 2, get_tex("moon", 0)))
+        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("moon", 0)))
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
     if "press"+str(pygame.K_F2) in keydown_set:

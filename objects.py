@@ -13,10 +13,13 @@ textures = [
             "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
-            "oatgrass", "oats", "teabush", "teatree", "tealeaf", "chilibush", "coffeebush", "coffeetree", "artichoke", "strawberryplant", "soybeans", "soybeanseedling", "soybeanmature", "soybeanfullymature", "soybeanfullymaturestem",
+            "oatgrass", "oatgrassmature", "oats", "teabush", "teatree", "tealeaf", "chilibush", "coffeebush", "coffeetree",
+            "artichoke", "strawberryplant", "soybeans", "soybeanseedling", "soybeanmature", "soybeanfullymature", "soybeanfullymaturestem",
             #items
             "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal", "oatbread", "coffeecherries", "coffeebeans", "artichokehead", "strawberry", "strawberryseeds", "edamame"
             ]
+
+item_type_map = {0 :"Floor tile", 1 :"Object", 2 :"Item", 3 :"Roof tile"}
 
 entities = ["charhands", "charhead", "charlegs"]
 animated = {"water", "freshwater"}
@@ -66,9 +69,21 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
+             "oatgrassmature": {
+                 "alias": "Oat Grass",
+                 "drops": (4, "oats", 1),
+                 "substrate": ("farmland",),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
              "oatgrass": {
                  "alias": "Oat Grass",
-                 "creates": (1, "oats"),
+                 "becomes": "oatgrassmature",
                  "drops": None,
                  "substrate": ("farmland",),
                  "moisture": (5, 50),
@@ -239,7 +254,7 @@ OBJ = {
                  "height": 0.04
              },
              "soybeanmature": {
-                 "drops": (4, "edamame"),
+                 "drops": (4, "edamame", 2),
                  "becomes": "soybeanfullymature",
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
@@ -251,7 +266,7 @@ OBJ = {
                  "height": 0.06
              },
              "soybeanfullymature": {
-                 "drops": (12, "soybeans"),
+                 "drops": (12, "soybeans", 1),
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
                  "temperiture": (20, 35),
@@ -388,7 +403,7 @@ OBJ = {
              },
              "silkyoak": {
                  "leaves": "treestump",
-                 "drops": (4, "wood"),
+                 "drops": (4, "wood", 2),
                  "sheds": "silkyoakdirt",
                  "substrate": ("silkyoakdirt", ),
                  "moisture": (20, 75),
@@ -403,7 +418,7 @@ OBJ = {
              },
              "bluegumeucalyptussapling": {
                  #"becomes": "bluegumeucalyptus",
-                 "drops": (2, "wood"),
+                 "drops": (2, "wood", 2),
                  "sheds": "eucalyptusdirt",
                  "substrate": ("eucalyptusdirt", "roughseedgrass"),
                  "moisture": (20, 75),
@@ -418,7 +433,7 @@ OBJ = {
              },
              "bluegumeucalyptus": {
                  "leaves": "treestump",
-                 "drops": (6, "wood"),
+                 "drops": (6, "wood", 2),
                  "sheds": "eucalyptusdirt",
                  "substrate": ("eucalyptusdirt", "roughseedgrass"),
                  "moisture": (20, 75),
@@ -432,7 +447,7 @@ OBJ = {
              },
              "weepingbottlebrush": {
                  "leaves": "treestump",
-                 "drops": (4, "wood"),
+                 "drops": (4, "wood", 2),
                  "sheds": "bottlebrushdirt",
                  "substrate": ("bottlebrushdirt", ),
                  "moisture": (20, 75),
@@ -447,7 +462,7 @@ OBJ = {
              },
              "norfolkislandpine": {
                  "leaves": "treestump",
-                 "drops": (6, "wood"),
+                 "drops": (6, "wood", 2),
                  "sheds": "norfolkislandpinedirt",
                  "substrate": ("norfolkislandpinedirt", ),
                  "moisture": (20, 75),
@@ -462,7 +477,7 @@ OBJ = {
              },
              "breadpalm": {
                  "leaves": "treestump",
-                 "drops": (3, "wood"),
+                 "drops": (3, "wood", 2),
                  "substrate": ("dirt", "weeds", "lushundergrowth", "sheoakdirt"),
                  "moisture": (40, 75),
                  "temperiture": (30, 80),
@@ -474,7 +489,7 @@ OBJ = {
                  "height": lambda x,y: 0.3+sin(x+y*y)/20
              },
              "greymangrove": {
-                 "drops": (1, "wood"),
+                 "drops": (1, "wood", 2),
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
                  "temperiture": (15, 80),
@@ -487,7 +502,7 @@ OBJ = {
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
              "horsetailcasuarina": {
-                 "drops": (1, "wood"),
+                 "drops": (1, "wood", 2),
                  "substrate": ( "dirt", "sand", "sheoakdirt", "roughseedgrass" ),
                  "moisture": (20, 50),
                  "temperiture": (15, 80),
@@ -501,7 +516,7 @@ OBJ = {
              },
              "silverwattle": {
                  "leaves": "treestump",
-                 "drops": (4, "wood"),
+                 "drops": (4, "wood", 2),
                  "sheds": "wattledirt",
                  "substrate": ( "wattledirt", "roughseedgrass" ),
                  "moisture": (20, 80),
@@ -514,7 +529,7 @@ OBJ = {
              },
              "papermulberry": {
                  "leaves": "treestump",
-                 "drops": (4, "wood"),
+                 "drops": (4, "wood", 2),
                  "substrate": ( "dirt" ),
                  "moisture": (10, 90),
                  "temperiture": (15, 60),
@@ -588,6 +603,12 @@ OBJ = {
                  "size": 1,
                  "height": 0.1
              },
+            "planks": {
+                 "flags": {"solid",},
+                 "model": "block",
+                 "size": 1,
+                 "height": 0.1
+             },
             "hexpavers": {
                  "flags": {"solid",},
                  "model": "block",
@@ -617,7 +638,7 @@ OBJ = {
                  "height": 0.02
              },
             "treestump": {
-                 "drops": (1, "wood"),
+                 "drops": (1, "wood", 2),
                  "flags": { "solid",},
                  "model": "doubleobj",
                  "bot": "treelog",
@@ -660,11 +681,32 @@ ITEMS = {
             }
 }
 
+TILES = {
+            "planks": {
+                 "alias": "Wooden Planks",
+                 "description": "Used to build flooring, walls, and roofing",
+            },
+}
+
 crafting = {
-    "sharprock": ((2, "rock", ),),
-    "chiliseeds": ((4, "chili"), (1, "sharprock")),
-    "strawberryseeds": ((3, "strawberry"), (1, "sharprock")),
-    "oatmeal": ((4, "oats"), (2, "rock", )),
-    "oatbread": ((6, "oatmeal"), ),
-    "coffeebeans": ((4, "coffeecherries"), (1, "sharprock")),
+    (2, "sharprock", 2): {
+        "materials": ((2, "rock", ),)},
+    (1, "chiliseeds", 1): {
+        "materials": ((4, "chili"), (1, "sharprock"))},
+    (1, "strawberryseeds", 1): {
+        "materials": ((3, "strawberry"), (1, "sharprock"))},
+    (1, "oatmeal", 2): {
+        "materials": ((4, "oats"), ),
+        "workstation": (("windmill",), ("watermill", "water"))},
+    (1, "oatbread", 2): {
+        "materials": ((6, "oatmeal"), ),
+        "workstation": (("oven",), ("campfire",))},
+    (1, "coffeebeans", 2): {
+        "materials": ((4, "coffeecherries"), (1, "rock")),
+        "workstation": (("oven",), ("campfire",))},
+    (1, "planks", 0): {
+        "materials": ((4, "wood"),)},
+    (1, "planks", 1): {
+        "materials": ((8, "wood"),)},
+
 }

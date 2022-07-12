@@ -30,7 +30,6 @@ in vec2 size;
 in float texnum;
 uniform float tile_size;
 uniform sampler2D texpack;
-uniform sampler2D overlay;
 out vec2 v_text;
 out float thetexnum;
 out vec3 screenpos;
@@ -81,32 +80,7 @@ void main() {
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
 }
 '''
-foreground_vertex_shader='''
-#version 330
-in vec2 vert;
-in vec2 in_text;
-in vec3 pos;
-in vec2 size;
-in float texnum;
-uniform float tile_size;
-uniform sampler2D texpack;
-uniform sampler2D overlay;
-out vec2 v_text;
-out float thetexnum;
-out vec3 screenpos;
-vec2 packsize;
-float zpos;
-void main() {
-    packsize = vec2(textureSize(texpack, 0).xy);
-    zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
-    zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? vert.y*zpos : zpos);
-    screenpos = vec3((pos.x+vert.x*size.x-1.0)*(1.0+zpos*tile_size), (1.0-pos.y-vert.y*size.y)*(1.0+zpos*tile_size), -pos.z);
-    thetexnum = texnum;
-
-    gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
-}
-'''
+foreground_vertex_shader=normal_vertex_shader
 foreground_fragment_shader='''
 #version 330
 precision mediump float;
