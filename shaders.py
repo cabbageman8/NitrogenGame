@@ -30,6 +30,7 @@ in vec2 size;
 in float texnum;
 in float sway;
 uniform vec2 screen_size;
+uniform vec2 player_offset;
 uniform float tile_size;
 uniform float time;
 uniform sampler2D texpack;
@@ -46,8 +47,8 @@ void main() {
     sway_translation = texnum+sway;
     sway_factor = vec2(sway/screen_size.x*tile_size*7.0*cos(time/700.0+sway_translation), 
                        sway/screen_size.y*tile_size*7.0*sin(time/700.0+sway_translation));
-    trans_pos = vec2(pos.x-sway_factor.x, pos.y-sway_factor.y);
-    trans_size = vec2(size.x+2.0*sway_factor.x, size.y+2.0*sway_factor.y);
+    trans_pos = vec2((pos.x-player_offset.x)/screen_size.x*2.0-sway_factor.x, (pos.y-player_offset.y)/screen_size.y*2.0-sway_factor.y);
+    trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
@@ -130,8 +131,9 @@ in vec3 pos;
 in vec2 size;
 in float texnum;
 in float sway;
-uniform float tile_size;
 uniform vec2 screen_size;
+uniform vec2 player_offset;
+uniform float tile_size;
 uniform float time;
 uniform sampler2D texpack;
 uniform float sunangle;
@@ -148,8 +150,8 @@ void main() {
     sway_translation = texnum+sway;
     sway_factor = vec2(sway/screen_size.x*tile_size*5.0*cos(time/700.0+sway_translation), 
                        sway/screen_size.y*tile_size*5.0*sin(time/700.0+sway_translation));
-    trans_pos = vec2(pos.x-sway_factor.x, pos.y-sway_factor.y);
-    trans_size = vec2(size.x+2.0*sway_factor.x, size.y+2.0*sway_factor.y);
+    trans_pos = vec2((pos.x-player_offset.x)/screen_size.x*2.0-sway_factor.x, (pos.y-player_offset.y)/screen_size.y*2.0-sway_factor.y);
+    trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);

@@ -21,6 +21,7 @@ import time
 import socket
 import base64
 from objects import *
+from array import array
 
 logfile = open("log.txt", 'w')
 sys.stderr = logfile
@@ -238,7 +239,7 @@ def construct_overlay():
     if len(text)*fontsize > window_size[1]:
         text = []
 construct_overlay()
-Renderer.render((0, 0), tile_size)
+Renderer.render((0, 0), (0, 0), tile_size)
 pygame.display.flip()
 
 pygame.mixer.music.load('data/ambience.wav')
@@ -269,7 +270,7 @@ p2r_cache = {}
 def point_to_random(x, y):
     if (x,y) in p2r_cache:
         return p2r_cache[(x,y)]
-    r = seeded_random(seeded_random(x) + seeded_random(y))
+    r = seeded_random(seeded_random(x) + seeded_random(y*y))
     p2r_cache.update({(x,y) :r})
     if len(p2r_cache) > 2**16:
         p2r_cache.clear()
@@ -457,15 +458,6 @@ def list_tiles_on_screen(dist):
                 yield screen_size[0] - b, screen_size[1] + a-1
                 yield screen_size[0] - b, screen_size[1] - a
 
-def screen_transform(x, y, z, w, h, tex, sway):
-    # convert pixel coords to shader coords
-    return (x/window_size[0]*2,
-            y/window_size[1]*2,
-            z,
-            w/window_size[0]*2,
-            h/window_size[1]*2,
-            tex, sway)
-
 def geom_light(x, y, z, w, h, hue):
     # return element for lighting using tile coords
     global screen_coords
@@ -473,11 +465,15 @@ def geom_light(x, y, z, w, h, hue):
               +1-(1 - screen_coords[1] % tile_size + tile_size * (y + abs(h) // 2 + 0.5) - screen_coords[1] // tile_size * tile_size) / window_size[1] * 2,
             1), hue)
 
+def screen_transform(x, y, z, w, h, tex, sway):
+    # convert pixel coords to shader coords
+    return array('f', (x,y,z,w,h,tex,sway))
+
 def geom_tile(x, y, z, tex, sway):
     # return element for rendering a tile using int tile coords relitive to the screen
     global screen_coords
-    return screen_transform((1 - screen_coords[0] % tile_size + tile_size * x),
-                            (1 - screen_coords[1] % tile_size + tile_size * y),
+    return screen_transform((1 + tile_size * x),
+                            (1 + tile_size * y),
                             z,
                             tile_size,
                             tile_size,
@@ -486,15 +482,15 @@ def geom_tile(x, y, z, tex, sway):
 def geom_object(x, y, z, w, h, tex, sway):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
-    return screen_transform((1 - screen_coords[0] % tile_size + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size),
-                            (1 - screen_coords[1] % tile_size + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size),
+    return screen_transform((1 + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size),
+                            (1 + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size),
                             z,
                             w * tile_size,
                             h * tile_size,
                             tex, sway)
 def draw_object(tex, x, y, z, w, h, sway):
     Renderer.vert_list.append(geom_object(x, y, z, w, h, tex, sway))
-    if w * h == 0:
+    if w == 0 or h == 0:
         Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
 def draw_object_foreground(tex, x, y, z, w, h, sway):
     Renderer.foreground_list.append(geom_object(x, y, 1+z, w, h, tex, sway))
@@ -695,7 +691,7 @@ def handle_controls(dt):
             velocity[1] -= velocity[1] / dnom
             pos[0] += dt * velocity[0]
             pos[1] += dt * velocity[1]
-    player_tile_info = new_player_tile_info
+            player_tile_info = new_player_tile_info
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     selected_tile = [mouse_pos[0] + screen_coords[0] % tile_size,
                      mouse_pos[1] + screen_coords[1] % tile_size]
@@ -1031,10 +1027,11 @@ def main():
             draw_object(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, 1)
     # add player textures to vertex list
     mat = player_tile_info[0]
+    player_offset = (screen_coords[0] % tile_size, screen_coords[1] % tile_size)
     if mat != "water":
-        Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim), 0))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim), 0))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 - tile_size, window_size[1] / 2 - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number), 0))
+        Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim), 0))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim), 0))
+    Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number), 0))
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
         Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
@@ -1055,11 +1052,13 @@ def main():
                      100*(int(c//2)%2*2-1), 2)
     r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
     if r >= 0.03:
-        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("sky", 0), 0))
+        Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("sky", 0)), 0.0)))
     else:
-        Renderer.reflection_list.append((0, 0, 0, 2, 2, get_tex("moon", 0), 0))
+        Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("moon", 0)), 0.0)))
 
-    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), tile_size)
+    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), (screen_coords[0] % tile_size, screen_coords[1] % tile_size), tile_size)
+    #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
+
     if "press"+str(pygame.K_F2) in keydown_set:
         try: os.mkdir("screenshots")
         except: pass
