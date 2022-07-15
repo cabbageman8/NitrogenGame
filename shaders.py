@@ -5,7 +5,7 @@ in vec2 in_text;
 uniform sampler2D overlay;
 out vec2 v_text;
 void main() {
-    gl_Position = vec4(vert.x*2.0-1.0, 1.0-vert.y*2.0 , 1.0 , 1.0);
+    gl_Position = vec4(vert.x*2.0-1.0, 1.0-vert.y*2.0 , -1.0 , 1.0);
     v_text = in_text;
 }
 '''
@@ -55,7 +55,7 @@ void main() {
     screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)*(1.0+zpos*tile_size), (1.0-trans_pos.y-vert.y*trans_size.y)*(1.0+zpos*tile_size), -pos.z);
     thetexnum = texnum;
 
-    gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
+    gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/3.0, 1.0);
     v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
 }
 '''
@@ -85,6 +85,9 @@ int i;
 vec3 light_value;
 void main() {
     incolour = texture(texpack,v_text);
+    if(incolour.a < 0.5){
+            discard;
+        }
     light_value = sunlight;
     for(i=0;i<lightnum;i++){
         light_dist = 0.1+((lightpos[i].x-screenpos.x)*(lightpos[i].x-screenpos.x)*(screen_size.x/screen_size.y)/(tile_size*tile_size)+(lightpos[i].y-screenpos.y)*(lightpos[i].y-screenpos.y)*(screen_size.y/screen_size.x)/(tile_size*tile_size))*5.0;
@@ -115,6 +118,9 @@ float seethrough;
 vec3 light_value;
 void main() {
     incolour = texture(texpack,v_text);
+    if(incolour.a < 0.5){
+            discard;
+        }
     mid_dist_2 = (screenpos.x)*(screenpos.x)*screen_size.x/screen_size.y+(screenpos.y)*(screenpos.y)*screen_size.y/screen_size.x;
     mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)*(screen_size.x/screen_size.y)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y)*(screen_size.y/screen_size.x);
     seethrough = (screenpos.z < -1.0) ? incolour.a*mid_dist_2*mouse_dist_2*50.0 : incolour.a;
@@ -158,7 +164,7 @@ void main() {
     screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+sunangle*(zpos*tile_size), (1.0-trans_pos.y-vert.y*trans_size.y)+0.3*(zpos*tile_size), -pos.z);
     thetexnum = texnum;
 
-    gl_Position = vec4(screenpos.x, screenpos.y, -zpos, 1.0);
+    gl_Position = vec4(screenpos.x, screenpos.y, -0.0001, 1.0);
     v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
 }
 '''
@@ -173,6 +179,9 @@ vec4 incolour;
 out vec4 f_color;
 void main() {
     incolour = texture(texpack,v_text);
+    if(incolour.a < 0.01){
+            discard;
+        }
     f_color = vec4(0, 0.02*sunlight.g, 0.05*sunlight.b, min(incolour.a,min(0.4, sunlight.r)));
 }
 '''

@@ -21,6 +21,13 @@ class glrenderer():
         self.volatile_memory = []
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
+        self.ctx.enable(moderngl.DEPTH_TEST)
+        #                       amount from SRC,     amount from DST
+        self.ctx.blend_func = (self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA, # colour
+                               self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA) # alpha
+        #                          operation between SRC and DST
+        self.ctx.blend_equation = (self.ctx.FUNC_ADD, # colour
+                                   self.ctx.FUNC_ADD) # alpha
         self.simple_prog = self.ctx.program( vertex_shader=simple_vertex_shader, fragment_shader=simple_fragment_shader)
         self.normal_prog = self.ctx.program( vertex_shader=normal_vertex_shader, fragment_shader=normal_fragment_shader)
         self.foreground_prog = self.ctx.program( vertex_shader=foreground_vertex_shader, fragment_shader=foreground_fragment_shader)
@@ -225,7 +232,16 @@ class glrenderer():
         update_mem, vao.extra[1] = self.find_changed_mem(vao)
         self.set_memory(vao.extra[0], update_mem)
 
-    def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0):
+    def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0, sort=0, depth_test=0):
+        if depth_test:
+            self.ctx.enable(moderngl.DEPTH_TEST)
+        else:
+            self.ctx.disable(moderngl.DEPTH_TEST)
+        '''if sort and random.random() < 1/60:
+            vert_list = sorted(vert_list, key= lambda x: x[2])
+            vao.extra[1].clear()
+            vao.extra[2].clear()
+            vao.extra[3].clear()'''
         self.write_vert_data(vert_list, vao)
         if is_shadow:
             self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
@@ -262,8 +278,8 @@ class glrenderer():
         # shader progs are ready to use
         self.render_vert_list(vert_list=list(reversed(self.reflection_list)), vao=self.reflectvao)
         self.render_vert_list(vert_list=self.tile_list, vao=self.tilevao)
-        self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1)
-        self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1)
+        self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1,depth_test=1)
+        self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, depth_test=1)
         self.render_vert_list(vert_list=self.shadow_list, vao=self.shadowvao, is_tex=0, is_shadow=1)
         self.render_vert_list(vert_list=self.weather_list, vao=self.weathervao, is_ln=1, is_tex=1, is_shadow=1)
         self.render_vert_list(vert_list=self.volatile_memory, vao=self.volatilevao, is_shadow=1)

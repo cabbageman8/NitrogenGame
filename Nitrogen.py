@@ -905,13 +905,13 @@ def main():
                 trunk = "treetrunk"
                 if "trunk" in OBJ[decor].keys():
                     trunk = OBJ[decor]["trunk"]
-                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height, 0, 1, 0)
-                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height, 1, 0, 0)
+                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height-0.02, 0, 1, 0)
+                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height-0.02, 1, 0, 0)
                 if "solid" in OBJ[decor]["flags"]:
                     stump = "treestump"
                     if "stump" in OBJ[decor].keys():
                         stump = OBJ[decor]["stump"]
-                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height, 1, 1, 0)
+                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height-0.01, 1, 1, 0)
                 if model == "doubletree":
                     draw_object_foreground(get_tex(decor, tile_coords[0]+10*tile_coords[1]), tile_coords[0], tile_coords[1], height/2, size*((1+tile_coords[0])%2*2-1), size*((1+tile_coords[1])%2*2-1), 1)
                 if model == "qtree":
@@ -1043,13 +1043,13 @@ def main():
                     1,
                     100*(int(c)%2*2-1),
                     100*(int(c//2)%2*2-1), 2)
-    for c in range(5):
+    '''for c in range(5):
         draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      1,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1), 2)
+                     100*(int(c//2)%2*2-1), 2)'''
     r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
     if r >= 0.03:
         Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("sky", 0)), 0.0)))
