@@ -391,7 +391,7 @@ def get_mat(x, y):
     local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
     biome = get_biome(x, y)
     temp, moisture, altitude = get_climate(x, y)
-    if temp % 10 > 9 and moisture % 10 > 9 and altitude < 40 and altitude > 20:
+    if temp % 10 > 9 and moisture % 10 > 9:
         # is in structure
         if x%5==0 or y%4==0:
             mat = "hexpavers"
