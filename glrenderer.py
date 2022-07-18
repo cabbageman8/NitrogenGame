@@ -1,13 +1,15 @@
 import random
 import struct
 import moderngl
+from PIL import Image
+import os
 import glcontext
 from math import pi, tau, sin, cos, tan, asin, acos, atan, ceil
 import time
 import pygame
 from array import array
 
-from shaders import simple_vertex_shader, simple_fragment_shader, normal_vertex_shader, normal_fragment_shader, foreground_vertex_shader, foreground_fragment_shader, shadow_vertex_shader, shadow_fragment_shader
+from shaders import simple_vertex_shader, simple_fragment_shader, normal_vertex_shader, normal_fragment_shader, foreground_vertex_shader, foreground_fragment_shader, shadow_vertex_shader, shadow_fragment_shader, reflection_vertex_shader, reflection_fragment_shader
 
 class glrenderer():
     def __init__(self, texpack, overlay):
@@ -31,6 +33,7 @@ class glrenderer():
         self.simple_prog = self.ctx.program( vertex_shader=simple_vertex_shader, fragment_shader=simple_fragment_shader)
         self.normal_prog = self.ctx.program( vertex_shader=normal_vertex_shader, fragment_shader=normal_fragment_shader)
         self.foreground_prog = self.ctx.program( vertex_shader=foreground_vertex_shader, fragment_shader=foreground_fragment_shader)
+        self.reflection_prog = self.ctx.program( vertex_shader=reflection_vertex_shader, fragment_shader=reflection_fragment_shader)
         self.shadow_prog = self.ctx.program( vertex_shader=shadow_vertex_shader, fragment_shader=shadow_fragment_shader)
 
         self.texpack_texture = self.ctx.texture(
@@ -47,6 +50,16 @@ class glrenderer():
         self.overlay_texture.repeat_x = False
         self.overlay_texture.repeat_y = False
         self.overlay_texture.swizzle = 'BGRA'
+
+        sky = pygame.image.load(os.path.join("data", "sky.png")).convert_alpha()
+        self.sun_texture = self.ctx.texture(sky.get_size(), 4)
+        self.sun_texture.swizzle = 'BGRA'
+        self.sun_texture.write(sky.get_view('1'))
+
+        moon = pygame.image.load(os.path.join("data", "moon.png")).convert_alpha()
+        self.moon_texture = self.ctx.texture(moon.get_size(), 4)
+        self.moon_texture.swizzle = 'BGRA'
+        self.moon_texture.write(moon.get_view('1'))
 
         texture_data = texpack.get_view('1')
         self.texpack_texture.write(texture_data)
@@ -134,7 +147,7 @@ class glrenderer():
                                                      1, 2, 3))
 
         self.vao_content = [ (self.vbo, '2f', 'vert'), (self.uvmap, '2f', 'in_text') ]
-        self.reflectvao = self.ctx.vertex_array(self.normal_prog, self.vao_content + [
+        self.reflectvao = self.ctx.vertex_array(self.reflection_prog, self.vao_content + [
             (self.reflectvao_instance_data[0], '3f/i', 'pos'),
             (self.reflectvao_instance_data[1], '2f/i', 'size'),
             (self.reflectvao_instance_data[2], 'f/i', 'texnum'),
@@ -232,16 +245,7 @@ class glrenderer():
         update_mem, vao.extra[1] = self.find_changed_mem(vao)
         self.set_memory(vao.extra[0], update_mem)
 
-    def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0, sort=0, depth_test=0):
-        if depth_test:
-            self.ctx.enable(moderngl.DEPTH_TEST)
-        else:
-            self.ctx.disable(moderngl.DEPTH_TEST)
-        '''if sort and random.random() < 1/60:
-            vert_list = sorted(vert_list, key= lambda x: x[2])
-            vao.extra[1].clear()
-            vao.extra[2].clear()
-            vao.extra[3].clear()'''
+    def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0, depth_test=0):
         self.write_vert_data(vert_list, vao)
         if is_shadow:
             self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
@@ -254,7 +258,10 @@ class glrenderer():
                     (vao.extra[0][3], 'f/i', 'sway')], self.ibo)
                 shadowvao.render(instances=len(vert_list))
                 shadowvao.release()
-                self.ctx.enable(moderngl.DEPTH_TEST)
+        if depth_test:
+            self.ctx.enable(moderngl.DEPTH_TEST)
+        else:
+            self.ctx.disable(moderngl.DEPTH_TEST)
         if is_tex:
             if is_ln:
                 self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
@@ -264,13 +271,12 @@ class glrenderer():
 
     def render(self, mouse_pos, screen_coords, tile_size):
         self.ctx.clear()
-        self.texpack_texture.use()
         self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
-        self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     tile_size
-        self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          (time.time()*1000)%2**16
-        self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.ctx.screen.viewport[2:]
-        self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = screen_coords
-        self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
+        self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     self.reflection_prog['tile_size'].value =     tile_size
+        self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          (time.time()*1000)%2**16
+        self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.ctx.screen.viewport[2:]
+        self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = self.reflection_prog['player_offset'].value = screen_coords
+        self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      self.reflection_prog['sunlight'].value =      (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
         self.foreground_prog['mouse_pos'].value = mouse_pos
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
         self.normal_prog['lightnum'].value = min(len(self.light_list), 128)
@@ -278,12 +284,22 @@ class glrenderer():
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
 
         # shader progs are ready to use
-        self.render_vert_list(vert_list=self.reflection_list, vao=self.reflectvao)
+        if self.r >= 0.03:
+            self.simple_prog['sunlight'].value = (max(self.r, 0.03), max(self.r ** 2, 0.05), max(self.r ** 4, 0.06))
+            self.sun_texture.use()
+        else:
+            moon = min(1, 0.01/self.r)
+            self.simple_prog['sunlight'].value = (moon, moon, moon)
+            self.moon_texture.use()
+        self.quad_fs.render()
+
+        self.texpack_texture.use()
+        self.render_vert_list(vert_list=self.reflection_list, vao=self.reflectvao, is_ln=1)
         self.render_vert_list(vert_list=self.tile_list, vao=self.tilevao)
-        self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1,depth_test=1)
+        self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1, depth_test=1)
         self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, depth_test=1)
         self.render_vert_list(vert_list=self.shadow_list, vao=self.shadowvao, is_tex=0, is_shadow=1)
-        self.render_vert_list(vert_list=self.weather_list, vao=self.weathervao, is_ln=1, is_tex=1, is_shadow=1)
+        self.render_vert_list(vert_list=self.weather_list, vao=self.weathervao, is_ln=1, is_shadow=1)
         self.render_vert_list(vert_list=self.volatile_memory, vao=self.volatilevao, is_shadow=1)
 
         self.reflection_list = []
@@ -296,5 +312,6 @@ class glrenderer():
 
         self.volatile_memory = []
         self.texpack_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self.simple_prog['sunlight'].value = (1,1,1)
         self.overlay_texture.use()
         self.quad_fs.render() # render UI overlay

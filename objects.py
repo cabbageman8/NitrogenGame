@@ -347,7 +347,7 @@ OBJ = {
                  "model": "tree",
                  "trunk": "blacktreeferntrunk",
                  "size": 4,
-                 "height": lambda x,y: 0.4+sin(x*+y*y)/5
+                 "height": lambda x,y: 0.4+sin(x*+y*y)/15
              },
              "tasmaniantreefern": {
                  "substrate": ("wetdirt", "weeds", "lushundergrowth", "sheoakdirt"),
@@ -537,7 +537,7 @@ OBJ = {
                  "flags": {"plant", "flip", "solid"},
                  "model": "tree",
                  "size": 8,
-                 "height": lambda x,y: 0.4+sin(x+y*y)/20
+                 "height": lambda x,y: 0.3+sin(x+y*y)/20
              },
              "cactus": {
                  "substrate": ("roughseedgrass", "sand"),

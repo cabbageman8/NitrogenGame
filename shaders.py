@@ -2,9 +2,12 @@ simple_vertex_shader='''
 #version 330
 in vec2 vert;
 in vec2 in_text;
+uniform vec3 sunlight;
 uniform sampler2D overlay;
+out vec3 sun;
 out vec2 v_text;
 void main() {
+    sun = sunlight;
     gl_Position = vec4(vert.x*2.0-1.0, 1.0-vert.y*2.0 , -1.0 , 1.0);
     v_text = in_text;
 }
@@ -14,11 +17,12 @@ simple_fragment_shader='''
 precision mediump float;
 uniform sampler2D overlay;
 in vec2 v_text;
+in vec3 sun;
 out vec4 f_color;
 vec4 incolour;
 void main() {
     incolour = texture(overlay,v_text);
-    f_color = vec4(incolour.r, incolour.g, incolour.b, incolour.a);
+    f_color = vec4(incolour.r*min(1.0, sun.r), incolour.g*min(1.0, sun.g), incolour.b*min(1.0, sun.b), incolour.a);
 }
 '''
 normal_vertex_shader='''
@@ -89,11 +93,11 @@ void main() {
     if (incolour.a < 0.5) { discard; }
     light_value = sunlight;
     for (i=0;i<lightnum;i++) {
-        light_dist = 0.1+(pow(lightpos[i].x-screenpos.x, 2.0)+
-                          pow(lightpos[i].y-screenpos.y, 2.0))*5.0;
+        light_dist = 0.1+(pow(lightpos[i].x/tile_size-screenpos.x/tile_size, 2.0)+
+                          pow(lightpos[i].y/tile_size-screenpos.y/tile_size, 2.0))*50000.0;
         light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist), light_value.g + lighthue[i].g*(1.0/light_dist), light_value.b + lighthue[i].b*(1.0/light_dist));
     }
-    f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(incolour.a, light_value.b), incolour.a);
+    f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
 }
 '''
 foreground_vertex_shader=normal_vertex_shader
@@ -125,6 +129,24 @@ void main() {
 
     light_value = sunlight;
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), min(incolour.a,max(0.3*incolour.a, seethrough)));
+}
+'''
+reflection_vertex_shader=normal_vertex_shader
+reflection_fragment_shader='''
+#version 330
+precision mediump float;
+uniform sampler2D texpack;
+uniform vec3 sunlight;
+in vec2 v_text;
+out vec4 f_color;
+vec4 incolour;
+vec3 light_value;
+
+void main() {
+    incolour = texture(texpack,v_text);
+    if (incolour.a < 0.5) { discard; }
+    light_value = sunlight;
+    f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
 }
 '''
 shadow_vertex_shader='''

@@ -951,7 +951,7 @@ def main():
             if item != None and tile_data[4] > 0:
                 w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
                 draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height+0.02, w, h, 0)
-        if tile_coords == selected_tile:
+        if height > 0 and tile_coords == selected_tile:
             draw_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3+height, 1, 1, 0)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
@@ -1044,18 +1044,13 @@ def main():
                     1,
                     100*(int(c)%2*2-1),
                     100*(int(c//2)%2*2-1), 2)
-    '''for c in range(5):
+    for c in range(5):
         draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      1,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1), 2)'''
-    r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
-    if r >= 0.03:
-        Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("sky", 0)), 0.0)))
-    else:
-        Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("moon", 0)), 0.0)))
+                     100*(int(c//2)%2*2-1), 2)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
     #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
