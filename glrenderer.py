@@ -246,6 +246,7 @@ class glrenderer():
         if is_shadow:
             self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
             if self.r >= 0.03:
+                self.ctx.disable(moderngl.DEPTH_TEST)
                 shadowvao = self.ctx.vertex_array(self.shadow_prog, self.vao_content + [
                     (vao.extra[0][0], '3f/i', 'pos'),
                     (vao.extra[0][1], '2f/i', 'size'),
@@ -253,6 +254,7 @@ class glrenderer():
                     (vao.extra[0][3], 'f/i', 'sway')], self.ibo)
                 shadowvao.render(instances=len(vert_list))
                 shadowvao.release()
+                self.ctx.enable(moderngl.DEPTH_TEST)
         if is_tex:
             if is_ln:
                 self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
@@ -264,7 +266,7 @@ class glrenderer():
         self.ctx.clear()
         self.texpack_texture.use()
         self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
-        self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     tile_size/100.0
+        self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     tile_size
         self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          (time.time()*1000)%2**16
         self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.ctx.screen.viewport[2:]
         self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = screen_coords
@@ -276,7 +278,7 @@ class glrenderer():
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
 
         # shader progs are ready to use
-        self.render_vert_list(vert_list=list(reversed(self.reflection_list)), vao=self.reflectvao)
+        self.render_vert_list(vert_list=self.reflection_list, vao=self.reflectvao)
         self.render_vert_list(vert_list=self.tile_list, vao=self.tilevao)
         self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1,depth_test=1)
         self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, depth_test=1)

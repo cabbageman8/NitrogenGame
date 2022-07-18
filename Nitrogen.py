@@ -472,8 +472,8 @@ def screen_transform(x, y, z, w, h, tex, sway):
 def geom_tile(x, y, z, tex, sway):
     # return element for rendering a tile using int tile coords relitive to the screen
     global screen_coords
-    return screen_transform((1 + tile_size * x),
-                            (1 + tile_size * y),
+    return screen_transform((1/tile_size + x)%2**16,
+                            (1/tile_size + y)%2**16,
                             z,
                             tile_size,
                             tile_size,
@@ -482,8 +482,8 @@ def geom_tile(x, y, z, tex, sway):
 def geom_object(x, y, z, w, h, tex, sway):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
-    return screen_transform((1 + tile_size * (x - w / 2 + 0.5) - screen_coords[0] // tile_size * tile_size),
-                            (1 + tile_size * (y - h / 2 + 0.5) - screen_coords[1] // tile_size * tile_size),
+    return screen_transform((1 / tile_size + (x - w / 2 + 0.5)) % 2 ** 16,
+                            (1 / tile_size + (y - h / 2 + 0.5)) % 2 ** 16,
                             z,
                             w * tile_size,
                             h * tile_size,
@@ -889,7 +889,7 @@ def main():
             matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
         else:
             matindex = index
-        Renderer.tile_list.append(geom_tile(x, y, height, get_tex(mat, matindex), 0))
+        Renderer.tile_list.append(geom_tile(*tile_coords, height, get_tex(mat, matindex), 0))
 
         decor = tile_data[1]
         if decor in OBJ.keys():
@@ -943,7 +943,7 @@ def main():
                     wall = get_tex(decor, index)
                     draw_object(wall, tile_coords[0], tile_coords[1]-((y>window_size[1]//tile_size//2)-.5), height, 1, 0, 0)
                     draw_object(wall, tile_coords[0]-((x>window_size[0]//tile_size//2)-.5), tile_coords[1], height, 0, 1, 0)
-                    draw_object(wall, tile_coords[0], tile_coords[1], height, 1, 1, 0)
+                    draw_object(wall, tile_coords[0], tile_coords[1], height+0.0001, 1, 1, 0)
                 elif model == "roof":
                     draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], 1+height, 1, 1, 0)
         if len(tile_data) > 4:
@@ -964,11 +964,12 @@ def main():
         else:
             grass_step_sfx.play()
     char_anim += char_speed*20
+    looking_direction = char_direction
     if char_speed < 0.001:
         char_anim = 0
-    looking_direction = int(atan2((mouse_pos[0] - window_size[0] / 2), (mouse_pos[1] - window_size[1] / 2)) / tau * 8 + 4.5) % 8
-    if looking_direction % 2:
-        looking_direction = (looking_direction + 2) % 8
+        looking_direction = int(atan2((mouse_pos[0] - window_size[0] / 2), (mouse_pos[1] - window_size[1] / 2)) / tau * 8 + 4.5) % 8
+        if looking_direction % 2:
+            looking_direction = (looking_direction + 2) % 8
 
     if last_random_tick + 5.0 < time.time():
         # do random tick in 190x190 square around player (1 tick per tile per ingame day = 10 mins irl)
@@ -1027,11 +1028,11 @@ def main():
             draw_object(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, 1)
     # add player textures to vertex list
     mat = player_tile_info[0]
-    player_offset = (screen_coords[0] % tile_size, screen_coords[1] % tile_size)
+    player_offset = (screen_coords[0]/tile_size%2**16, screen_coords[1]/tile_size%2**16)
     if mat != "water":
-        Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.05, 2 * tile_size, 2 * tile_size, get_tex("charlegs"+str(char_direction),char_anim), 0))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.07, 2 * tile_size, 2 * tile_size, get_tex("charhands"+str(char_direction),char_anim), 0))
-    Renderer.vert_list.append(screen_transform(window_size[0] / 2 + player_offset[0] - tile_size, window_size[1] / 2 + player_offset[1] - tile_size, 0.08, 2 * tile_size, 2 * tile_size, get_tex("charhead"+str(looking_direction),player_number), 0))
+        draw_object(get_tex("charlegs" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, 1)
+    draw_object(get_tex("charhands" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, 1)
+    draw_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
         Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
@@ -1056,7 +1057,7 @@ def main():
     else:
         Renderer.reflection_list.append(array('f', (0.0, 0.0, 0.0, 2.0, 2.0, float(get_tex("moon", 0)), 0.0)))
 
-    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), (screen_coords[0] % tile_size, screen_coords[1] % tile_size), tile_size)
+    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
     #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
 
     if "press"+str(pygame.K_F2) in keydown_set:
