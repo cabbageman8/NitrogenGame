@@ -94,7 +94,7 @@ void main() {
     light_value = sunlight;
     for (i=0;i<lightnum;i++) {
         light_dist = 0.1+(pow(lightpos[i].x/tile_size-screenpos.x/tile_size, 2.0)+
-                          pow(lightpos[i].y/tile_size-screenpos.y/tile_size, 2.0))*50000.0;
+                          pow(lightpos[i].y/tile_size-screenpos.y/tile_size, 2.0))*20000.0;
         light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist), light_value.g + lighthue[i].g*(1.0/light_dist), light_value.b + lighthue[i].b*(1.0/light_dist));
     }
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
@@ -144,7 +144,7 @@ vec3 light_value;
 
 void main() {
     incolour = texture(texpack,v_text);
-    if (incolour.a < 0.5) { discard; }
+    if (incolour.a < 0.000001) { discard; }
     light_value = sunlight;
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
 }

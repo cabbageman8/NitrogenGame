@@ -497,7 +497,7 @@ def draw_object_foreground(tex, x, y, z, w, h, sway):
     Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
 def draw_shadow(tex, x, y, z, w, h, sway):
     Renderer.reflection_list.append(geom_object(x, y, -z, w, h, tex, sway))
-    Renderer.shadow_list.append(geom_object(x, y, -z, w, h, tex, sway))
+    Renderer.shadow_list.append(geom_object(x, y, z, w, h, tex, sway))
 def draw_weather(tex, x, y, z, w, h, sway):
     Renderer.weather_list.append(geom_object(x, y, 1+z, w, h, tex, sway))
 
@@ -1041,16 +1041,16 @@ def main():
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
                     screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100,
-                    1,
+                    0.9,
                     100*(int(c)%2*2-1),
-                    100*(int(c//2)%2*2-1), 2)
-    for c in range(5):
+                    100*(int(c//2)%2*2-1), 8)
+    for c in range(3):
         draw_weather(get_tex("cloud", c),
                      screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
-                     1,
+                     0.9,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1), 2)
+                     100*(int(c//2)%2*2-1), 8)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
     #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)

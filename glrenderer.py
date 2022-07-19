@@ -20,7 +20,6 @@ class glrenderer():
         self.tile_list = []
         self.light_list = []
         self.foreground_list = []
-        self.volatile_memory = []
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.enable(moderngl.DEPTH_TEST)
@@ -177,18 +176,12 @@ class glrenderer():
             (self.foregroundvao_instance_data[2], 'f/i', 'texnum'),
             (self.foregroundvao_instance_data[3], 'f/i', 'sway')], self.ibo)
         self.foregroundvao.extra = [self.foregroundvao_instance_data, {}, set(), set()]
-        self.weathervao = self.ctx.vertex_array(self.foreground_prog, self.vao_content + [
+        self.weathervao = self.ctx.vertex_array(self.reflection_prog, self.vao_content + [
             (self.weathervao_instance_data[0], '3f/i', 'pos'),
             (self.weathervao_instance_data[1], '2f/i', 'size'),
             (self.weathervao_instance_data[2], 'f/i', 'texnum'),
             (self.weathervao_instance_data[3], 'f/i', 'sway')], self.ibo)
         self.weathervao.extra = [self.weathervao_instance_data, {}, set(), set()]
-        self.volatilevao = self.ctx.vertex_array(self.normal_prog, self.vao_content + [
-            (self.volatilevao_instance_data[0], '3f/i', 'pos'),
-            (self.volatilevao_instance_data[1], '2f/i', 'size'),
-            (self.volatilevao_instance_data[2], 'f/i', 'texnum'),
-            (self.volatilevao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.volatilevao.extra = [self.volatilevao_instance_data, {}, set(), set()]
         self.quad_fs = self.ctx.vertex_array(self.simple_prog, self.vao_content, self.ibo)
 
     def update_overlay(self, overlay):
@@ -300,7 +293,6 @@ class glrenderer():
         self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, depth_test=1)
         self.render_vert_list(vert_list=self.shadow_list, vao=self.shadowvao, is_tex=0, is_shadow=1)
         self.render_vert_list(vert_list=self.weather_list, vao=self.weathervao, is_ln=1, is_shadow=1)
-        self.render_vert_list(vert_list=self.volatile_memory, vao=self.volatilevao, is_shadow=1)
 
         self.reflection_list = []
         self.tile_list = []
@@ -310,7 +302,6 @@ class glrenderer():
         self.weather_list = []
         self.light_list = []
 
-        self.volatile_memory = []
         self.texpack_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.simple_prog['sunlight'].value = (1,1,1)
         self.overlay_texture.use()
