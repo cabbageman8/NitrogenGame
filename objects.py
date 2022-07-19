@@ -15,6 +15,7 @@ textures = [
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
             "oatgrass", "oatgrassmature", "oats", "teabush", "teatree", "tealeaf", "chilibush", "coffeebush", "coffeetree",
             "artichoke", "strawberryplant", "soybeans", "soybeanseedling", "soybeanmature", "soybeanfullymature", "soybeanfullymaturestem",
+            "cottonsprout", "cottonplant", "cottonflowering", "cottonpremature", "cottonmature", "cottonseeds", "cottonbolls",
             #items
             "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal", "oatbread", "coffeecherries", "coffeebeans", "artichokehead", "strawberry", "strawberryseeds", "edamame"
             ]
@@ -276,6 +277,78 @@ OBJ = {
                  "trunk": "soybeanfullymaturestem",
                  "size": 1,
                  "height": lambda x,y: 0.06+sin(x*+y*y)/50
+             },
+             "cottonsprout": {
+                 "drops": None,
+                 "becomes": "cottonplant",
+                 "substrate": ("farmland",),
+                 "moisture": (50, 100),
+                 "temperiture": (20, 35),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 0.5,
+                 "height": 0.04
+             },
+             "cottonseeds": {
+                 "drops": None,
+                 "becomes": "cottonsprout",
+                 "substrate": ("farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (25, 50),
+                 "salinity": (0, 100),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.01
+             },
+             "cottonplant": {
+                 "drops": None,
+                 "becomes": "cottonflowering",
+                 "substrate": ("farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (25, 50),
+                 "salinity": (0, 100),
+                 "flags": {"plant", "flip"},
+                 "model": "doubleshrub",
+                 "size": 1,
+                 "height": 0.03
+             },
+             "cottonflowering": {
+                 "drops": None,
+                 "becomes": "cottonpremature",
+                 "substrate": ("farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (25, 50),
+                 "salinity": (0, 100),
+                 "flags": {"plant", "flip"},
+                 "model": "doubleshrub",
+                 "size": 1,
+                 "height": 0.05
+             },
+             "cottonpremature": {
+                 "drops": None,
+                 "leaves": "cottonseeds",
+                 "becomes": "cottonmature",
+                 "substrate": ("farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (25, 50),
+                 "salinity": (0, 100),
+                 "flags": {"plant", "flip"},
+                 "model": "doubleshrub",
+                 "size": 1,
+                 "height": 0.07
+             },
+             "cottonmature": {
+                 "drops": (6, "cottonbolls", 2),
+                 "substrate": ("farmland",),
+                 "moisture": (10, 50),
+                 "temperiture": (25, 50),
+                 "salinity": (0, 100),
+                 "flags": {"plant", "flip"},
+                 "model": "doubleshrub",
+                 "size": 1,
+                 "height": 0.09
              },
              "artichoke": {
                  "alias": "Artichoke",
@@ -708,5 +781,7 @@ crafting = {
         "materials": ((4, "wood"),)},
     (1, "planks", 1): {
         "materials": ((8, "wood"),)},
+    (2, "cottonseeds", 1): {
+        "materials": ((1, "cottonbolls"),)},
 
 }

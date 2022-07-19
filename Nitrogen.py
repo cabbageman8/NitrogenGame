@@ -740,7 +740,7 @@ def handle_controls(dt):
                 else:
                     drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
                 destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
-                if hotbar[destination_item_slot][2] == 0 or drops == None or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type):
+                if (destination_item_slot != None or drops == None) and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type)):
                     shovel_sfx.play()
                     if drops != None:
                         hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
