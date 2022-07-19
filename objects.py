@@ -1,7 +1,7 @@
 from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log
 textures = [
             #special
-            "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon",
+            "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon", "birds", "rain",
             #materials
             "water", "planks", "dirt", "farmland", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
