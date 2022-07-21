@@ -36,6 +36,7 @@ in float sway;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
+uniform float max_tex;
 uniform float time;
 uniform sampler2D texpack;
 out vec2 v_text;
@@ -61,7 +62,7 @@ void main() {
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 normal_fragment_shader='''
@@ -160,6 +161,7 @@ in float sway;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
+uniform float max_tex;
 uniform float time;
 uniform sampler2D texpack;
 uniform float sunangle;
@@ -187,7 +189,7 @@ void main() {
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, zpos-0.0001, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 shadow_fragment_shader='''
@@ -216,6 +218,7 @@ in float sway;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
+uniform float max_tex;
 uniform float time;
 uniform sampler2D texpack;
 out vec2 v_text;
@@ -240,7 +243,7 @@ void main() {
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, 128.0))*(128.0/packsize.x), (in_text.y*0.98+0.01+floor(texnum/128.0))*(128.0/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 rain_fragment_shader=reflection_fragment_shader

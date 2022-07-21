@@ -8,16 +8,24 @@ textures = [
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms", "rock", "sharprock", "crab",
-            "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "norfolkislandpine", "cactus", "greencactus",
+            "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
-            "greymangrove", "silverwattle", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
-            "greymangrovetrunk", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
+            "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
+            "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
-            "oatgrass", "oatgrassmature", "oats", "teabush", "teatree", "tealeaf", "chilibush", "coffeebush", "coffeetree",
-            "artichoke", "strawberryplant", "soybeans", "soybeanseedling", "soybeanmature", "soybeanfullymature", "soybeanfullymaturestem",
-            "cottonsprout", "cottonplant", "cottonflowering", "cottonpremature", "cottonmature", "cottonseeds", "cottonbolls",
+            #crops
+            "oatgrassseedling", "oatgrassfilling", "oatgrassmature", "oats", "oatmeal", "oatbread",
+            "teabush", "teatree", "tealeaf",
+            "chilibush", "chili", "chiliseeds",
+            "coffeebush", "coffeetree", "coffeecherries", "coffeebeans",
+            "artichoke", "artichokehead",
+            "strawberryplant", "strawberry", "strawberryseeds",
+            "soybeanseedling", "soybeanfilling", "soybeanmature", "soybeanmaturestem", "edamame", "soybeans",
+            "cottonseedling", "cottonjointing", "cottonflowering", "cottonfilling", "cottonmature", "cottonseeds", "cottonbolls",
+            "ricegrassseedling", "ricegrassfilling", "ricegrassmature", "rice",
+            "barleygrassseedling", "barleygrassfilling", "barleygrassmature", "barley",
             #items
-            "axe", "spade", "chili", "chiliseeds", "wood", "oatmeal", "oatbread", "coffeecherries", "coffeebeans", "artichokehead", "strawberry", "strawberryseeds", "edamame"
+            "axe", "spade", "wood"
             ]
 
 item_type_map = {0 :"Floor tile", 1 :"Object", 2 :"Item", 3 :"Roof tile"}
@@ -70,6 +78,108 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
+             "ricegrassmature": {
+                 "alias": "Rice Grass",
+                 "drops": (4, "rice", 1),
+                 "substrate": ("farmland", "freshwater"),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.07
+             },
+             "ricegrassfilling": {
+                 "alias": "Rice Grass",
+                 "becomes": "ricegrassmature",
+                 "drops": None,
+                 "substrate": ("farmland", "freshwater"),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
+             "ricegrassseedling": {
+                 "alias": "Rice Grass",
+                 "becomes": "ricegrassfilling",
+                 "drops": None,
+                 "substrate": ("farmland", "freshwater"),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 1,
+                 "height": 0.03
+             },
+             "rice": {
+                 "alias": "Rice",
+                 "becomes": "ricegrassseedling",
+                 "drops": None,
+                 "substrate": ("farmland", "freshwater"),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.01
+             },
+             "barleygrassmature": {
+                 "alias": "Barley Grass",
+                 "drops": (4, "barley", 1),
+                 "substrate": ("farmland", ),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.07
+             },
+             "barleygrassfilling": {
+                 "alias": "Barley Grass",
+                 "becomes": "barleygrassmature",
+                 "drops": None,
+                 "substrate": ("farmland", ),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.05
+             },
+             "barleygrassseedling": {
+                 "alias": "Barley Grass",
+                 "becomes": "barleygrassfilling",
+                 "drops": None,
+                 "substrate": ("farmland", ),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.03
+             },
+             "barley": {
+                 "alias": "Barley",
+                 "becomes": "barleygrassseedling",
+                 "drops": None,
+                 "substrate": ("farmland", ),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleobj",
+                 "size": 1,
+                 "height": 0.01
+             },
              "oatgrassmature": {
                  "alias": "Oat Grass",
                  "drops": (4, "oats", 1),
@@ -82,7 +192,7 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
-             "oatgrass": {
+             "oatgrassfilling": {
                  "alias": "Oat Grass",
                  "becomes": "oatgrassmature",
                  "drops": None,
@@ -95,8 +205,21 @@ OBJ = {
                  "size": 2,
                  "height": 0.05
              },
+             "oatgrassseedling": {
+                 "alias": "Oat Grass",
+                 "becomes": "oatgrassfilling",
+                 "drops": None,
+                 "substrate": ("farmland",),
+                 "moisture": (5, 50),
+                 "temperiture": (5, 30),
+                 "salinity": (0, 50),
+                 "flags": {"plant", "flip"},
+                 "model": "singleshrub",
+                 "size": 1,
+                 "height": 0.05
+             },
              "oats": {
-                 "becomes": "oatgrass",
+                 "becomes": "oatgrassseedling",
                  "drops": None,
                  "substrate": ("farmland",),
                  "moisture": (5, 50),
@@ -244,7 +367,7 @@ OBJ = {
              },
              "soybeanseedling": {
                  "drops": None,
-                 "becomes": "soybeanmature",
+                 "becomes": "soybeanfilling",
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
                  "temperiture": (20, 35),
@@ -254,9 +377,9 @@ OBJ = {
                  "size": 2,
                  "height": 0.04
              },
-             "soybeanmature": {
+             "soybeanfilling": {
                  "drops": (4, "edamame", 2),
-                 "becomes": "soybeanfullymature",
+                 "becomes": "soybeanmature",
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
                  "temperiture": (20, 35),
@@ -266,7 +389,7 @@ OBJ = {
                  "size": 2,
                  "height": 0.06
              },
-             "soybeanfullymature": {
+             "soybeanmature": {
                  "drops": (12, "soybeans", 1),
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
@@ -274,13 +397,13 @@ OBJ = {
                  "salinity": (0, 50),
                  "flags": {"plant", "flip"},
                  "model": "qtree",
-                 "trunk": "soybeanfullymaturestem",
+                 "trunk": "soybeanmaturestem",
                  "size": 1,
                  "height": lambda x,y: 0.06+sin(x*+y*y)/50
              },
-             "cottonsprout": {
+             "cottonseedling": {
                  "drops": None,
-                 "becomes": "cottonplant",
+                 "becomes": "cottonjointing",
                  "substrate": ("farmland",),
                  "moisture": (50, 100),
                  "temperiture": (20, 35),
@@ -292,7 +415,7 @@ OBJ = {
              },
              "cottonseeds": {
                  "drops": None,
-                 "becomes": "cottonsprout",
+                 "becomes": "cottonseedling",
                  "substrate": ("farmland",),
                  "moisture": (10, 50),
                  "temperiture": (25, 50),
@@ -302,7 +425,7 @@ OBJ = {
                  "size": 1,
                  "height": 0.01
              },
-             "cottonplant": {
+             "cottonjointing": {
                  "drops": None,
                  "becomes": "cottonflowering",
                  "substrate": ("farmland",),
@@ -316,7 +439,7 @@ OBJ = {
              },
              "cottonflowering": {
                  "drops": None,
-                 "becomes": "cottonpremature",
+                 "becomes": "cottonfilling",
                  "substrate": ("farmland",),
                  "moisture": (10, 50),
                  "temperiture": (25, 50),
@@ -324,9 +447,9 @@ OBJ = {
                  "flags": {"plant", "flip"},
                  "model": "doubleshrub",
                  "size": 1,
-                 "height": 0.05
+                 "height": 0.03
              },
-             "cottonpremature": {
+             "cottonfilling": {
                  "drops": None,
                  "leaves": "cottonseeds",
                  "becomes": "cottonmature",
@@ -337,7 +460,7 @@ OBJ = {
                  "flags": {"plant", "flip"},
                  "model": "doubleshrub",
                  "size": 1,
-                 "height": 0.07
+                 "height": 0.04
              },
              "cottonmature": {
                  "drops": (6, "cottonbolls", 2),
@@ -348,7 +471,7 @@ OBJ = {
                  "flags": {"plant", "flip"},
                  "model": "doubleshrub",
                  "size": 1,
-                 "height": 0.09
+                 "height": 0.05
              },
              "artichoke": {
                  "alias": "Artichoke",
@@ -533,6 +656,21 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
+             "weepingbottlebrushsapling": {
+                 "leaves": "treestump",
+                 "drops": (1, "wood", 2),
+                 "sheds": "bottlebrushdirt",
+                 "substrate": ("bottlebrushdirt", ),
+                 "moisture": (20, 75),
+                 "nutreants": (20, 75),
+                 "temperiture": (15, 80),
+                 "salinity": (0, 90),
+                 "lightlevel": "any",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 4,
+                 "height": lambda x,y: 0.2+sin(x+y*y)/20
+             },
              "norfolkislandpine": {
                  "leaves": "treestump",
                  "drops": (6, "wood", 2),
@@ -574,6 +712,31 @@ OBJ = {
                  "size": 8,
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
+             "greymangrovesapling": {
+                 "drops": (1, "wood", 2),
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "moisture": (20, 50),
+                 "temperiture": (15, 80),
+                 "salinity": (90, 130),
+                 "lightlevel": "any",
+                 "flags": {"plant", "native", "flip", "slow"},
+                 "model": "tree",
+                 "trunk": "greymangrovetrunk",
+                 "size": 4,
+                 "height": lambda x,y: 0.075+sin(x+y*y)/20
+             },
+             "greymangrovepropagule": {
+                 "drops": (1, "wood", 2),
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "moisture": (20, 50),
+                 "temperiture": (15, 80),
+                 "salinity": (90, 130),
+                 "lightlevel": "any",
+                 "flags": {"plant", "native", "flip", "slow"},
+                 "model": "singleshrub",
+                 "size": 2,
+                 "height": 0.1
+             },
              "horsetailcasuarina": {
                  "drops": (1, "wood", 2),
                  "substrate": ( "dirt", "sand", "sheoakdirt", "roughseedgrass" ),
@@ -599,6 +762,19 @@ OBJ = {
                  "model": "tree",
                  "size": 8,
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
+             },
+             "silverwattlesapling": {
+                 "leaves": "treestump",
+                 "drops": (4, "wood", 2),
+                 "sheds": "wattledirt",
+                 "substrate": ( "wattledirt", "roughseedgrass" ),
+                 "moisture": (20, 80),
+                 "temperiture": (15, 80),
+                 "salinity": (0, 90),
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 4,
+                 "height": lambda x,y: 0.2+sin(x+y*y)/20
              },
              "papermulberry": {
                  "leaves": "treestump",

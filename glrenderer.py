@@ -17,7 +17,8 @@ from shaders import simple_vertex_shader, simple_fragment_shader,\
     rain_vertex_shader, rain_fragment_shader
 
 class glrenderer():
-    def __init__(self, texpack, overlay):
+    def __init__(self, texpack, overlay, max_tex):
+        self.max_tex = max_tex
         self.reflection_list = set()
         self.vert_list = set()
         self.shadow_list = set()
@@ -281,6 +282,7 @@ class glrenderer():
         self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =     self.ctx.screen.viewport[2:]
         self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = self.reflection_prog['player_offset'].value = self.rain_prog['player_offset'].value =     screen_coords
         self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      self.reflection_prog['sunlight'].value =      self.rain_prog['sunlight'].value =     (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
+        self.normal_prog['max_tex'].value =       self.foreground_prog['max_tex'].value =       self.shadow_prog['max_tex'].value =       self.reflection_prog['max_tex'].value =       self.rain_prog['max_tex'].value =      self.max_tex
         self.foreground_prog['mouse_pos'].value = mouse_pos
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
         self.normal_prog['lightnum'].value = min(len(self.light_list), 128)
