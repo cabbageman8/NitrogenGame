@@ -4,11 +4,11 @@ textures = [
             "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon", "birds", "rain",
             #materials
             "water", "planks", "dirt", "farmland", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
-            "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "wattledirt", "lawn", "fossil", "sand", "freshwater",
+            "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
             #objects
-            "grass", "treelog", "treestump", "treetrunk", "basil", "mushrooms", "rock", "sharprock", "crab",
-            "fern", "bush", "tarragon", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
+            "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "sharprock", "crab",
+            "fern", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
             "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
             "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
@@ -43,7 +43,7 @@ biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("desertscrub", (("dirt", "sand", "roughseedgrass"),)),
           ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass", "dirt", "roughseedgrass"),)),
-          ("desert", (("sand", "fossil"),)),
+          ("desert", (("sand", "dirt"),)),
           ("sea", (("water", "stones"),("water", "sand"),("water",),)))
 
 #            temp over humidity
@@ -64,19 +64,7 @@ OBJ = {
                  "flags": {"plant", "native", "flip"},
                  "model": "singleshrub",
                  "size": 2,
-                 "height": 0.05
-             },
-             "basil": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth"),
-                 "moisture": (5, 50),
-                 "nutreants": (10, 70),
-                 "temperiture": (20, 40),
-                 "salinity": (0, 50),
-                 "lightlevel": "high",
-                 "flags": {"plant", "flip"},
-                 "model": "doubleshrub",
-                 "size": 2,
-                 "height": 0.05
+                 "height": 0.02
              },
              "ricegrassmature": {
                  "alias": "Rice Grass",
@@ -585,18 +573,6 @@ OBJ = {
                  "size": 3,
                  "height": 0.1
              },
-             "tarragon": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
-                 "moisture": (20, 50),
-                 "nutreants": (50, 70),
-                 "temperiture": (20, 40),
-                 "salinity": (0, 60),
-                 "lightlevel": "high",
-                 "flags": {"plant", "flip"},
-                 "model": "doubleshrub",
-                 "size": 2,
-                 "height": 0.05
-             },
              "silkyoak": {
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
@@ -666,8 +642,9 @@ OBJ = {
                  "temperiture": (15, 80),
                  "salinity": (0, 90),
                  "lightlevel": "any",
-                 "flags": {"plant", "native", "flip", "solid"},
+                 "flags": {"plant", "native", "flip"},
                  "model": "tree",
+                 "trunk": "horsetailcasuarinatrunk",
                  "size": 4,
                  "height": lambda x,y: 0.2+sin(x+y*y)/20
              },
@@ -725,7 +702,7 @@ OBJ = {
                  "size": 4,
                  "height": lambda x,y: 0.075+sin(x+y*y)/20
              },
-             "greymangrovepropagule": {
+             "greymangrovepropagules": {
                  "drops": (1, "wood", 2),
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
@@ -771,8 +748,9 @@ OBJ = {
                  "moisture": (20, 80),
                  "temperiture": (15, 80),
                  "salinity": (0, 90),
-                 "flags": {"plant", "native", "flip", "solid"},
+                 "flags": {"plant", "native", "flip"},
                  "model": "tree",
+                 "trunk": "horsetailcasuarinatrunk",
                  "size": 4,
                  "height": lambda x,y: 0.2+sin(x+y*y)/20
              },

@@ -59,6 +59,8 @@ while True:
                 print("sending world chunk of size:",len(chunk))
                 response = pickle.dumps(chunk)
                 s.sendto(response, client_address)
+            with open(os.path.join("save", "server.log"), 'a') as log:
+                log.write(str((int(time()), "world_download", "from", client_address))+'\n')
 
         elif header[:14] == "player_update ":
             header = header[14:].split(',')
@@ -73,8 +75,8 @@ while True:
             s.sendto(response, client_address)
 
         elif header[:15] == "save_to_server ":
-            print(int(time()), "processing save_to_server", "from", client_address)
             header = pickle.loads(base64.b64decode(header[17:-1]))
+            print(int(time()), "processing", len(header), "tiles_edited", "from", client_address)
             for key, value in header.items():
                 payload = (key, value)
                 for k in list(player_inbox):
@@ -88,3 +90,6 @@ while True:
             if last_save + 60 < time():
                 save_game()
                 last_save = time()
+
+            with open(os.path.join("save", "server.log"), 'a') as log:
+                log.write(str((int(time()), len(header), "tiles_edited from", client_address))+'\n')

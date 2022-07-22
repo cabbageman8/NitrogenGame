@@ -110,21 +110,27 @@ if fullscreen:
 silombol = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize)
 silombol2 = pygame.font.Font(os.path.join("data", "SilomBol.ttf"), fontsize*2)
 textures_img = []
+icon_img = []
 texd = {}
 
 max_tex = 256
+ico_size = 3*fontsize
 
 def load_textures():
     global texd
     global textures_img
+    global icon_img
     textures_img = []
     for mat in textures:
         file = Image.open(os.path.join("data", mat + ".png")).convert("RGBA")
         frame_list = []
         for i in range(file.height//file.width):
-            frame = pygame.image.fromstring( file.crop(Rect(0,file.width*i,file.width,file.width*(i+1))).resize([max_tex, max_tex], resample=Image.NEAREST).tobytes(), [max_tex, max_tex], "RGBA").convert_alpha()
+            file_segment = file.crop(Rect(0,file.width*i,file.width,file.width*(i+1)))
+            frame = pygame.image.fromstring( file_segment.resize([max_tex, max_tex], resample=Image.NEAREST).tobytes(), [max_tex, max_tex], "RGBA").convert_alpha()
             frame_list.append(len(textures_img))
             textures_img.append(frame)
+            icon = pygame.image.fromstring( file_segment.resize([ico_size, ico_size], resample=Image.NEAREST).tobytes(), [ico_size, ico_size], "RGBA").convert_alpha()
+            icon_img.append(icon)
         texd.update({mat : frame_list})
         file.close()
 
@@ -182,11 +188,11 @@ def construct_overlay():
     global Renderer
     overlay.fill((0, 0, 0, 0))
     if menu == 0 or menu == 2: # game play hud
-        overlay.blit(textures_img[texd["selection"][0]], (0, max_tex * selected_item_slot - max_tex * 4.5 + overlay.get_size()[1] / 2))
+        overlay.blit(icon_img[texd["selection"][0]], (0, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2))
         for i in range(9):
             if hotbar[i][0] != None and hotbar[i][2] > 0:
-                overlay.blit(textures_img[texd[hotbar[i][0]][0]], (0, max_tex * i - max_tex * 4.5 + overlay.get_size()[1] / 2))
-                draw_text(overlay, (10, max_tex * i - max_tex * 4.5 + overlay.get_size()[1] / 2), str(hotbar[i][2]), has_bg=True)
+                overlay.blit(icon_img[texd[hotbar[i][0]][0]], (0, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
+                draw_text(overlay, (10, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2), str(hotbar[i][2]), has_bg=True)
         slot = hotbar[int(selected_item_slot)]
         if slot[0] == "debug":
             for x,y in list_tiles_on_screen(8):
@@ -195,36 +201,36 @@ def construct_overlay():
                 climate = get_climate(tile_coords[0], tile_coords[1])
                 overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
         if slot[0] != None and slot[2] > 0 and menu == 0:
-            draw_text(overlay, (100, max_tex * selected_item_slot - max_tex * 4.5 + overlay.get_size()[1] / 2), get_alias(str(slot[0])), has_bg=True)
+            draw_text(overlay, (100, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(str(slot[0])), has_bg=True)
     if menu == 1: # title screen / help menu
         file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
         for i, t in enumerate(text):
-            overlay.blit(silombol.render(t, True, (0, 0, 0)), (max_tex, max_tex+silombol.size(t)[1] * i))
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (ico_size, ico_size+silombol.size(t)[1] * i))
     if menu == 2: # crafting menu
         file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
-        pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((max_tex, max_tex * selected_crafting_slot - max_tex * 4.5 + overlay.get_size()[1] / 2), (280, max_tex)))
+        pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((ico_size, ico_size * selected_crafting_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), (280, ico_size)))
         for i, product in enumerate(crafting.keys()):
-            overlay.blit(textures_img[texd[product[1]][0]], (max_tex, max_tex * i - max_tex * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (2*max_tex, max_tex * i - max_tex * 4.5 + overlay.get_size()[1] / 2), get_alias(product[1]), has_bg=True)
+            overlay.blit(icon_img[texd[product[1]][0]], (ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (2*ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(product[1]), has_bg=True)
         selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
-        draw_text(overlay, (650, 0-max_tex * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe[1]), has_bg=True)
-        draw_text(overlay, (650+max_tex, 1*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), item_type_map[selected_recipe[2]], has_bg=True)
-        draw_text(overlay, (650+max_tex, 2*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe[1]), has_bg=True)
+        draw_text(overlay, (650, 0-ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe[1]), has_bg=True)
+        draw_text(overlay, (650+ico_size, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), item_type_map[selected_recipe[2]], has_bg=True)
+        draw_text(overlay, (650+ico_size, 2*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe[1]), has_bg=True)
 
-        overlay.blit(textures_img[texd[selected_recipe[1]][0]], (650, 1*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2))
-        draw_text(overlay, (650, 1*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), str(selected_recipe[0]), has_bg=True)
-        draw_text(overlay, (650, 4*fontsize-max_tex * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
+        overlay.blit(icon_img[texd[selected_recipe[1]][0]], (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
+        draw_text(overlay, (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(selected_recipe[0]), has_bg=True)
+        draw_text(overlay, (650, 4*fontsize-ico_size * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
         for i, item in enumerate(crafting[selected_recipe]["materials"]):
-            overlay.blit(textures_img[texd[item[1]][0]], (650+max_tex*i, 5*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (660+max_tex*i, 5*fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
+            overlay.blit(icon_img[texd[item[1]][0]], (650+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (660+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
         if "workstation" in crafting[selected_recipe].keys():
-            draw_text(overlay, (650, 8 * fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), "Workstation:", has_bg=True)
+            draw_text(overlay, (650, 8 * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), "Workstation:", has_bg=True)
             for i, wrk in enumerate(crafting[selected_recipe]["workstation"]):
                 phrase = ""
                 for j, item in enumerate(wrk):
@@ -234,9 +240,9 @@ def construct_overlay():
                     else:
                         phrase += " and "
                     phrase += item
-                draw_text(overlay, (700, (i+9) * fontsize - max_tex * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
+                draw_text(overlay, (700, (i+9) * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
         for i, t in enumerate(text):
-            overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - max_tex * 4.5 + overlay.get_size()[1] / 2))
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
     Renderer.update_overlay(overlay)
     if len(text)*fontsize > window_size[1]:
         text = []
@@ -722,8 +728,8 @@ def handle_controls(dt):
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
     selected_data = get_tile_info(*selected_tile)
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
-        if Rect(0, window_size[1] / 2 - max_tex * 4.5, max_tex, max_tex*9).collidepoint(mouse_pos):
-            selected_item_slot = (mouse_pos[1]-(window_size[1] / 2 - max_tex * 4.5))//max_tex
+        if Rect(0, window_size[1] / 2 - ico_size * 4.5, ico_size, ico_size*9).collidepoint(mouse_pos):
+            selected_item_slot = (mouse_pos[1]-(window_size[1] / 2 - ico_size * 4.5))//ico_size
         else:
             if selected_data != None and len(selected_data) > 3 and selected_data[3] != None:
                 # grab item from selected tile
@@ -807,8 +813,8 @@ def handle_controls_crafting(dt):
     global hotbar
     global text
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
-        if Rect(max_tex, window_size[1] / 2 - max_tex * 4.5, 280, max_tex*9).collidepoint(mouse_pos):
-            selected_crafting_slot = int((mouse_pos[1]-(window_size[1] / 2 - max_tex * 4.5))//max_tex)%len(crafting)
+        if Rect(ico_size, window_size[1] / 2 - ico_size * 4.5, 280, ico_size*9).collidepoint(mouse_pos):
+            selected_crafting_slot = int((mouse_pos[1]-(window_size[1] / 2 - ico_size * 4.5))//ico_size)%len(crafting)
         construct_overlay()
         if "click1" in keydown_set:
             keydown_set.remove("click1")
