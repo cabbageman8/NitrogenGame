@@ -748,7 +748,7 @@ def handle_controls(dt):
                 else:
                     drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
                 destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
-                if (destination_item_slot != None or drops == None) and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type)):
+                if drops == None or (destination_item_slot != None and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type))):
                     shovel_sfx.play()
                     if drops != None:
                         hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
@@ -1038,7 +1038,7 @@ def main():
             server_fails += 1
             if server_fails > 60:
                 menu = 1
-                text.append("Error reaching server", "progress will not be saved")
+                text.append("Error reaching server", "If your pc has internet access, the Nitrogen server might be down", "Standby while the server restarts / ddns updates (could take 5min)", "Progress Will Not Be Saved")
                 construct_overlay()
                 server_fails = 0
         last_server_update = time.time()
