@@ -472,17 +472,26 @@ def get_tile_info(x, y):
 
 def list_tiles_on_screen(dist):
     # returns an generator for every tile near the screen in order of manhattan distance
-    screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
-    radius = ceil( screen_size[0] + screen_size[1] + dist )
-    for i in reversed(range(radius)):
-        for j in range(i-1):
-            a, b = i-j-1, j
-            if a <= screen_size[0]+dist and b <= screen_size[1]+dist:
-                yield screen_size[0] + a, screen_size[1] + b
-                yield screen_size[0] + a, screen_size[1] - b-1
-            if b <= screen_size[0]+dist and a <= screen_size[1]+dist:
-                yield screen_size[0] - b, screen_size[1] + a-1
-                yield screen_size[0] - b, screen_size[1] - a
+    while True:
+        screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
+        radius = ceil( screen_size[0] + screen_size[1] + dist )
+        store_screen_coords = screen_coords
+        Renderer.reflection_list.clear()
+        Renderer.tile_list.clear()
+        Renderer.vert_list.clear()
+        Renderer.foreground_list.clear()
+        Renderer.rain_list.clear()
+        Renderer.light_list = []
+        for i in reversed(range(radius)):
+            for j in range(i-1):
+                a, b = i-j-1, j
+                if a <= screen_size[0]+dist and b <= screen_size[1]+dist:
+                    yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] + a), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] + b)
+                    yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] + a), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] - b-1)
+                if b <= screen_size[0]+dist and a <= screen_size[1]+dist:
+                    yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] + a-1)
+                    yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] - a)
+        Renderer.set_verts()
 
 def geom_light(x, y, z, w, h, hue):
     # return element for lighting using tile coords
@@ -527,6 +536,8 @@ def draw_weather(tex, x, y, z, w, h, sway):
     Renderer.weather_list.add(geom_object(x, y, 1+z, w, h, tex, sway))
 def draw_rain(tex, x, y, z, w, h, sway):
     Renderer.rain_list.add(geom_object(x, y, z, w, h, tex, sway))
+def ontop_object(tex, x, y, z, w, h, sway):
+    Renderer.ontop_list.add(geom_object(x, y, z, w, h, tex, sway))
 
 velocity = [0, 0]
 acceleration = 1/300
@@ -872,6 +883,8 @@ def handle_controls_help(dt):
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
 
+world_tiles = list_tiles_on_screen(8)
+
 def main():
     global velocity
     global curtime
@@ -903,14 +916,15 @@ def main():
         handle_controls_help(dt)
     elif menu == 2:
         handle_controls_crafting(dt)
-    # start loading the world into renderer
-    for x, y in list_tiles_on_screen(8):
-        height = 0.0
-        tile_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                       ceil(screen_coords[1] / tile_size) + y - 1]
+    # load tiles into render lists for 1ms (overwrites render buffers automatically once full)
+    screen_size = floor((window_size[0] / tile_size) / 2), floor((window_size[1] / tile_size) / 2)
+    radius = ceil(screen_size[0] + screen_size[1] + 8)
+    for _ in range(((radius*2)**2)//60):
+        tile_coords = next(world_tiles)
         tile_data = get_tile_info(*tile_coords)
         mat = tile_data[0]
         index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
+        height = 0.0
         if (mat in animated):
             matindex = int(((curtime+index)//200+tile_coords[0]*tile_coords[0]+tile_coords[1]))
         elif (mat == "hexpavers"):
@@ -923,7 +937,7 @@ def main():
         if decor in OBJ.keys():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
-            if model == "tree" or model == "doubletree" or model == "qtree":
+            if "tree" in model:
                 if "solid" in OBJ[decor]["flags"]:
                     log = "treelog"
                     if "log" in OBJ[decor].keys():
@@ -969,8 +983,8 @@ def main():
                     draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w,h, 0)
                 elif model == "block":
                     wall = get_tex(decor, index)
-                    draw_object(wall, tile_coords[0], tile_coords[1]-((y>window_size[1]//tile_size//2)-.5), height, 1, 0, 0)
-                    draw_object(wall, tile_coords[0]-((x>window_size[0]//tile_size//2)-.5), tile_coords[1], height, 0, 1, 0)
+                    draw_object(wall, tile_coords[0], tile_coords[1]-((tile_coords[1]*tile_size>(screen_coords[1]+window_size[1]/2))-.5), height, 1, 0, 0)
+                    draw_object(wall, tile_coords[0]-((tile_coords[0]*tile_size>(screen_coords[0]+window_size[0]/2))-.5), tile_coords[1], height, 0, 1, 0)
                     draw_object(wall, tile_coords[0], tile_coords[1], height+0.0001, 1, 1, 0)
         if len(tile_data) > 4:
             item = tile_data[3]
@@ -985,8 +999,6 @@ def main():
             #render rain
             w, h = 3*(int(index + tile_coords[0]) % 2 * 2 - 1), 3*(int(index + tile_coords[1]) % 2 * 2 - 1)
             draw_rain(get_tex("rain", index), tile_coords[0], tile_coords[1], index/1000, w, h, 1)
-        if height > 0 and tile_coords == selected_tile:
-            draw_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3+height, 1, 1, 0)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
         steptime = curtime
@@ -1064,13 +1076,17 @@ def main():
     mat = player_tile_info[0]
     player_offset = (screen_coords[0]/tile_size%2**16, screen_coords[1]/tile_size%2**16)
     if "water" not in mat:
-        draw_object(get_tex("charlegs" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, 1)
-    draw_object(get_tex("charhands" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, 1)
-    draw_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
+        ontop_object(get_tex("charlegs" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, 1)
+    ontop_object(get_tex("charhands" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, 1)
+    ontop_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
         Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
-    draw_object(get_tex("selectionbot",0), selected_tile[0], selected_tile[1], 3, 1, 1, 0)
+    tile_data = get_tile_info(*selected_tile)
+    if tile_data[1] in OBJ.keys() and "height" in OBJ[tile_data[1]].keys():
+        height = OBJ[tile_data[1]]["height"](*selected_tile) if "tree" in OBJ[tile_data[1]]["model"] else OBJ[tile_data[1]]["height"]
+        ontop_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3 + height, 1, 1, 0)
+    ontop_object(get_tex("selectionbot", 0), selected_tile[0], selected_tile[1], 3, 1, 1, 0)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,

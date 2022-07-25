@@ -17,6 +17,27 @@ from shaders import simple_vertex_shader, simple_fragment_shader,\
     rain_vertex_shader, rain_fragment_shader
 
 class glrenderer():
+    def instance_data_factory(self):
+        return [
+            self.ctx.buffer(struct.pack(
+                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
+            self.ctx.buffer(struct.pack(
+                '2f', 0.0, 0.0) * (2 ** 16)),
+            self.ctx.buffer(struct.pack(
+                '1f', 0.0) * (2 ** 16)),
+            self.ctx.buffer(struct.pack(
+                '1f', 0.0) * (2 ** 16)),
+        ]
+    def vao_factory(self, program):
+        vao_instance_data = self.instance_data_factory()
+        vao = self.ctx.vertex_array(program, self.vao_content + [
+            (vao_instance_data[0], '3f/i', 'pos'),
+            (vao_instance_data[1], '2f/i', 'size'),
+            (vao_instance_data[2], 'f/i', 'texnum'),
+            (vao_instance_data[3], 'f/i', 'sway')], self.ibo)
+        vao.extra = [vao_instance_data, {}, set(), set()]
+        return vao
+
     def __init__(self, texpack, overlay, max_tex):
         self.max_tex = max_tex
         self.reflection_list = set()
@@ -26,7 +47,9 @@ class glrenderer():
         self.rain_list = set()
         self.tile_list = set()
         self.light_list = []
+        self.light_buffer = []
         self.foreground_list = set()
+        self.ontop_list = set()
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.enable(moderngl.DEPTH_TEST)
@@ -73,129 +96,25 @@ class glrenderer():
         texture_data = overlay.get_view('1')
         self.overlay_texture.write(texture_data)
 
-        self.reflectvao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.tilevao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.objectvao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.shadowvao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.foregroundvao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.weathervao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-        self.rainvao_instance_data = [
-            self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-            self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
-        ]
-
         self.vbo = self.ctx.buffer(struct.pack('8f', 0, 0, 1, 0,
-                                                     0, 1, 1, 1))
+                                          0, 1, 1, 1))
 
         self.uvmap = self.ctx.buffer(struct.pack('8f', 0, 0, 1, 0,
-                                                       0, 1, 1, 1))
+                                            0, 1, 1, 1))
 
         self.ibo = self.ctx.buffer(struct.pack('6I', 0, 1, 2,
-                                                     1, 2, 3))
+                                          1, 2, 3))
 
-        self.vao_content = [ (self.vbo, '2f', 'vert'), (self.uvmap, '2f', 'in_text') ]
-        self.reflectvao = self.ctx.vertex_array(self.reflection_prog, self.vao_content + [
-            (self.reflectvao_instance_data[0], '3f/i', 'pos'),
-            (self.reflectvao_instance_data[1], '2f/i', 'size'),
-            (self.reflectvao_instance_data[2], 'f/i', 'texnum'),
-            (self.reflectvao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.reflectvao.extra = [self.reflectvao_instance_data, {}, set(), set()]
-        self.tilevao = self.ctx.vertex_array(self.normal_prog, self.vao_content + [
-            (self.tilevao_instance_data[0], '3f/i', 'pos'),
-            (self.tilevao_instance_data[1], '2f/i', 'size'),
-            (self.tilevao_instance_data[2], 'f/i', 'texnum'),
-            (self.tilevao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.tilevao.extra = [self.tilevao_instance_data, {}, set(), set()]
-        self.objectvao = self.ctx.vertex_array(self.normal_prog, self.vao_content + [
-            (self.objectvao_instance_data[0], '3f/i', 'pos'),
-            (self.objectvao_instance_data[1], '2f/i', 'size'),
-            (self.objectvao_instance_data[2], 'f/i', 'texnum'),
-            (self.objectvao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.objectvao.extra = [self.objectvao_instance_data, {}, set(), set()]
-        self.shadowvao = self.ctx.vertex_array(self.shadow_prog, self.vao_content + [
-            (self.shadowvao_instance_data[0], '3f/i', 'pos'),
-            (self.shadowvao_instance_data[1], '2f/i', 'size'),
-            (self.shadowvao_instance_data[2], 'f/i', 'texnum'),
-            (self.shadowvao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.shadowvao.extra = [self.shadowvao_instance_data, {}, set(), set()]
-        self.foregroundvao = self.ctx.vertex_array(self.foreground_prog, self.vao_content + [
-            (self.foregroundvao_instance_data[0], '3f/i', 'pos'),
-            (self.foregroundvao_instance_data[1], '2f/i', 'size'),
-            (self.foregroundvao_instance_data[2], 'f/i', 'texnum'),
-            (self.foregroundvao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.foregroundvao.extra = [self.foregroundvao_instance_data, {}, set(), set()]
-        self.weathervao = self.ctx.vertex_array(self.reflection_prog, self.vao_content + [
-            (self.weathervao_instance_data[0], '3f/i', 'pos'),
-            (self.weathervao_instance_data[1], '2f/i', 'size'),
-            (self.weathervao_instance_data[2], 'f/i', 'texnum'),
-            (self.weathervao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.weathervao.extra = [self.weathervao_instance_data, {}, set(), set()]
-        self.rainvao = self.ctx.vertex_array(self.rain_prog, self.vao_content + [
-            (self.rainvao_instance_data[0], '3f/i', 'pos'),
-            (self.rainvao_instance_data[1], '2f/i', 'size'),
-            (self.rainvao_instance_data[2], 'f/i', 'texnum'),
-            (self.rainvao_instance_data[3], 'f/i', 'sway')], self.ibo)
-        self.rainvao.extra = [self.rainvao_instance_data, {}, set(), set()]
+        self.vao_content = [(self.vbo, '2f', 'vert'), (self.uvmap, '2f', 'in_text')]
+
+        self.reflectvao = self.vao_factory(self.reflection_prog)
+        self.tilevao = self.vao_factory(self.normal_prog)
+        self.objectvao = self.vao_factory(self.normal_prog)
+        self.foregroundvao = self.vao_factory(self.foreground_prog)
+        self.rainvao = self.vao_factory(self.rain_prog)
+        self.weathervao = self.vao_factory(self.reflection_prog)
+        self.ontopvao = self.vao_factory(self.normal_prog)
+        self.shadowvao = self.vao_factory(self.shadow_prog)
         self.quad_fs = self.ctx.vertex_array(self.simple_prog, self.vao_content, self.ibo)
 
     def update_overlay(self, overlay):
@@ -247,11 +166,14 @@ class glrenderer():
         update_mem, vao.extra[1] = self.find_changed_mem(vert_list, vao)
         self.set_memory(vao.extra[0], update_mem)
 
-    def render_vert_list(self, vert_list, vao, is_ln=0, is_tex=1, is_shadow=0, is_depth_test=0, is_reset=0):
-        if False and is_reset:
+    def set_vert_buffers(self, vert_list, vao, is_reset=0):
+        vao.extra[2] = vert_list.copy()
+        if is_reset:
             self.set_memory(vao.extra[0], enumerate(vert_list))
         else:
             self.write_vert_data(vert_list, vao)
+
+    def render_vert_list(self, vao, is_ln=0, is_tex=1, is_shadow=0, is_depth_test=0):
         if is_shadow:
             self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
             if self.r >= 0.03:
@@ -261,7 +183,7 @@ class glrenderer():
                     (vao.extra[0][1], '2f/i', 'size'),
                     (vao.extra[0][2], 'f/i', 'texnum'),
                     (vao.extra[0][3], 'f/i', 'sway')], self.ibo)
-                shadowvao.render(instances=len(vert_list))
+                shadowvao.render(instances=len(vao.extra[2]))
                 shadowvao.release()
         if is_depth_test:
             self.ctx.enable(moderngl.DEPTH_TEST)
@@ -272,7 +194,7 @@ class glrenderer():
                 self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
             else:
                 self.texpack_texture.filter = moderngl.NEAREST, moderngl.NEAREST
-            vao.render(instances=len(vert_list))
+            vao.render(instances=len(vao.extra[2]))
 
     def set_uniforms(self, mouse_pos, screen_coords, tile_size):
         self.ctx.clear()
@@ -285,9 +207,17 @@ class glrenderer():
         self.normal_prog['max_tex'].value =       self.foreground_prog['max_tex'].value =       self.shadow_prog['max_tex'].value =       self.reflection_prog['max_tex'].value =       self.rain_prog['max_tex'].value =      self.max_tex
         self.foreground_prog['mouse_pos'].value = mouse_pos
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
-        self.normal_prog['lightnum'].value = min(len(self.light_list), 128)
-        self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
-        self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_list)+[(0, 0, 0),]*128)[:128]
+        self.normal_prog['lightnum'].value = min(len(self.light_buffer), 128)
+        self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
+        self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
+
+    def set_verts(self):
+        self.set_vert_buffers(vert_list=self.reflection_list, vao=self.reflectvao)
+        self.set_vert_buffers(vert_list=self.tile_list, vao=self.tilevao)
+        self.set_vert_buffers(vert_list=self.vert_list, vao=self.objectvao)
+        self.set_vert_buffers(vert_list=self.foreground_list, vao=self.foregroundvao)
+        self.set_vert_buffers(vert_list=self.rain_list, vao=self.rainvao)
+        self.light_buffer = self.light_list.copy()
 
     def render(self, mouse_pos, screen_coords, tile_size):
         self.set_uniforms(mouse_pos, screen_coords, tile_size)
@@ -302,23 +232,28 @@ class glrenderer():
         self.quad_fs.render()
 
         self.texpack_texture.use()
-        self.render_vert_list(vert_list=self.shadow_list, vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0, is_reset=1)
-        self.render_vert_list(vert_list=self.reflection_list, vao=self.reflectvao, is_ln=1)
-        self.render_vert_list(vert_list=self.tile_list, vao=self.tilevao)
-        self.render_vert_list(vert_list=self.vert_list, vao=self.objectvao, is_shadow=1, is_depth_test=1)
-        self.render_vert_list(vert_list=self.foreground_list, vao=self.foregroundvao, is_shadow=1, is_depth_test=1)
-        self.render_vert_list(vert_list=self.weather_list, vao=self.weathervao, is_ln=1, is_shadow=1, is_reset=1)
-        self.render_vert_list(vert_list=self.rain_list, vao=self.rainvao, is_ln=1)
-        self.render_vert_list(vert_list=self.shadow_list, vao=self.shadowvao, is_tex=0, is_shadow=1, is_reset=1)
+        #self.set_verts()
 
-        self.reflection_list.clear()
-        self.tile_list.clear()
-        self.vert_list.clear()
-        self.foreground_list.clear()
+        self.render_vert_list(vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0)
+        #self.render_vert_list(vao=self.reflectvao, is_ln=1)
+        self.render_vert_list(vao=self.tilevao)
+        self.render_vert_list(vao=self.objectvao, is_shadow=1, is_depth_test=1)
+        self.render_vert_list(vao=self.foregroundvao, is_shadow=1, is_depth_test=1)
+        self.render_vert_list(vao=self.rainvao, is_ln=1)
+
+        self.set_vert_buffers(vert_list=self.weather_list, vao=self.weathervao, is_reset=1)
+        # self.set_vert_buffers(vert_list=self.shadow_list, vao=self.reflectvao, is_reset=1)
+        self.set_vert_buffers(vert_list=self.shadow_list, vao=self.shadowvao, is_reset=1)
+
+        self.render_vert_list(vao=self.weathervao, is_ln=1, is_shadow=1)
+        self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1)
+
+        self.set_vert_buffers(vert_list=self.ontop_list, vao=self.ontopvao, is_reset=1)
+        self.render_vert_list(vao=self.ontopvao, is_ln=1)
+
         self.shadow_list.clear()
         self.weather_list.clear()
-        self.rain_list.clear()
-        self.light_list = []
+        self.ontop_list.clear()
 
         self.texpack_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.simple_prog['sunlight'].value = (1,1,1)
