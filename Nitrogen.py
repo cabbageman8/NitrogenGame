@@ -883,7 +883,7 @@ def handle_controls_help(dt):
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
 
-world_tiles = list_tiles_on_screen(8)
+world_tiles = list_tiles_on_screen(12)
 
 def main():
     global velocity
@@ -1081,12 +1081,12 @@ def main():
     ontop_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
     item = hotbar[int(selected_item_slot)]
     if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
-        Renderer.light_list.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
+        Renderer.light_buffer.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
     tile_data = get_tile_info(*selected_tile)
     if tile_data[1] in OBJ.keys() and "height" in OBJ[tile_data[1]].keys():
         height = OBJ[tile_data[1]]["height"](*selected_tile) if "tree" in OBJ[tile_data[1]]["model"] else OBJ[tile_data[1]]["height"]
-        ontop_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], 3 + height, 1, 1, 0)
-    ontop_object(get_tex("selectionbot", 0), selected_tile[0], selected_tile[1], 3, 1, 1, 0)
+        ontop_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], height, 1, 1, 0)
+    ontop_object(get_tex("selectionbot", 0), selected_tile[0], selected_tile[1], 0, 1, 1, 0)
     for c in range(10):
         draw_shadow(get_tex("cloud", c),
                     screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,

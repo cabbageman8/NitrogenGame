@@ -238,6 +238,8 @@ class glrenderer():
         #self.render_vert_list(vao=self.reflectvao, is_ln=1)
         self.render_vert_list(vao=self.tilevao)
         self.render_vert_list(vao=self.objectvao, is_shadow=1, is_depth_test=1)
+        self.set_vert_buffers(vert_list=sorted(self.ontop_list, key= lambda n: struct.unpack("f", n[4*2:4*3])), vao=self.ontopvao, is_reset=1)
+        self.render_vert_list(vao=self.ontopvao, is_ln=1)
         self.render_vert_list(vao=self.foregroundvao, is_shadow=1, is_depth_test=1)
         self.render_vert_list(vao=self.rainvao, is_ln=1)
 
@@ -247,9 +249,6 @@ class glrenderer():
 
         self.render_vert_list(vao=self.weathervao, is_ln=1, is_shadow=1)
         self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1)
-
-        self.set_vert_buffers(vert_list=self.ontop_list, vao=self.ontopvao, is_reset=1)
-        self.render_vert_list(vao=self.ontopvao, is_ln=1)
 
         self.shadow_list.clear()
         self.weather_list.clear()

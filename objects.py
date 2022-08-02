@@ -918,6 +918,8 @@ TILES = {
 crafting = {
     (2, "sharprock", 2): {
         "materials": ((2, "rock", ),)},
+    (1, "candle", 1): {
+        "materials": ((1, "wood", ),)},
     (1, "chiliseeds", 1): {
         "materials": ((4, "chili"), (1, "sharprock"))},
     (1, "strawberryseeds", 1): {
