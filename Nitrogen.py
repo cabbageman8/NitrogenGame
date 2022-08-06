@@ -186,8 +186,9 @@ def construct_overlay():
     global text
     global overlay
     global Renderer
+    global menu
     overlay.fill((0, 0, 0, 0))
-    if menu == 0 or menu == 2: # game play hud
+    if menu == 0 or menu == 0.5 or menu == 2: # game play hud
         overlay.blit(icon_img[texd["selection"][0]], (0, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2))
         for i in range(9):
             if hotbar[i][0] != None and hotbar[i][2] > 0:
@@ -202,6 +203,11 @@ def construct_overlay():
                 overlay.blit(silombol2.render(str(int(climate[0]))+','+str(int(climate[1]))+','+str(int(climate[2]))+','+str(int(100/(climate[2]/30)-climate[1])), True, (0, 0, 0)), (x*tile_size, y*tile_size+(x*32+16)%tile_size))
         if slot[0] != None and slot[2] > 0 and menu == 0:
             draw_text(overlay, (100, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(str(slot[0])), has_bg=True)
+    if menu == 0.5:
+        info = get_tile_info(*selected_tile)
+        for i, item in enumerate(info):
+            if item:
+                draw_text(overlay, (mouse_pos[0], mouse_pos[1]+fontsize*i), get_alias(str(item)), has_bg=True)
     if menu == 1: # title screen / help menu
         file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
@@ -363,7 +369,7 @@ except pickle.UnpicklingError:
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 hotbar[8] = ["farmland", 0, 999]
-#hotbar[1] = ["candle", 1, 999]
+hotbar[1] = ["axe", 2, 1]
 #hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]
@@ -562,7 +568,7 @@ def handle_keys():
                 save_game()
                 running = False
             keydown_set.add(event.key)
-            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c)):
+            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c, pygame.K_SPACE)):
                 keydown_set.add("press"+str(event.key))
         elif event.type == pygame.KEYUP and event.key not in (pygame.K_F4, ):
             keydown_set.remove(event.key)
@@ -620,7 +626,7 @@ def find_destination_slot(item, item_type):
     return None
 
 running=True
-curtime = pygame.time.get_ticks()
+curtime = time.time()
 char_direction = 0
 char_speed = 0
 char_anim = 0
@@ -631,6 +637,7 @@ last_server_update = 0
 last_random_tick = 0
 server_fails = 0
 selected_tile = [0, 0]
+selected_data = None
 player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
 
 def handle_controls(dt):
@@ -653,6 +660,7 @@ def handle_controls(dt):
     global pos
     global player_tile_info
     global menu
+    global selected_data
     # interpret inputs
     if pygame.K_w in keydown_set or "sticky1" in gamepad_set:
         if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
@@ -699,6 +707,13 @@ def handle_controls(dt):
             menu = 0
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
+    if "press"+str(pygame.K_SPACE) in keydown_set:
+        if menu == 0:
+            menu = 0.5
+        else:
+            menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_SPACE))
     if pygame.K_F4 in keydown_set:
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
@@ -737,6 +752,10 @@ def handle_controls(dt):
                      -screen_coords[1] % tile_size + tile_size * ceil(selected_tile[1] / tile_size) - window_size[1] // 2]
     selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
                      ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
+    if get_tile_info(*selected_tile) != selected_data:
+        if menu == 0.5:
+            menu = 0
+            construct_overlay()
     selected_data = get_tile_info(*selected_tile)
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
         if Rect(0, window_size[1] / 2 - ico_size * 4.5, ico_size, ico_size*9).collidepoint(mouse_pos):
@@ -794,6 +813,7 @@ def handle_controls(dt):
                 age = None if len(selected_data) < 3 else selected_data[2]
                 map.set_data(*selected_tile, (selected_data[0], selected_data[1], age) + (hotbar[int(selected_item_slot)][0], hotbar[int(selected_item_slot)][2]) + selected_data[5:])
                 hotbar[int(selected_item_slot)][2] = 0
+                construct_overlay()
             elif (selected_data[1] == None and hotbar[int(selected_item_slot)][1] == 1 and
                     ("plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or
                       selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] )):
@@ -801,12 +821,13 @@ def handle_controls(dt):
                 crumple_sfx.play()
                 map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
                 hotbar[int(selected_item_slot)][2] -= 1
+                construct_overlay()
             elif hotbar[int(selected_item_slot)][1] == 0 and selected_data[0] != hotbar[int(selected_item_slot)][0]:
                 # place material in selected tile
                 hit_sfx.play()
                 map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
                 hotbar[int(selected_item_slot)][2] -= 1
-            construct_overlay()
+                construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
         selected_item_slot = (selected_item_slot-1)%9
         construct_overlay()
@@ -883,7 +904,7 @@ def handle_controls_help(dt):
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
 
-world_tiles = list_tiles_on_screen(12)
+world_tiles = list_tiles_on_screen(10)
 
 def main():
     global velocity
@@ -906,27 +927,30 @@ def main():
     global pos
     global player_tile_info
     global menu
-    dt = pygame.time.get_ticks() - curtime
-    curtime = pygame.time.get_ticks()
+    dt = (time.time() - curtime)*1000
+    curtime = time.time()
     raining = 1+(time.time()%7000 < 600)
     handle_keys()
-    if menu == 0:
+    if menu == 0 or menu == 0.5:
         handle_controls(dt)
     elif menu == 1:
         handle_controls_help(dt)
     elif menu == 2:
         handle_controls_crafting(dt)
-    # load tiles into render lists for 1ms (overwrites render buffers automatically once full)
+
     screen_size = floor((window_size[0] / tile_size) / 2), floor((window_size[1] / tile_size) / 2)
     radius = ceil(screen_size[0] + screen_size[1] + 8)
-    for _ in range(((radius*2)**2)//60):
+    num_tiles = 0
+    # update tiles for 12ms or until all tiles have been updated (overwrites render buffers automatically once full)
+    while time.time()-curtime < 0.012 and num_tiles < ((radius*2)**2):
+        num_tiles+=1
         tile_coords = next(world_tiles)
         tile_data = get_tile_info(*tile_coords)
         mat = tile_data[0]
         index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
         height = 0.0
         if (mat in animated):
-            matindex = int(((curtime+index)//200+tile_coords[0]*tile_coords[0]+tile_coords[1]))
+            matindex = int((((curtime%1000)*5+index)+(tile_coords[0]*tile_coords[0]+tile_coords[1])%1000))
         elif (mat == "hexpavers"):
             matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
         else:
@@ -1000,7 +1024,8 @@ def main():
             w, h = 3*(int(index + tile_coords[0]) % 2 * 2 - 1), 3*(int(index + tile_coords[1]) % 2 * 2 - 1)
             draw_rain(get_tex("rain", index), tile_coords[0], tile_coords[1], index/1000, w, h, 1)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
-    if (abs(velocity[0])+abs(velocity[1])) > 0.001 and curtime-steptime > 2/char_speed:
+    if (abs(velocity[0])+abs(velocity[1])) > 0.001 and (curtime-steptime)*1000 > 2/char_speed:
+        print((curtime-steptime)*1000, 2 / char_speed)
         steptime = curtime
         mat = player_tile_info[0]
         if mat == "water":

@@ -3,13 +3,13 @@ textures = [
             #special
             "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon", "birds", "rain",
             #materials
-            "water", "planks", "dirt", "farmland", "tiles", "weeds", "wall", "block", "hexpavers", "roughseedgrass",
+            "water", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "sharprock", "crab",
             "fern", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
-            "flytrap", "birchtreelog", "birchtreetrunk", "birchtreestump", "lillypad", "talldrygrass", "candle",
+            "flytrap", "whitetreelog", "whitetreetrunk", "whitetreestump", "lillypad", "talldrygrass", "candle",
             "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "truemulga", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
@@ -546,6 +546,7 @@ OBJ = {
                  "height": lambda x,y: 0.3+sin(x+y*y)/15
              },
              "australiangrasstree": {
+                 "alias": "Australian Grass Tree",
                  "leaves": "australiangrasstreelog",
                  "drops": None,
                  "substrate": ["sand", "roughseedgrass",]+any_dirt,
@@ -562,6 +563,7 @@ OBJ = {
                  "height": lambda x,y: 0.1+sin(x+y*y)/15
              },
              "truemulga": {
+                 "alias": "True Mulga",
                  "substrate": ["weeds", "roughseedgrass",]+any_dirt,
                  "moisture": (40, 90),
                  "nutreants": (10, 70),
@@ -574,6 +576,7 @@ OBJ = {
                  "height": 0.1
              },
              "silkyoak": {
+                 "alias": "Silky Oak",
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "sheds": "silkyoakdirt",
@@ -589,6 +592,7 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "bluegumeucalyptussapling": {
+                 "alias": "Bluegum Eucalyptus (sapling)",
                  #"becomes": "bluegumeucalyptus",
                  "drops": (2, "wood", 2),
                  "sheds": "eucalyptusdirt",
@@ -604,7 +608,8 @@ OBJ = {
                  "height": lambda x,y: 0.3+sin(x+y*y)/20
              },
              "bluegumeucalyptus": {
-                 "leaves": "treestump",
+                 "alias": "Bluegum Eucalyptus",
+                 "leaves": "whitetreestump",
                  "drops": (6, "wood", 2),
                  "sheds": "eucalyptusdirt",
                  "substrate": ("eucalyptusdirt", "roughseedgrass"),
@@ -614,10 +619,14 @@ OBJ = {
                  "lightlevel": "any",
                  "flags": {"plant", "native", "flip", "solid"},
                  "model": "doubletree",
+                 "trunk": "whitetreetrunk",
+                 "log": "whitetreelog",
+                 "stump": "whitetreestump",
                  "size": 9,
                  "height": lambda x,y: 0.5+sin(x+y*y)/20
              },
              "weepingbottlebrush": {
+                 "alias": "Weeping Bottlebrush",
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "sheds": "bottlebrushdirt",
@@ -633,6 +642,7 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "weepingbottlebrushsapling": {
+                 "alias": "Weeping Bottlebrush (sapling)",
                  "leaves": "treestump",
                  "drops": (1, "wood", 2),
                  "sheds": "bottlebrushdirt",
@@ -649,6 +659,7 @@ OBJ = {
                  "height": lambda x,y: 0.2+sin(x+y*y)/20
              },
              "norfolkislandpine": {
+                 "alias": "Norfolk Island Pine",
                  "leaves": "treestump",
                  "drops": (6, "wood", 2),
                  "sheds": "norfolkislandpinedirt",
@@ -664,6 +675,7 @@ OBJ = {
                  "height": lambda x,y: 0.5+sin(x+y*y)/20
              },
              "breadpalm": {
+                 "alias": "Bread Palm",
                  "leaves": "treestump",
                  "drops": (3, "wood", 2),
                  "substrate": ("dirt", "weeds", "lushundergrowth", "sheoakdirt"),
@@ -677,7 +689,9 @@ OBJ = {
                  "height": lambda x,y: 0.3+sin(x+y*y)/20
              },
              "greymangrove": {
+                 "alias": "Grey Mangrove",
                  "drops": (1, "wood", 2),
+                 "creates": (1, "greymangrovepropagules"),
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
                  "temperiture": (15, 80),
@@ -690,6 +704,7 @@ OBJ = {
                  "height": lambda x,y: 0.1+sin(x+y*y)/20
              },
              "greymangrovesapling": {
+                 "alias": "Grey Mangrove (sapling)",
                  "drops": (1, "wood", 2),
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
@@ -703,6 +718,7 @@ OBJ = {
                  "height": lambda x,y: 0.075+sin(x+y*y)/20
              },
              "greymangrovepropagules": {
+                 "alias": "Grey Mangrove (propagules)",
                  "drops": (1, "wood", 2),
                  "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
                  "moisture": (20, 50),
@@ -715,6 +731,7 @@ OBJ = {
                  "height": 0.1
              },
              "horsetailcasuarina": {
+                 "alias": "Horsetail Casuarina",
                  "drops": (1, "wood", 2),
                  "substrate": ( "dirt", "sand", "sheoakdirt", "roughseedgrass" ),
                  "moisture": (20, 50),
@@ -728,6 +745,7 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "silverwattle": {
+                 "alias": "Silver Wattle",
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "sheds": "wattledirt",
@@ -741,6 +759,7 @@ OBJ = {
                  "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "silverwattlesapling": {
+                 "alias": "Silver Wattle (sapling)",
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "sheds": "wattledirt",
@@ -755,6 +774,7 @@ OBJ = {
                  "height": lambda x,y: 0.2+sin(x+y*y)/20
              },
              "papermulberry": {
+                 "alias": "Paper Mulberry",
                  "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "substrate": ( "dirt" ),
@@ -824,12 +844,6 @@ OBJ = {
                  "size": 2,
                  "height": 0.03
              },
-            "wall": {
-                 "flags": {"solid",},
-                 "model": "block",
-                 "size": 1,
-                 "height": 0.1
-             },
             "planks": {
                  "flags": {"solid",},
                  "model": "block",
@@ -869,6 +883,14 @@ OBJ = {
                  "flags": { "solid",},
                  "model": "doubleobj",
                  "bot": "treelog",
+                 "size": 1,
+                 "height": 0.03
+             },
+            "whitetreestump": {
+                 "drops": (1, "wood", 2),
+                 "flags": { "solid",},
+                 "model": "doubleobj",
+                 "bot": "whitetreelog",
                  "size": 1,
                  "height": 0.03
              },

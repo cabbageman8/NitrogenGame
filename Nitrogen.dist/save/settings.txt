@@ -8,7 +8,7 @@ window_size = 1920, 1080
 fullscreen = True
 
 # players with the same spawn key will spawn in the same place (remove or rename your savedata file to spawn as new character)
-spawnkey = worldspawn
+spawnkey = meowdragon
 
 # vertical synchronisation
 vsyncenabled = True
