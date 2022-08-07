@@ -402,6 +402,7 @@ OBJ = {
                  "height": 0.04
              },
              "cottonseeds": {
+                 "alias": "Cotton Seeds",
                  "drops": None,
                  "becomes": "cottonseedling",
                  "substrate": ("farmland",),
@@ -414,6 +415,7 @@ OBJ = {
                  "height": 0.01
              },
              "cottonjointing": {
+                 "alias": "Cotton (jointing)",
                  "drops": None,
                  "becomes": "cottonflowering",
                  "substrate": ("farmland",),
@@ -426,6 +428,7 @@ OBJ = {
                  "height": 0.03
              },
              "cottonflowering": {
+                 "alias": "Cotton (flowering)",
                  "drops": None,
                  "becomes": "cottonfilling",
                  "substrate": ("farmland",),
@@ -438,6 +441,7 @@ OBJ = {
                  "height": 0.03
              },
              "cottonfilling": {
+                 "alias": "Cotton (filling)",
                  "drops": None,
                  "leaves": "cottonseeds",
                  "becomes": "cottonmature",
@@ -451,6 +455,7 @@ OBJ = {
                  "height": 0.04
              },
              "cottonmature": {
+                 "alias": "Cotton (mature)",
                  "drops": (6, "cottonbolls", 2),
                  "substrate": ("farmland",),
                  "moisture": (10, 50),
@@ -906,7 +911,11 @@ OBJ = {
 ITEMS = {
             "sharprock": {
                  "alias": "Sharp Rock",
-                 "description": "Sharper than other rocks",
+                 "description": "Sharper than other rocks, can be used to cut trees",
+            },
+            "axe": {
+                 "alias": "Axe",
+                 "description": "Can cut trees without breaking",
             },
             "oatmeal": {
                  "alias": "Oatmeal",
@@ -915,6 +924,10 @@ ITEMS = {
             "oatbread": {
                  "alias": "Oatmeal Bread",
                  "description": "Delicous source of carbs",
+            },
+            "coffeecherries": {
+                 "alias": "Coffee Cherries",
+                 "description": "Used to grow Coffee Tree or roasted into Coffee Beans",
             },
             "coffeebeans": {
                  "alias": "Coffee Beans",
@@ -927,6 +940,10 @@ ITEMS = {
             "strawberryseeds": {
                  "alias": "Strawberry Seeds",
                  "description": "Used to grow strawberries",
+            },
+            "tealeaf": {
+                 "alias": "Tea Leaf",
+                 "description": "Used to brew Tea",
             }
 }
 
@@ -942,6 +959,8 @@ crafting = {
         "materials": ((2, "rock", ),)},
     (1, "candle", 1): {
         "materials": ((1, "wood", ),)},
+    (1, "axe", 2): {
+        "materials": ((1, "sharprock"), (4, "wood"),)},
     (1, "chiliseeds", 1): {
         "materials": ((4, "chili"), (1, "sharprock"))},
     (1, "strawberryseeds", 1): {

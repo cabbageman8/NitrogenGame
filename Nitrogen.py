@@ -205,9 +205,29 @@ def construct_overlay():
             draw_text(overlay, (100, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(str(slot[0])), has_bg=True)
     if menu == 0.5:
         info = get_tile_info(*selected_tile)
-        for i, item in enumerate(info):
-            if item:
-                draw_text(overlay, (mouse_pos[0], mouse_pos[1]+fontsize*i), get_alias(str(item)), has_bg=True)
+        infotext = []
+        if len(info) > 1 and info[1]:
+            infotext.append(get_alias(str(info[1])))
+            if "flags" in OBJ[info[1]].keys():
+                if "native" in OBJ[info[1]]["flags"] and "plant" in OBJ[info[1]]["flags"]:
+                    infotext.append(" Native Plant")
+                elif "plant" in OBJ[info[1]]["flags"]:
+                    infotext.append(" Non-native Plant")
+            if "creates" in OBJ[info[1]].keys() and OBJ[info[1]]["creates"]:
+                infotext.append(" Produces: "+get_alias(OBJ[info[1]]["creates"][1]))
+            if "drops" in OBJ[info[1]].keys():
+                if OBJ[info[1]]["drops"]:
+                    infotext.append(" Drops: "+get_alias(OBJ[info[1]]["drops"][1]))
+            else:
+                infotext.append(" Collectable")
+        else:
+            infotext.append(get_alias(str(info[0])))
+        if len(info) > 3 and info[3]:
+            infotext.append(get_alias(str(info[3])))
+            if info[3] in ITEMS.keys() and "description" in ITEMS[info[3]].keys():
+                infotext.append(" "+ITEMS[info[3]]["description"])
+        for i, item in enumerate(infotext):
+            draw_text(overlay, (mouse_pos[0], mouse_pos[1]+fontsize*i), item, has_bg=True)
     if menu == 1: # title screen / help menu
         file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
@@ -771,19 +791,22 @@ def handle_controls(dt):
                     print("picked up item such that:", hotbar[destination_item_slot])
                     map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
             elif selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
-                # grab decoration from selected tile
-                drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
-                if drops:
-                    drop_num, dropped_item, dropped_item_type = drops
-                else:
-                    drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
-                destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
-                if drops == None or (destination_item_slot != None and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type))):
-                    shovel_sfx.play()
-                    if drops != None:
-                        hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
-                    leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
-                    map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
+                if ("tree" not in OBJ[selected_data[1]]["model"] or (hotbar[selected_item_slot][0] == "sharprock" or hotbar[selected_item_slot][0] == "axe") and hotbar[selected_item_slot][2] > 0):
+                    # grab decoration from selected tile
+                    drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
+                    if drops:
+                        drop_num, dropped_item, dropped_item_type = drops
+                    else:
+                        drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
+                    destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
+                    if drops == None or (destination_item_slot != None and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type))):
+                        if "tree" in OBJ[selected_data[1]]["model"] and hotbar[selected_item_slot][0] == "sharprock":
+                            hotbar[selected_item_slot][2] -= 1
+                        shovel_sfx.play()
+                        if drops != None:
+                            hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
+                        leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
+                        map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
             else:
                 destination_item_slot = find_destination_slot(selected_data[0], 0)
                 if destination_item_slot != None:
@@ -1042,9 +1065,9 @@ def main():
         if looking_direction % 2:
             looking_direction = (looking_direction + 2) % 8
 
-    if last_random_tick + 5.0 < time.time():
+    if last_random_tick + 1.0 < time.time():
         # do random tick in 190x190 square around player (1 tick per tile per ingame day = 10 mins irl)
-        for i in range(300):
+        for _ in range(60):
             x, y = random.randint(-95, 95), random.randint(-95, 95)
             RT_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
                            ceil(screen_coords[1] / tile_size) + y - 1]
@@ -1075,7 +1098,7 @@ def main():
             server_fails += 1
             if server_fails > 60:
                 menu = 1
-                text.append("Error reaching server", "If your pc has internet access, the Nitrogen server might be down", "Standby while the server restarts / ddns updates (could take 5min)", "Progress Will Not Be Saved")
+                text = ("Error reaching server", "If your pc has internet access, the Nitrogen server might be down", "Standby while the server restarts / ddns updates (could take 5min)", "Progress Will Not Be Saved")
                 construct_overlay()
                 server_fails = 0
         last_server_update = time.time()
