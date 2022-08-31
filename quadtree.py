@@ -3,6 +3,11 @@ class leaf_node():
         self.data = data
     def tree(self):
         print(self.data)
+    def get_set(self, x, y, z, w, size, level):
+        if self.data == None:
+            return set()
+        else:
+            return set(self.data)
     def get_data(self, x, y, z, w, size):
         if self.data == None:
             return None
@@ -37,6 +42,25 @@ class branch_node():
         if self.children != None:
             for c in self.children:
                 c.tree()
+    def get_set(self, x, y, z, w, size, level):
+        if self.children == None:
+            return set()
+        elif (2**level >= size):
+            return set().union(self.children[3].get_set(x, y, z+size/2, w+size/2, size/2, level),
+                               self.children[1].get_set(x, y, z+size/2, w-size/2, size/2, level),
+                               self.children[2].get_set(x, y, z-size/2, w+size/2, size/2, level),
+                               self.children[0].get_set(x, y, z-size/2, w-size/2, size/2, level))
+        else:
+            if x > z:
+                if y > w:
+                    return self.children[3].get_set(x, y, z+size/2, w+size/2, size/2, level)
+                else:
+                    return self.children[1].get_set(x, y, z+size/2, w-size/2, size/2, level)
+            else:
+                if y > w:
+                    return self.children[2].get_set(x, y, z-size/2, w+size/2, size/2, level)
+                else:
+                    return self.children[0].get_set(x, y, z-size/2, w-size/2, size/2, level)
     def get_data(self, x, y, z, w, size):
         if self.children == None:
             return None
@@ -87,6 +111,25 @@ class root_node():
     def tree(self):
         for c in self.children:
             c.tree()
+    def get_set(self, x, y, level):
+        if (abs(x)>self.size or abs(y)>self.size):
+            return set()
+        if (2**level >= self.size):
+            return set().union(self.children[3].get_set(x, y,  self.size,  self.size, self.size, level),
+                               self.children[1].get_set(x, y,  self.size, -self.size, self.size, level),
+                               self.children[2].get_set(x, y, -self.size,  self.size, self.size, level),
+                               self.children[0].get_set(x, y, -self.size, -self.size, self.size, level))
+        if x > 0:
+            if y > 0:
+                result = self.children[3].get_set(x, y, self.size, self.size, self.size, level)
+            else:
+                result = self.children[1].get_set(x, y, self.size, -self.size, self.size, level)
+        else:
+            if y > 0:
+                result = self.children[2].get_set(x, y, -self.size, self.size, self.size, level)
+            else:
+                result = self.children[0].get_set(x, y, -self.size, -self.size, self.size, level)
+        return result
     def get_data(self, x, y):
         if (int(x), int(y)) in self.cache:
             return self.cache[(int(x), int(y))]

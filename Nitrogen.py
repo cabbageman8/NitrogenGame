@@ -235,6 +235,7 @@ def construct_overlay():
         overlay.blit(bgimg, (0, 0))
         for i, t in enumerate(text):
             overlay.blit(silombol.render(t, True, (0, 0, 0)), (ico_size, ico_size+silombol.size(t)[1] * i))
+
     if menu == 2: # crafting menu
         file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
@@ -386,6 +387,7 @@ except socket.gaierror:
 except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
+print("mapset is", map.get_set(*pos, 10))
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 hotbar[8] = ["farmland", 0, 999]
@@ -469,7 +471,7 @@ def decorate(x, y, mat):
             if "plant" in OBJ[dec]["flags"]:
                 if "native" in OBJ[dec]["flags"]:
                     if mat not in OBJ[dec]["substrate"] or \
-                            temp < OBJ[dec]["temperiture"][0] or temp > OBJ[dec]["temperiture"][1] or \
+                            temp < OBJ[dec]["temperature"][0] or temp > OBJ[dec]["temperature"][1] or \
                             moisture < OBJ[dec]["moisture"][0] or moisture > OBJ[dec]["moisture"][1] or \
                             salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]:
                         dec = None
@@ -973,7 +975,7 @@ def main():
         index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
         height = 0.0
         if (mat in animated):
-            matindex = int((((curtime%1000)*5+index)+(tile_coords[0]*tile_coords[0]+tile_coords[1])%1000))
+            matindex = int((((curtime%1000)*6+index)+(tile_coords[0]*tile_coords[0]+tile_coords[1])%1000))
         elif (mat == "hexpavers"):
             matindex = int(tile_coords[0]*13 + tile_coords[1] * tile_coords[1]*7)*2+tile_coords[0]
         else:
