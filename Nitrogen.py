@@ -390,7 +390,7 @@ except pickle.UnpicklingError:
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 hotbar[8] = ["farmland", 0, 999]
-hotbar[1] = ["axe", 2, 1]
+#hotbar[1] = ["axe", 2, 1]
 #hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]

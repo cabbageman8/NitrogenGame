@@ -8,7 +8,7 @@ window_size = 1920, 1080
 fullscreen = True
 
 # players with the same spawn key will spawn in the same place (remove or rename your savedata file to spawn as new character)
-spawnkey = meowdragon
+spawnkey = worldspawn
 
 # vertical synchronisation
 vsyncenabled = True
@@ -19,7 +19,7 @@ tile_size = 75
 # font size effects the scale of ui elements
 fontsize = 45
 
-# ip address of game server
+# ip address or domain of game server (use localhost if the server is on this machine)
 ip = server.cabbage.moe
 
 # udp port number of game server
