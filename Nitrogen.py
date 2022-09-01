@@ -69,7 +69,7 @@ tile_size = 75
 # font size effects the scale of ui elements
 fontsize = 45
 
-# ip address of game server
+# ip address or domain of game server (use localhost if the server is on this machine)
 ip = server.cabbage.moe
 
 # udp port number of game server
@@ -360,13 +360,13 @@ screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - 
 # get server data
 map = root_node()
 try:
-    sock.sendto('world_download '.encode('utf-8'), server_address)
+    sock.sendto(str('world_download '+str(pos[0])+","+str(pos[1])).encode('utf-8'), server_address)
     downl_time = time.time()
     world_data = []
     while time.time() - downl_time < 1:
         try:
             byt, address = sock.recvfrom(2**16)
-            print("received", len(byt), "bytes")
+            print("received", len(byt), "bytes", "from", address)
             world_data.append(byt)
         except BlockingIOError:
             pass
@@ -374,7 +374,7 @@ try:
         data = pickle.loads(byt)
         for key, value in data.items():
             payload = (key, value)
-            map.apply_data(payload[0][0], payload[0][1], payload[1])
+            map.apply_data(int(payload[0][0]), int(payload[0][1]), payload[1])
         print("loaded", len(data), "tiles")
     del world_data
     text.append('loaded save from server')
@@ -387,7 +387,6 @@ except socket.gaierror:
 except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
-print("mapset is", map.get_set(*pos, 10))
 
 #hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
 hotbar[8] = ["farmland", 0, 999]
@@ -744,7 +743,7 @@ def handle_controls(dt):
         construct_overlay()
         keydown_set.remove(pygame.K_F4)
     if pygame.K_F9 in keydown_set:
-        pos = [10**10-seeded_random(pos[0])*10**10*2+pi, 10**10-seeded_random(pos[1])*10**10*2+tau]
+        pos = [10**14-seeded_random(pos[0])*10**14*2+pi, 10**14-seeded_random(pos[1])*10**14*2+tau]
 
     #player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
     new_player_tile_info = get_tile_info(ceil(pos[0] - 1 + dt * velocity[0]), ceil(pos[1] - 1 + dt * velocity[1]))
@@ -772,8 +771,8 @@ def handle_controls(dt):
                      mouse_pos[1] + screen_coords[1] % tile_size]
     selected_tile = [-screen_coords[0] % tile_size + tile_size * ceil(selected_tile[0] / tile_size) - window_size[0] // 2,
                      -screen_coords[1] % tile_size + tile_size * ceil(selected_tile[1] / tile_size) - window_size[1] // 2]
-    selected_tile = [ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3),
-                     ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3)]
+    selected_tile = [int(ceil(pos[0] + ceil(selected_tile[0] / tile_size) - 3)),
+                     int(ceil(pos[1] + ceil(selected_tile[1] / tile_size) - 3))]
     if get_tile_info(*selected_tile) != selected_data:
         if menu == 0.5:
             menu = 0
@@ -1050,7 +1049,6 @@ def main():
             draw_rain(get_tex("rain", index), tile_coords[0], tile_coords[1], index/1000, w, h, 1)
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
     if (abs(velocity[0])+abs(velocity[1])) > 0.001 and (curtime-steptime)*1000 > 2/char_speed:
-        print((curtime-steptime)*1000, 2 / char_speed)
         steptime = curtime
         mat = player_tile_info[0]
         if mat == "water":
@@ -1071,8 +1069,8 @@ def main():
         # do random tick in 190x190 square around player (1 tick per tile per ingame day = 10 mins irl)
         for _ in range(60):
             x, y = random.randint(-95, 95), random.randint(-95, 95)
-            RT_coords = [ceil(screen_coords[0] / tile_size) + x - 1,
-                           ceil(screen_coords[1] / tile_size) + y - 1]
+            RT_coords = [int(ceil(screen_coords[0] / tile_size) + x - 1),
+                         int(ceil(screen_coords[1] / tile_size) + y - 1)]
             RT_data = get_tile_info(*RT_coords)
             if RT_data[1] in OBJ.keys():
                 if "becomes" in OBJ[RT_data[1]].keys():
@@ -1094,7 +1092,7 @@ def main():
             world_text = pickle.loads(base64.b64decode(data[1][2:-1]))
             player_text = pickle.loads(base64.b64decode(data[0][2:-1]))
             for key in world_text.keys():
-                map.apply_data(key[0], key[1], world_text[key])
+                map.apply_data(int(key[0]), int(key[1]), world_text[key])
             server_fails = 0
         except BlockingIOError:
             server_fails += 1

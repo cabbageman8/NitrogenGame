@@ -3,11 +3,20 @@ class leaf_node():
         self.data = data
     def tree(self):
         print(self.data)
-    def get_set(self, x, y, z, w, size, level):
+    def get_area(self, x, y, z, w, size, level):
+        output = {}
         if self.data == None:
-            return set()
+            return output
         else:
-            return set(self.data)
+            if self.data[0]:
+                output.update({(int(z + 0), int(w + 0)) : self.data[0]})
+            if self.data[1]:
+                output.update({(int(z + 1), int(w + 0)) : self.data[1]})
+            if self.data[2]:
+                output.update({(int(z + 0), int(w + 1)) : self.data[2]})
+            if self.data[3]:
+                output.update({(int(z + 1), int(w + 1)) : self.data[3]})
+            return output
     def get_data(self, x, y, z, w, size):
         if self.data == None:
             return None
@@ -42,25 +51,27 @@ class branch_node():
         if self.children != None:
             for c in self.children:
                 c.tree()
-    def get_set(self, x, y, z, w, size, level):
+    def get_area(self, x, y, z, w, size, level):
+        output = {}
         if self.children == None:
-            return set()
+            return output
         elif (2**level >= size):
-            return set().union(self.children[3].get_set(x, y, z+size/2, w+size/2, size/2, level),
-                               self.children[1].get_set(x, y, z+size/2, w-size/2, size/2, level),
-                               self.children[2].get_set(x, y, z-size/2, w+size/2, size/2, level),
-                               self.children[0].get_set(x, y, z-size/2, w-size/2, size/2, level))
+            output.update(self.children[3].get_area(x, y, z+size/2, w+size/2, size/2, level))
+            output.update(self.children[1].get_area(x, y, z+size/2, w-size/2, size/2, level))
+            output.update(self.children[2].get_area(x, y, z-size/2, w+size/2, size/2, level))
+            output.update(self.children[0].get_area(x, y, z-size/2, w-size/2, size/2, level))
+            return output
         else:
             if x > z:
                 if y > w:
-                    return self.children[3].get_set(x, y, z+size/2, w+size/2, size/2, level)
+                    return self.children[3].get_area(x, y, z+size/2, w+size/2, size/2, level)
                 else:
-                    return self.children[1].get_set(x, y, z+size/2, w-size/2, size/2, level)
+                    return self.children[1].get_area(x, y, z+size/2, w-size/2, size/2, level)
             else:
                 if y > w:
-                    return self.children[2].get_set(x, y, z-size/2, w+size/2, size/2, level)
+                    return self.children[2].get_area(x, y, z-size/2, w+size/2, size/2, level)
                 else:
-                    return self.children[0].get_set(x, y, z-size/2, w-size/2, size/2, level)
+                    return self.children[0].get_area(x, y, z-size/2, w-size/2, size/2, level)
     def get_data(self, x, y, z, w, size):
         if self.children == None:
             return None
@@ -111,24 +122,26 @@ class root_node():
     def tree(self):
         for c in self.children:
             c.tree()
-    def get_set(self, x, y, level):
+    def get_area(self, x, y, level):
+        output = {}
         if (abs(x)>self.size or abs(y)>self.size):
-            return set()
+            return output
         if (2**level >= self.size):
-            return set().union(self.children[3].get_set(x, y,  self.size,  self.size, self.size, level),
-                               self.children[1].get_set(x, y,  self.size, -self.size, self.size, level),
-                               self.children[2].get_set(x, y, -self.size,  self.size, self.size, level),
-                               self.children[0].get_set(x, y, -self.size, -self.size, self.size, level))
+            output.update(self.children[3].get_area(x, y,  self.size,  self.size, self.size, level))
+            output.update(self.children[1].get_area(x, y,  self.size, -self.size, self.size, level))
+            output.update(self.children[2].get_area(x, y, -self.size,  self.size, self.size, level))
+            output.update(self.children[0].get_area(x, y, -self.size, -self.size, self.size, level))
+            return output
         if x > 0:
             if y > 0:
-                result = self.children[3].get_set(x, y, self.size, self.size, self.size, level)
+                result = self.children[3].get_area(x, y, self.size, self.size, self.size, level)
             else:
-                result = self.children[1].get_set(x, y, self.size, -self.size, self.size, level)
+                result = self.children[1].get_area(x, y, self.size, -self.size, self.size, level)
         else:
             if y > 0:
-                result = self.children[2].get_set(x, y, -self.size, self.size, self.size, level)
+                result = self.children[2].get_area(x, y, -self.size, self.size, self.size, level)
             else:
-                result = self.children[0].get_set(x, y, -self.size, -self.size, self.size, level)
+                result = self.children[0].get_area(x, y, -self.size, -self.size, self.size, level)
         return result
     def get_data(self, x, y):
         if (int(x), int(y)) in self.cache:
@@ -154,7 +167,6 @@ class root_node():
         self.cache.update({(int(x), int(y)) : data})
     def apply_data(self, x, y, data):
         if self.get_data(int(x), int(y)) != data:
-            self.cache_data(int(x), int(y), data)
             if (abs(x)>self.size or abs(y)>self.size):
                 self.size = 2*self.size
                 print("world size now =", self.size)
@@ -162,8 +174,9 @@ class root_node():
                                  branch_node((branch_node(), branch_node(), self.children[1], branch_node())),
                                  branch_node((branch_node(), self.children[2], branch_node(), branch_node())),
                                  branch_node((self.children[3], branch_node(), branch_node(), branch_node())))
-                self.set_data(x, y, data)
+                self.apply_data(x, y, data)
             else:
+                self.cache_data(int(x), int(y), data)
                 if x > 0:
                     if y > 0:
                         self.children[3].set_data(x, y, data, self.size, self.size, self.size)
