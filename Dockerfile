@@ -5,3 +5,4 @@ RUN python -c "from urllib.request import urlretrieve; urlretrieve('https://raw.
 RUN python -c "from urllib.request import urlretrieve; urlretrieve('https://raw.githubusercontent.com/cabbageman8/NitrogenGame/main/quadtree.py', 'quadtree.py')"
 EXPOSE 27448/udp
 CMD [ "python", "./server.py" ]
+

@@ -5,7 +5,7 @@ textures = [
             #materials
             "water", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "freshwater",
-            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt",
+            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "sharprock", "crab",
             "fern", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
@@ -13,6 +13,7 @@ textures = [
             "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "mulgabush", "mulgatree", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
+            "sawtoothbanksiasapling", "sawtoothbanksia",
             #crops
             "oatgrassseedling", "oatgrassfilling", "oatgrassmature", "oats", "oatmeal", "oatbread",
             "teabush", "teatree", "tealeaf",
@@ -41,7 +42,7 @@ biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("wetforest", (("freshwater", "weeds", "freshwater"), ("freshwater", "wetdirt", "freshwater"), ("freshwater", "silkyoakdirt", "freshwater") )),
           ("moistforest", (("freshwater", "weeds", "wetdirt", "weeds", "wetdirt"),)),
           ("desertscrub", (("dirt", "sand", "roughseedgrass"),)),
-          ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
+          ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("banksiadirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass", "dirt", "roughseedgrass"),)),
           ("desert", (("sand", "dirt"),)),
           ("sea", (("water", "stones"),("water", "sand"),("water",),)))
@@ -593,6 +594,35 @@ OBJ = {
                  "trunk": "horsetailcasuarinatrunk",
                  "size": 6,
                  "height": lambda x,y: 0.3+sin(x+y*y)/20
+             },
+             "sawtoothbanksiasapling": {
+                 "alias": "Sawtooth Banksia (sapling)",
+                 "drops": (2, "wood", 2),
+                 "substrate": ["banksiadirt",],
+                 "moisture": (30, 90),
+                 "nutreants": (10, 70),
+                 "temperature": (30, 45),
+                 "salinity": (0, 100),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip", "slow"},
+                 "model": "tree",
+                 "trunk": "horsetailcasuarinatrunk",
+                 "size": 3,
+                 "height": lambda x,y: 0.2+sin(x+y*y)/20
+             },
+             "sawtoothbanksia": {
+                 "alias": "Sawtooth Banksia",
+                 "drops": (4, "wood", 2),
+                 "substrate": ["banksiadirt",],
+                 "moisture": (30, 90),
+                 "nutreants": (10, 70),
+                 "temperature": (30, 45),
+                 "salinity": (0, 100),
+                 "lightlevel": "moderate",
+                 "flags": {"plant", "native", "flip", "solid"},
+                 "model": "tree",
+                 "size": 7,
+                 "height": lambda x,y: 0.4+sin(x+y*y)/20
              },
              "silkyoak": {
                  "alias": "Silky Oak",

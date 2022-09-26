@@ -20,13 +20,13 @@ class glrenderer():
     def instance_data_factory(self):
         return [
             self.ctx.buffer(struct.pack(
-                '3f', 0.0, 0.0, 0.0) * (2 ** 16)),
+                '3f', 0.0, 0.0, 0.0) * (2 ** 22)),
             self.ctx.buffer(struct.pack(
-                '2f', 0.0, 0.0) * (2 ** 16)),
+                '2f', 0.0, 0.0) * (2 ** 22)),
             self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
+                '1f', 0.0) * (2 ** 22)),
             self.ctx.buffer(struct.pack(
-                '1f', 0.0) * (2 ** 16)),
+                '1f', 0.0) * (2 ** 22)),
         ]
     def vao_factory(self, program):
         vao_instance_data = self.instance_data_factory()
