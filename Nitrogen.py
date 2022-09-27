@@ -4,7 +4,9 @@
 # py -m nuitka --onefile --remove-output --include-data-dir=data=data --include-data-dir=save=save Nitrogen.py
 
 # to build Docker image of server; run
+# docker login
 # docker build -t cabbageman/nitrogenserver .
+# docker push cabbageman/nitrogenserver
 import random
 
 import pygame
