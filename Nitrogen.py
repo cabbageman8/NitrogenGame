@@ -425,7 +425,7 @@ try:
     world_data = []
     while time.perf_counter() - downl_time < 1:
         try:
-            byt, address = sock.recvfrom(2**16)
+            byt, address = sock.recvfrom(65507)
             print("received", len(byt), "bytes", "from", address)
             world_data.append(byt)
         except BlockingIOError:
@@ -702,7 +702,7 @@ def find_destination_slot(item, item_type):
             break
         elif first_blank == None and hotbar[destination_item_slot][2] == 0:
             first_blank = destination_item_slot
-        destination_item_slot = (destination_item_slot + 1) % 9
+        destination_item_slot = int((destination_item_slot + 1) % 9)
     if item != hotbar[destination_item_slot][0] and first_blank != None:
         destination_item_slot = first_blank
     if hotbar[destination_item_slot][2] == 0 or (item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == item_type):
@@ -848,7 +848,7 @@ def handle_controls(dt):
                     print("picked up item such that:", hotbar[destination_item_slot])
                     map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
             elif selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
-                if "tree" not in OBJ[selected_data[1]]["model"] or ((hotbar[selected_item_slot][0] == "sharprock" or hotbar[selected_item_slot][0] == "axe") and hotbar[selected_item_slot][2] > 0):
+                if "tree" not in OBJ[selected_data[1]]["model"] or ((hotbar[int(selected_item_slot)][0] == "sharprock" or hotbar[int(selected_item_slot)][0] == "axe") and hotbar[int(selected_item_slot)][2] > 0):
                     # grab decoration from selected tile
                     drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
                     if drops:
@@ -857,8 +857,8 @@ def handle_controls(dt):
                         drop_num, dropped_item, dropped_item_type = 1, selected_data[1], 1
                     destination_item_slot = find_destination_slot(dropped_item, dropped_item_type)
                     if drops == None or (destination_item_slot != None and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type))):
-                        if "tree" in OBJ[selected_data[1]]["model"] and hotbar[selected_item_slot][0] == "sharprock":
-                            hotbar[selected_item_slot][2] -= 1
+                        if "tree" in OBJ[selected_data[1]]["model"] and hotbar[int(selected_item_slot)][0] == "sharprock":
+                            hotbar[int(selected_item_slot)][2] -= 1
                         shovel_sfx.play()
                         if drops != None:
                             hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
@@ -866,11 +866,11 @@ def handle_controls(dt):
                         map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
             elif "water" not in selected_data[0]:
                 if selected_data[0] == "dirt":
-                    if hotbar[selected_item_slot][0] == "hoe":
+                    if hotbar[int(selected_item_slot)][0] == "hoe":
                         hit_sfx.play()
                         map.set_data(*selected_tile, ("farmland",) + selected_data[1:])
                 elif selected_data[0] in any_dirt:
-                    if hotbar[selected_item_slot][0] == "leafrake":
+                    if hotbar[int(selected_item_slot)][0] == "leafrake":
                         hit_sfx.play()
                         map.set_data(*selected_tile, ("dirt",) + selected_data[1:])
                 else:
@@ -924,12 +924,12 @@ def handle_controls(dt):
                 hotbar[int(selected_item_slot)][2] -= 1
                 construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
-        selected_item_slot = (selected_item_slot-1)%9
+        selected_item_slot = int((selected_item_slot-1)%9)
         construct_overlay()
         if "unclick4" in keydown_set:
             keydown_set.remove("unclick4")
     if "unclick5" in keydown_set or "d-pady-1" in gamepad_set and not "d-pady-1" in old_gamepad_set:
-        selected_item_slot = (selected_item_slot+1)%9
+        selected_item_slot = int((selected_item_slot+1)%9)
         construct_overlay()
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
@@ -1066,7 +1066,7 @@ def main():
         try:
             my_player_text = "player_update,"+str(player_number)+','+str(pos[0])+','+str(pos[1])+','+str(char_direction)+','+str(looking_direction)+','+str(char_anim)+','+str(char_speed)
             sock.sendto(my_player_text.encode('utf-8'), server_address)
-            data, address = sock.recvfrom(8192)
+            data, address = sock.recvfrom(65507)
             data = data.decode('utf-8')
             data = data.split("&")
             world_text = pickle.loads(base64.b64decode(data[1][2:-1]))
