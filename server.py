@@ -69,7 +69,7 @@ while True:
                 players.update({player_number: [x, y, *player_data]})
                 if player_number not in player_inbox.keys():
                     player_inbox.update({player_number: {}})
-                player_inbox[player_number].update(map.get_area(int(float(x))+random.randint(-100, 100), int(float(y))+random.randint(-100, 100), 4))
+                player_inbox[player_number].update(map.get_area(int(float(x))+random.randint(-100, 100), int(float(y))+random.randint(-100, 100), 3))
                 downloads = base64.b64encode(pickle.dumps(player_inbox[player_number]))
                 player_inbox[player_number].clear()
                 response = str(str(base64.b64encode(pickle.dumps(players))) + "&" + str(downloads)).encode('utf-8')

@@ -141,16 +141,16 @@ class glrenderer():
         update_mem = []
         new_locations = {}
         for byt in vert_list:
-            if byt not in vao.extra[1].keys():
+            try:
+                new_locations[byt] = vao.extra[1][byt]
+            except KeyError:
                 if vao.extra[3]:
                     location = vao.extra[3].pop()
                 else:
                     location = len(vao.extra[1]) + tail
                     tail += 1
                 update_mem.append((location, byt))
-                new_locations.update({byt: location})
-            else:
-                new_locations.update({byt: vao.extra[1][byt]})
+                new_locations[byt] = location
         return update_mem, new_locations
 
     def set_memory(self, buffer, update_mem):

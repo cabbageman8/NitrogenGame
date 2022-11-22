@@ -294,26 +294,84 @@ crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
 crumple_sfx.set_volume(0.5)
 jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
 jump_into_water_sfx.set_volume(0.2)
+sea_sfx = pygame.mixer.Sound('data/sea-waves.wav')
+sea_sfx.set_volume(0.2)
 
-def set_soundstage():
-    global music
-    if (time.time()%7000 < 600):
-        if music != "rain":
-            pygame.mixer.music.load('data/rain.wav')
-            pygame.mixer.music.play(-1)
-            music = "rain"
-    else:
-        if sin((time.time() * tau) / 60 / 10)+ 1.32 > 0:
-            if music != "ambience":
-                pygame.mixer.music.load('data/ambience.wav')
-                pygame.mixer.music.play(-1)
-                music = "ambience"
+obs_on_screen = set()
+next_obs_on_screen = set()
+curtime = time.perf_counter()
+steptime = curtime
+velocity = [0, 0]
+acceleration = 1/300
+
+def set_soundstage(raining, obs_on_screen, char_speed):
+    global velocity
+    global curtime
+    global steptime
+    global menu
+    if (abs(velocity[0])+abs(velocity[1])) > 0.001 and (curtime-steptime)*1000 > 2/char_speed:
+        steptime = curtime
+        mat = player_tile_info[0]
+        if mat == "seawater":
+            seasplash_sfx.play()
+        elif mat == "freshwater":
+            fish_sfx.play()
         else:
-            if music != "crickets":
-                pygame.mixer.music.load('data/crickets.wav')
-                pygame.mixer.music.play(-1)
-                music = "crickets"
-set_soundstage()
+            grass_step_sfx.play()
+    global music
+    if menu == 1:
+        if music != "titleloop":
+            pygame.mixer.music.load('data/titleloop.wav')
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play(-1)
+            music = "titleloop"
+    else:
+        if (raining > 1):
+            if "seawater" in obs_on_screen:
+                # at the beach
+                if music != "stormy-sea-waves":
+                    pygame.mixer.music.load('data/stormy-sea-waves.wav')
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play(-1)
+                    music = "stormy-sea-waves"
+            else:
+                if music != "rain":
+                    # is raining
+                    pygame.mixer.music.load('data/storm.wav')
+                    pygame.mixer.music.set_volume(1)
+                    pygame.mixer.music.play(-1)
+                    music = "rain"
+        else:
+            if "seawater" in obs_on_screen:
+                # at the beach
+                if music != "sea-waves":
+                    pygame.mixer.music.load('data/sea-waves.wav')
+                    pygame.mixer.music.set_volume(0.2)
+                    pygame.mixer.music.play(-1)
+                    music = "sea-waves"
+            elif "freshwater" in obs_on_screen:
+                # in water biome
+                if music != "flowing-water":
+                    pygame.mixer.music.load('data/flowing-water.wav')
+                    pygame.mixer.music.set_volume(0.2)
+                    pygame.mixer.music.play(-1)
+                    music = "flowing-water"
+            elif len(set(ANY_TREE).intersection(obs_on_screen)) > 0:
+                if min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4 > 0.03:
+                    # day time
+                    if music != "ambience":
+                        pygame.mixer.music.load('data/ambience.wav')
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
+                        music = "ambience"
+                else:
+                    # night time
+                    if music != "crickets":
+                        pygame.mixer.music.load('data/crickets.wav')
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
+                        music = "crickets"
+set_soundstage(0, obs_on_screen, 0)
 def seeded_random(a):
     output = (41406202+14874235*a     )%79493069
     output = (43915416+77751829*output)%76741089
@@ -390,9 +448,8 @@ except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
 
-#hotbar = [["treestump", 1, 1], ["treestump", 1, 1], ["birchtreestump", 1, 1], ["treestump", 1, 1], ["wall", 1, 1000], ["tiles", 1, 1000], ["dirt", 0, 1], ["lushundergrowth", 0, 1], ["bottlebrushdirt", 0, 1]]
-hotbar[8] = ["farmland", 0, 999]
-#hotbar[1] = ["axe", 2, 1]
+hotbar[8] = ["candle", 1, 999]
+#hotbar[3] = ["axe", 2, 1]
 #hotbar[1] = ["teabush", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]
@@ -446,7 +503,10 @@ def get_mat(x, y):
     local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
     biome = get_biome(x, y)
     temp, moisture, altitude = get_climate(x, y)
-    if temp % 10 > 9 and moisture % 10 > 9:
+    if biome[0] == "sea" and altitude > 18:
+        mat_list = get_local(temp, moisture, altitude, biome)
+        mat = mat_list[1%len(mat_list)]
+    elif temp % 10 > 9 and moisture % 10 > 9:
         # is in structure
         if x%5==0 or y%4==0:
             mat = "hexpavers"
@@ -500,7 +560,9 @@ def get_tile_info(x, y):
     return tuple(tile_data+(None,)*7)[:7]
 
 def list_tiles_on_screen(dist):
-    # returns an generator for every tile near the screen in order of manhattan distance
+    global obs_on_screen
+    global next_obs_on_screen
+    # returns a generator for every tile near the screen in order of manhattan distance
     while True:
         screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
         radius = ceil( screen_size[0] + screen_size[1] + dist )
@@ -511,6 +573,7 @@ def list_tiles_on_screen(dist):
         Renderer.foreground_list.clear()
         Renderer.rain_list.clear()
         Renderer.light_list = []
+        next_obs_on_screen.clear()
         for i in reversed(range(radius)):
             for j in range(i-1):
                 a, b = i-j-1, j
@@ -520,6 +583,7 @@ def list_tiles_on_screen(dist):
                 if b <= screen_size[0]+dist and a <= screen_size[1]+dist:
                     yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] + a-1)
                     yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] - a)
+        obs_on_screen = next_obs_on_screen.copy()
         Renderer.set_verts()
 
 def geom_light(x, y, z, w, h, hue):
@@ -567,9 +631,6 @@ def draw_rain(tex, x, y, z, w, h, sway):
     Renderer.rain_list.add(geom_object(x, y, z, w, h, tex, sway))
 def ontop_object(tex, x, y, z, w, h, sway):
     Renderer.ontop_list.add(geom_object(x, y, z, w, h, tex, sway))
-
-velocity = [0, 0]
-acceleration = 1/300
 
 keydown_set = set()
 gamepad_set = set()
@@ -649,11 +710,9 @@ def find_destination_slot(item, item_type):
     return None
 
 running=True
-curtime = time.perf_counter()
 char_direction = 0
 char_speed = 0
 char_anim = 0
-steptime = curtime
 world_text = {}
 player_text = {}
 last_server_update = 0
@@ -673,7 +732,6 @@ def handle_controls(dt):
     global overlay
     global window_size
     global selected_item_slot
-    global steptime
     global char_anim
     global world_text
     global player_text
@@ -790,7 +848,7 @@ def handle_controls(dt):
                     print("picked up item such that:", hotbar[destination_item_slot])
                     map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
             elif selected_data != None and len(selected_data) > 1 and selected_data[1] != None:
-                if ("tree" not in OBJ[selected_data[1]]["model"] or (hotbar[selected_item_slot][0] == "sharprock" or hotbar[selected_item_slot][0] == "axe") and hotbar[selected_item_slot][2] > 0):
+                if "tree" not in OBJ[selected_data[1]]["model"] or ((hotbar[selected_item_slot][0] == "sharprock" or hotbar[selected_item_slot][0] == "axe") and hotbar[selected_item_slot][2] > 0):
                     # grab decoration from selected tile
                     drops = 0 if "drops" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["drops"]
                     if drops:
@@ -806,15 +864,24 @@ def handle_controls(dt):
                             hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
                         leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
                         map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
-            else:
-                destination_item_slot = find_destination_slot(selected_data[0], 0)
-                if destination_item_slot != None:
-                    # grab material from selected tile
-                    shovel_sfx.play()
-                    hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
-                    biome = get_biome(*selected_tile)
-                    temp, moisture, altitude = get_climate(*selected_tile)
-                    map.set_data(*selected_tile, (get_local(temp, moisture, altitude, biome)[0], )+selected_data[1:])
+            elif "water" not in selected_data[0]:
+                if selected_data[0] == "dirt":
+                    if hotbar[selected_item_slot][0] == "hoe":
+                        hit_sfx.play()
+                        map.set_data(*selected_tile, ("farmland",) + selected_data[1:])
+                elif selected_data[0] in any_dirt:
+                    if hotbar[selected_item_slot][0] == "leafrake":
+                        hit_sfx.play()
+                        map.set_data(*selected_tile, ("dirt",) + selected_data[1:])
+                else:
+                    destination_item_slot = find_destination_slot(selected_data[0], 0)
+                    if destination_item_slot != None:
+                        # grab material from selected tile
+                        shovel_sfx.play()
+                        hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
+                        biome = get_biome(*selected_tile)
+                        temp, moisture, altitude = get_climate(*selected_tile)
+                        map.set_data(*selected_tile, (get_local(temp, moisture, altitude, biome)[0], )+selected_data[1:])
         construct_overlay()
         if "click1" in keydown_set:
             keydown_set.remove("click1")
@@ -829,7 +896,7 @@ def handle_controls(dt):
         construct_overlay()
     if "mouse3" in keydown_set or "button9" in gamepad_set:
         if hotbar[int(selected_item_slot)][2] > 0:
-            if hotbar[int(selected_item_slot)][1] == 2:
+            if hotbar[int(selected_item_slot)][1] == 2 and selected_data[3] == None:
                 # place item in selected tile
                 crumple_sfx.play()
                 age = None if len(selected_data) < 3 else selected_data[2]
@@ -848,6 +915,12 @@ def handle_controls(dt):
                 # place material in selected tile
                 hit_sfx.play()
                 map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
+                hotbar[int(selected_item_slot)][2] -= 1
+                construct_overlay()
+            elif hotbar[int(selected_item_slot)][1] == 3 and selected_data[5] != hotbar[int(selected_item_slot)][0]:
+                # place roof in selected tile
+                hit_sfx.play()
+                map.set_data(*selected_tile, selected_data[:5] + (hotbar[int(selected_item_slot)][0], 1))
                 hotbar[int(selected_item_slot)][2] -= 1
                 construct_overlay()
     if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
@@ -938,7 +1011,6 @@ def main():
     global overlay
     global window_size
     global selected_item_slot
-    global steptime
     global char_anim
     global text
     global world_text
@@ -949,6 +1021,8 @@ def main():
     global pos
     global player_tile_info
     global menu
+    global obs_on_screen
+    global next_obs_on_screen
     dt = (time.perf_counter() - curtime)*1000
     curtime = time.perf_counter()
     raining = 1+(time.time()%7000 < 600)
@@ -963,15 +1037,6 @@ def main():
     screen_size = floor((window_size[0] / tile_size) / 2), floor((window_size[1] / tile_size) / 2)
 
     char_speed = (sqrt(velocity[0]*velocity[0]+velocity[1]*velocity[1]))
-    if (abs(velocity[0])+abs(velocity[1])) > 0.001 and (curtime-steptime)*1000 > 2/char_speed:
-        steptime = curtime
-        mat = player_tile_info[0]
-        if mat == "water":
-            seasplash_sfx.play()
-        elif mat == "freshwater":
-            fish_sfx.play()
-        else:
-            grass_step_sfx.play()
     char_anim += char_speed*20
     looking_direction = char_direction
     if char_speed < 0.001:
@@ -1005,7 +1070,7 @@ def main():
             data = data.decode('utf-8')
             data = data.split("&")
             world_text = pickle.loads(base64.b64decode(data[1][2:-1]))
-            print(world_text)
+            #print(world_text)
             player_text = pickle.loads(base64.b64decode(data[0][2:-1]))
             for key in world_text.keys():
                 map.apply_data(int(key[0]), int(key[1]), world_text[key])
@@ -1072,7 +1137,7 @@ def main():
                      0.9,
                      100*(int(c)%2*2-1),
                      100*(int(c//2)%2*2-1), raining)
-    set_soundstage()
+    set_soundstage(raining, obs_on_screen, char_speed)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
     #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
@@ -1088,13 +1153,14 @@ def main():
 
     radius = ceil(screen_size[0] + screen_size[1] + 8)
     num_tiles = 0
-    # update tiles for 12ms or until all tiles have been updated (overwrites render buffers automatically once full)
+    # update tiles for 10ms or until all tiles have been updated (overwrites render buffers automatically once full)
 
     while time.perf_counter() - curtime < 0.010 and num_tiles < ((radius * 2) ** 2):
         num_tiles += 1
         tile_coords = next(world_tiles)
         tile_data = get_tile_info(*tile_coords)
         mat = tile_data[0]
+        next_obs_on_screen.add(mat)
         index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
         height = 0.0
         if (mat in animated):
@@ -1106,6 +1172,7 @@ def main():
         Renderer.tile_list.add(geom_tile(*tile_coords, height, get_tex(mat, matindex), 0))
 
         decor = tile_data[1]
+        next_obs_on_screen.add(decor)
         if decor in OBJ.keys():
             model = OBJ[decor]["model"]
             size = OBJ[decor]["size"]
@@ -1179,7 +1246,7 @@ def main():
         if len(tile_data) > 6 and tile_data[5] != None:
             # render roof
             w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
-            draw_object_foreground(get_tex(tile_data[5], index), tile_coords[0], tile_coords[1], 0.5, w, h, 0)
+            draw_object_foreground(get_tex(tile_data[5], index), tile_coords[0], tile_coords[1], 0.1, w, h, 0)
         elif raining != 1:
             # render rain
             w, h = 3 * (int(index + tile_coords[0]) % 2 * 2 - 1), 3 * (int(index + tile_coords[1]) % 2 * 2 - 1)

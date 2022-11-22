@@ -3,13 +3,13 @@ textures = [
             #special
             "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon", "birds", "rain",
             #materials
-            "water", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
+            "seawater", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt",
             #objects
-            "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "sharprock", "crab",
+            "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "crab",
             "fern", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
-            "flytrap", "whitetreelog", "whitetreetrunk", "whitetreestump", "lillypad", "talldrygrass", "candle",
+            "whitetreelog", "whitetreetrunk", "whitetreestump", "lillypad", "talldrygrass", "candle",
             "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "papermulberry", "horsetailcasuarina", "horsetailcasuarinatrunk",
             "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
             "bluegumeucalyptus", "bluegumeucalyptussapling", "mulgabush", "mulgatree", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
@@ -26,15 +26,16 @@ textures = [
             "ricegrassseedling", "ricegrassfilling", "ricegrassmature", "rice",
             "barleygrassseedling", "barleygrassfilling", "barleygrassmature", "barley",
             #items
-            "axe", "spade", "wood"
+            "axe", "spade", "wood", "hoe", "sharprock", "leafrake"
             ]
 
 item_type_map = {0 :"Floor tile", 1 :"Object", 2 :"Item", 3 :"Roof tile"}
 
 entities = ["charhands", "charhead", "charlegs"]
-animated = {"water", "freshwater"}
-difficult_terrain = {"water", "freshwater"}
-any_dirt = [obj for obj in textures if "dirt" in obj]+["farmland",]
+animated = {"seawater", "freshwater"}
+difficult_terrain = {"seawater", "freshwater"}
+any_dirt = [obj for obj in textures if "dirt" in obj]+["farmland", "roughseedgrass"]
+tools = ["axe", "sharprock", "spade", "hoe", "leafrake"]
 
 #          biome name, material lists
 biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
@@ -45,7 +46,7 @@ biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
           ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("banksiadirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass", "dirt", "roughseedgrass"),)),
           ("desert", (("sand", "dirt"),)),
-          ("sea", (("water", "stones"),("water", "sand"),("water",),)))
+          ("sea", (("seawater", "stones"),("seawater", "sand"),)))
 
 #            temp over humidity
 biome_map = ((4, 3, 2, 1, 2, 0),# cold
@@ -56,6 +57,8 @@ biome_map = ((4, 3, 2, 1, 2, 0),# cold
 
 OBJ = {
              "grass": {
+                 "alias": "Grass",
+                 "drops": None,
                  "substrate": ["weeds", "roughseedgrass", "stones", "lushundergrowth", "lawn", "sand", "freshwater"]+any_dirt,
                  "moisture": (5, 100),
                  "nutreants": (10, 70),
@@ -570,6 +573,7 @@ OBJ = {
              },
              "mulgabush": {
                  "alias": "Mulga (bush)",
+                 "drops": (2, "wood", 2),
                  "substrate": ["weeds", "roughseedgrass", "sand"]+any_dirt,
                  "moisture": (40, 90),
                  "nutreants": (10, 70),
@@ -583,6 +587,7 @@ OBJ = {
              },
              "mulgatree": {
                  "alias": "Mulga (tree)",
+                 "drops": (4, "wood", 2),
                  "substrate": ["weeds", "roughseedgrass", "sand"]+any_dirt,
                  "moisture": (40, 90),
                  "nutreants": (10, 70),
@@ -599,9 +604,9 @@ OBJ = {
                  "alias": "Sawtooth Banksia (sapling)",
                  "drops": (2, "wood", 2),
                  "substrate": ["banksiadirt",],
-                 "moisture": (30, 90),
+                 "moisture": (20, 90),
                  "nutreants": (10, 70),
-                 "temperature": (30, 45),
+                 "temperature": (15, 80),
                  "salinity": (0, 100),
                  "lightlevel": "moderate",
                  "flags": {"plant", "native", "flip", "slow"},
@@ -612,11 +617,12 @@ OBJ = {
              },
              "sawtoothbanksia": {
                  "alias": "Sawtooth Banksia",
+                 "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "substrate": ["banksiadirt",],
-                 "moisture": (30, 90),
+                 "moisture": (20, 90),
                  "nutreants": (10, 70),
-                 "temperature": (30, 45),
+                 "temperature": (15, 80),
                  "salinity": (0, 100),
                  "lightlevel": "moderate",
                  "flags": {"plant", "native", "flip", "solid"},
@@ -741,7 +747,7 @@ OBJ = {
                  "alias": "Grey Mangrove",
                  "drops": (1, "wood", 2),
                  "creates": (1, "greymangrovepropagules"),
-                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "seawater", "roughseedgrass", "stones" ),
                  "moisture": (20, 50),
                  "temperature": (15, 80),
                  "salinity": (90, 130),
@@ -755,7 +761,7 @@ OBJ = {
              "greymangrovesapling": {
                  "alias": "Grey Mangrove (sapling)",
                  "drops": (1, "wood", 2),
-                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "seawater", "roughseedgrass", "stones" ),
                  "moisture": (20, 50),
                  "temperature": (15, 80),
                  "salinity": (90, 130),
@@ -769,7 +775,7 @@ OBJ = {
              "greymangrovepropagules": {
                  "alias": "Grey Mangrove (propagules)",
                  "drops": (1, "wood", 2),
-                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "water", "roughseedgrass" ),
+                 "substrate": ( "mangrovedirt", "dirt", "sand", "freshwater", "seawater", "roughseedgrass", "stones" ),
                  "moisture": (20, 50),
                  "temperature": (15, 80),
                  "salinity": (90, 130),
@@ -809,7 +815,6 @@ OBJ = {
              },
              "silverwattlesapling": {
                  "alias": "Silver Wattle (sapling)",
-                 "leaves": "treestump",
                  "drops": (4, "wood", 2),
                  "sheds": "wattledirt",
                  "substrate": ( "wattledirt", "roughseedgrass" ),
@@ -844,18 +849,6 @@ OBJ = {
                  "flags": {"plant", "flip", "solid"},
                  "model": "singleshrub",
                  "size": 2,
-                 "height": 0.03
-             },
-             "flytrap": {
-                 "substrate": ("dirt", "weeds", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "sheoakdirt", "lawn"),
-                 "moisture": (50, 90),
-                 "nutreants": (10, 60),
-                 "temperature": (30, 40),
-                 "salinity": (0, 40),
-                 "lightlevel": "high",
-                 "flags": {"plant", "flip", "slow"},
-                 "model": "singleshrub",
-                 "size": 1.5,
                  "height": 0.03
              },
              "lillypad": {
@@ -952,10 +945,20 @@ OBJ = {
              },
 }
 
+ANY_TREE = [key for key, value in OBJ.items() if "tree" in value["model"]]
+
 ITEMS = {
             "sharprock": {
                  "alias": "Sharp Rock",
                  "description": "Sharper than other rocks, can be used to cut trees",
+            },
+            "hoe": {
+                 "alias": "Hoe",
+                 "description": "Can till dirt into farmland",
+            },
+            "leafrake": {
+                 "alias": "Leaf Rake",
+                 "description": "Can clean up leaf litter",
             },
             "axe": {
                  "alias": "Axe",
@@ -1003,6 +1006,10 @@ crafting = {
         "materials": ((2, "rock", ),)},
     (1, "candle", 1): {
         "materials": ((1, "wood", ),)},
+    (1, "hoe", 2): {
+        "materials": ((1, "rock"), (4, "wood"),)},
+    (1, "leafrake", 2): {
+        "materials": ((8, "wood"),)},
     (1, "axe", 2): {
         "materials": ((1, "sharprock"), (4, "wood"),)},
     (1, "chiliseeds", 1): {
@@ -1011,7 +1018,7 @@ crafting = {
         "materials": ((3, "strawberry"), (1, "sharprock"))},
     (1, "oatmeal", 2): {
         "materials": ((4, "oats"), ),
-        "workstation": (("windmill",), ("watermill", "water"))},
+        "workstation": (("windmill",), ("watermill", "seawater"))},
     (1, "oatbread", 2): {
         "materials": ((6, "oatmeal"), ),
         "workstation": (("oven",), ("campfire",))},
@@ -1021,6 +1028,8 @@ crafting = {
     (1, "planks", 0): {
         "materials": ((4, "wood"),)},
     (1, "planks", 1): {
+        "materials": ((8, "wood"),)},
+    (1, "planks", 3): {
         "materials": ((8, "wood"),)},
     (2, "cottonseeds", 1): {
         "materials": ((1, "cottonbolls"),)},
