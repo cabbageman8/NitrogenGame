@@ -19,4 +19,4 @@ jobs:
     - name: Build the Docker image
       run: docker build . -t ${{ secrets.DOCKER_USERNAME }}/nitrogenserver:$(date +%s)
     - name: Push to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/nitrogenserver:$(date +%s)
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/nitrogenserver
