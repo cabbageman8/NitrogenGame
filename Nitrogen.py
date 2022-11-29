@@ -503,7 +503,10 @@ def get_mat(x, y):
     local = max(-1, min(1, sin(0.546354 * y/5) * sin(0.876964 * y/5) * sin(1.45638 * y/5 + 1.82266 * x/5) + cos(1.94367 * x/5 - 1.743247 * y/5) * cos(0.869632 * x/5) ))
     biome = get_biome(x, y)
     temp, moisture, altitude = get_climate(x, y)
-    if biome[0] == "sea" and altitude > 18:
+    if (temp % 7)*(moisture % 7)/altitude > 6/10:
+        # is in creek
+        mat = "freshwater"
+    elif biome[0] == "sea" and altitude > 18:
         mat_list = get_local(temp, moisture, altitude, biome)
         mat = mat_list[1%len(mat_list)]
     elif temp % 10 > 9 and moisture % 10 > 9:
@@ -519,31 +522,34 @@ def get_mat(x, y):
 
 def decorate(x, y, mat):
     dec = None
-    r = point_to_random(x, y)
-    r2 = seeded_random(r)
-    if mat == "hexpavers":
-        if r < 0.4:
-            dec = "hexpavers"
-    else:
-        if r > 0.0:
-            dec = list(OBJ)[int(r2*len(OBJ))]
-            temp, moisture, altitude = get_climate(x, y)
-            salinity = max(0, 100 / (altitude / 30) - moisture)
-            if "plant" in OBJ[dec]["flags"]:
-                if "native" in OBJ[dec]["flags"]:
-                    if mat not in OBJ[dec]["substrate"] or \
-                            int(temp) not in range(*OBJ[dec]["temperature"]) or \
-                            int(moisture) not in range(*OBJ[dec]["moisture"]) or \
-                            int(salinity) not in range(*OBJ[dec]["salinity"]):
+    counter = 0
+    while dec == None and counter < 3:
+        counter += 1
+        r = point_to_random(x+2**counter, y-2**counter)
+        r2 = seeded_random(r)
+        if mat == "hexpavers":
+            if r < 0.4:
+                dec = "hexpavers"
+        else:
+            if r > 0.0:
+                dec = list(OBJ)[int(r2*len(OBJ))]
+                temp, moisture, altitude = get_climate(x, y)
+                salinity = max(0, 100 / (altitude / 30) - moisture)
+                if "plant" in OBJ[dec]["flags"]:
+                    if "native" in OBJ[dec]["flags"]:
+                        if mat not in OBJ[dec]["substrate"] or \
+                                int(temp) not in range(*OBJ[dec]["temperature"]) or \
+                                int(moisture) not in range(*OBJ[dec]["moisture"]) or \
+                                int(salinity) not in range(*OBJ[dec]["salinity"]):
+                            dec = None
+                    elif mat == "farmland":
+                        if r < 0.4:
+                            dec = None
+                    else:
                         dec = None
-                elif mat == "farmland":
-                    if r < 0.4:
-                        dec = None
-                else:
+                elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
+                        "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
                     dec = None
-            elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
-                    "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
-                dec = None
     if dec == None:
         map.cache_data(int(x), int(y), (mat, ))
     else:
@@ -865,12 +871,24 @@ def handle_controls(dt):
                         leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
                         map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
             elif "water" not in selected_data[0]:
-                if selected_data[0] == "dirt":
-                    if hotbar[int(selected_item_slot)][0] == "hoe":
-                        hit_sfx.play()
-                        map.set_data(*selected_tile, ("farmland",) + selected_data[1:])
-                elif selected_data[0] in any_dirt:
-                    if hotbar[int(selected_item_slot)][0] == "leafrake":
+                if hotbar[int(selected_item_slot)][0] == "spade":
+                    if selected_data[0] == "dirt" or selected_data[0] == "wetdirt" or selected_data[0] == "sand":
+                        r1 = random.choice((0, 1))
+                        r2 = random.choice((1, -1))
+                        neighbour_mat = get_tile_info(selected_tile[0]+(r1*r2), selected_tile[1]+((1-r1)*r2))[0]
+                        if "water" in neighbour_mat:
+                            hit_sfx.play()
+                            map.set_data(*selected_tile, (neighbour_mat,) + selected_data[1:])
+                elif hotbar[int(selected_item_slot)][0] == "hoe":
+                    if selected_data[0] == "dirt":
+                        r1 = random.choice((0, 1))
+                        r2 = random.choice((1, -1))
+                        neighbour_mat = get_tile_info(selected_tile[0]+(r1*r2), selected_tile[1]+((1-r1)*r2))[0]
+                        if neighbour_mat == "freshwater" or neighbour_mat == "farmland":
+                            hit_sfx.play()
+                            map.set_data(*selected_tile, ("farmland",) + selected_data[1:])
+                elif hotbar[int(selected_item_slot)][0] == "leafrake":
+                    if selected_data[0] != "dirt" and selected_data[0] in any_dirt:
                         hit_sfx.play()
                         map.set_data(*selected_tile, ("dirt",) + selected_data[1:])
                 else:

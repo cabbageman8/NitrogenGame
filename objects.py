@@ -5,7 +5,7 @@ textures = [
             #materials
             "seawater", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "freshwater",
-            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt",
+            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt", "mossdirt",
             #objects
             "grass", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "crab",
             "fern", "silkyoak", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine", "cactus", "greencactus",
@@ -38,10 +38,10 @@ any_dirt = [obj for obj in textures if "dirt" in obj]+["farmland", "roughseedgra
 tools = ["axe", "sharprock", "spade", "hoe", "leafrake"]
 
 #          biome name, material lists
-biomes = (("alpinetundra", (("sheoakdirt", "weeds", "stones"),)),
+biomes = (("alpinetundra", (("sheoakdirt", "mossdirt", "stones"),)),
           ("steppe", (("lawn", "lushundergrowth", "weeds", "stones"),)),
-          ("wetforest", (("freshwater", "weeds", "freshwater"), ("freshwater", "wetdirt", "freshwater"), ("freshwater", "silkyoakdirt", "freshwater") )),
-          ("moistforest", (("freshwater", "weeds", "wetdirt", "weeds", "wetdirt"),)),
+          ("wetforest", (("freshwater", "mossdirt", "freshwater"), ("freshwater", "wetdirt", "freshwater"), ("freshwater", "silkyoakdirt", "freshwater") )),
+          ("moistforest", (("freshwater", "mossdirt", "wetdirt", "mossdirt", "wetdirt"),)),
           ("desertscrub", (("dirt", "sand", "roughseedgrass"),)),
           ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("banksiadirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass", "dirt", "roughseedgrass"),)),
@@ -510,7 +510,7 @@ OBJ = {
              },
              "fern": {
                  "substrate": ["weeds", "lushundergrowth", "lawn"]+any_dirt,
-                 "moisture": (40, 90),
+                 "moisture": (40, 100),
                  "temperature": (20, 40),
                  "salinity": (0, 50),
                  "lightlevel": "moderate",
@@ -1009,6 +1009,8 @@ crafting = {
     (1, "hoe", 2): {
         "materials": ((1, "rock"), (4, "wood"),)},
     (1, "leafrake", 2): {
+        "materials": ((8, "wood"),)},
+    (1, "spade", 2): {
         "materials": ((8, "wood"),)},
     (1, "axe", 2): {
         "materials": ((1, "sharprock"), (4, "wood"),)},
