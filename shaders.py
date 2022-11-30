@@ -58,8 +58,7 @@ void main() {
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
-    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), 
-                     (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
+    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
@@ -74,6 +73,7 @@ uniform sampler2D overlay;
 uniform vec2 mouse_pos;
 uniform float tile_size;
 uniform vec2 screen_size;
+uniform vec2 player_offset;
 uniform float time;
 uniform vec3 sunlight;
 uniform int lightnum;
@@ -87,7 +87,8 @@ vec4 incolour;
 float mid_dist_2;
 float mouse_dist_2;
 float seethrough;
-float light_dist;
+vec2 trans_pos;
+float light_dist_2;
 int i;
 vec3 light_value;
 void main() {
@@ -95,9 +96,11 @@ void main() {
     if (incolour.a < 0.5) { discard; }
     light_value = sunlight;
     for (i=0;i<lightnum;i++) {
-        light_dist = 0.1+(pow((lightpos[i].x/tile_size-screenpos.x/tile_size)*screen_size.x/screen_size.y, 2.0)+
-                          pow(lightpos[i].y/tile_size-screenpos.y/tile_size, 2.0))*20000.0;
-        light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist), light_value.g + lighthue[i].g*(1.0/light_dist), light_value.b + lighthue[i].b*(1.0/light_dist));
+        trans_pos = vec2((lightpos[i].x-player_offset.x)/(screen_size.x/tile_size)*2.0, 
+                         (lightpos[i].y-player_offset.y)/(screen_size.y/tile_size)*2.0);
+        light_dist_2 = 0.1+(pow((trans_pos.x-screenpos.x)/tile_size*screen_size.x/screen_size.y, 2.0)+
+                            pow((-trans_pos.y-screenpos.y)/tile_size, 2.0))*20000.0;
+        light_value = vec3(light_value.r + lighthue[i].r*(1.0/light_dist_2), light_value.g + lighthue[i].g*(1.0/light_dist_2), light_value.b + lighthue[i].b*(1.0/light_dist_2));
     }
     f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), incolour.a);
 }
@@ -240,7 +243,7 @@ void main() {
     trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = mod(pos.z-time/400.0, 1.0);
-    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)*(1.0+zpos), (1.0-trans_pos.y-vert.y*trans_size.y)*(1.0+zpos), -pos.z);
+    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);

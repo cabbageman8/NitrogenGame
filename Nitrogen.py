@@ -523,7 +523,7 @@ def get_mat(x, y):
 def decorate(x, y, mat):
     dec = None
     counter = 0
-    while dec == None and counter < 3:
+    while dec == None and counter < 2:
         counter += 1
         r = point_to_random(x+2**counter, y-2**counter)
         r2 = seeded_random(r)
@@ -568,6 +568,10 @@ def get_tile_info(x, y):
 def list_tiles_on_screen(dist):
     global obs_on_screen
     global next_obs_on_screen
+    global hotbar
+    global selected_item_slot
+    global screen_coords
+    global tile_size
     # returns a generator for every tile near the screen in order of manhattan distance
     while True:
         screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
@@ -589,15 +593,18 @@ def list_tiles_on_screen(dist):
                 if b <= screen_size[0]+dist and a <= screen_size[1]+dist:
                     yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] + a-1)
                     yield ceil(store_screen_coords[0] / tile_size) + (screen_size[0] - b), ceil(store_screen_coords[1] / tile_size) + (screen_size[1] - a)
+        item = hotbar[int(selected_item_slot)]
+        if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
+            player_offset = (store_screen_coords[0] / tile_size % 2 ** 16, store_screen_coords[1] / tile_size % 2 ** 16)
+            Renderer.light_list.append(((player_offset[0], player_offset[1], 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
         obs_on_screen = next_obs_on_screen.copy()
         Renderer.set_verts()
 
 def geom_light(x, y, z, w, h, hue):
     # return element for lighting using tile coords
     global screen_coords
-    return (( -1+(1 - screen_coords[0] % tile_size + tile_size * (x + abs(w) // 2 + 0.5) - screen_coords[0] // tile_size * tile_size) / window_size[0] * 2,
-              +1-(1 - screen_coords[1] % tile_size + tile_size * (y + abs(h) // 2 + 0.5) - screen_coords[1] // tile_size * tile_size) / window_size[1] * 2,
-            1), hue)
+    screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
+    return (((x+0.5-screen_size[0]) % 2 ** 16, (y-screen_size[1]) % 2 ** 16, 1), hue)
 
 def screen_transform(x, y, z, w, h, tex, sway):
     # convert pixel coords to shader coords
@@ -1126,9 +1133,6 @@ def main():
         ontop_object(get_tex("charlegs" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, 1)
     ontop_object(get_tex("charhands" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, 1)
     ontop_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
-    item = hotbar[int(selected_item_slot)]
-    if item[2] > 0 and item[0] in OBJ.keys() and "lightemit" in OBJ[item[0]].keys():
-        Renderer.light_buffer.append(((0, 0, 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
     tile_data = get_tile_info(*selected_tile)
     if tile_data[1] in OBJ.keys() and "height" in OBJ[tile_data[1]].keys():
         height = OBJ[tile_data[1]]["height"](*selected_tile) if "tree" in OBJ[tile_data[1]]["model"] else OBJ[tile_data[1]]["height"]

@@ -107,6 +107,7 @@ class glrenderer():
 
         self.vao_content = [(self.vbo, '2f', 'vert'), (self.uvmap, '2f', 'in_text')]
 
+        self.cloudvao = self.vao_factory(self.reflection_prog)
         self.reflectvao = self.vao_factory(self.reflection_prog)
         self.tilevao = self.vao_factory(self.normal_prog)
         self.objectvao = self.vao_factory(self.normal_prog)
@@ -198,7 +199,7 @@ class glrenderer():
 
     def set_uniforms(self, mouse_pos, screen_coords, tile_size):
         self.ctx.clear()
-        self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
+        self.r = 1#min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
         self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     self.reflection_prog['tile_size'].value =     self.rain_prog['tile_size'].value =     tile_size
         self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          self.rain_prog['time'].value =     (time.time()*1000)%2**16
         self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =     self.ctx.screen.viewport[2:]
@@ -232,7 +233,9 @@ class glrenderer():
         self.quad_fs.render()
 
         self.texpack_texture.use()
-        #self.set_verts()
+
+        self.set_vert_buffers(vert_list=self.shadow_list, vao=self.cloudvao, is_reset=1)
+        self.render_vert_list(vao=self.cloudvao, is_ln=1, is_tex=1, is_shadow=0)
 
         self.render_vert_list(vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0)
         #self.render_vert_list(vao=self.reflectvao, is_ln=1)
