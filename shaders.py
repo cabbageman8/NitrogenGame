@@ -58,7 +58,8 @@ void main() {
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
-    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)*(1.0+zpos), (1.0-trans_pos.y-vert.y*trans_size.y)*(1.0+zpos), -pos.z);
+    screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), 
+                     (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
     thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
