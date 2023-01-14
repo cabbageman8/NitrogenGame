@@ -1,4 +1,5 @@
 from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log
+
 textures = [
             #special
             "None", "selection", "selectionbot", "cloud", "sky", "hole", "moon", "birds", "rain",
@@ -947,6 +948,87 @@ OBJ = {
 
 ANY_TREE = [key for key, value in OBJ.items() if "tree" in value["model"]]
 
+''' FOOD INFO (source https://en.wikipedia.org/wiki/Dietary_Reference_Intake)
+water (hydration) watermelon, lettuce, fruit, vege
+carbohydrates (energy) grain, fruit, vege
+protein (amino acids)  nuts, seeds, legumes, beans, peas, lentils, meats, eggs
+fattyacid (omega-6, omega-3) oils, nuts, seeds, egg yolk, soybean
+vitamins (vitamin C, Niacin, Vitamin E) peppers, yeast, chives, coriander, yeast, hazelnut, peanut, chilli, mushrooms
+minerals (calcium, phosphorus, magnesium) tofu, basil, whey, cottonseed meal, hemp seeds, seaweed, mushrooms, oyster, sesame, cocoa, cashews, sunflower seeds, kelp, nuts, thyme
+'''
+FOODS = {
+            "porridge": {
+                 "alias": "Oat Porridge",
+                 "description": "Cooked Oatmeal",
+                 "nutrients": {"carbohydrates", "protein", "minerals"},
+            },
+            "oatbread": {
+                 "alias": "Oatmeal Bread",
+                 "description": "Delicous source of carbs",
+                 "nutrients": {"carbohydrates", "protein", "minerals"},
+            },
+            "chili": {
+                 "alias": "Chilli",
+                 "description": "Hot and spicy fruit",
+                 "nutrients": {"vitamins",},
+            },
+            "mushrooms": {
+                 "alias": "Mushrooms",
+                 "description": "Nither plant nor animal, belongs to the fungi kingdom",
+                 "nutrients": {"protein", "vitamins", "minerals"},
+            },
+            "crabmeat": {
+                 "alias": "Crab Meat",
+                 "description": "Sweet tasting seafood",
+                 "nutrients": {"protein", "fattyacid", "vitamins", "minerals"},
+            },
+            "tea": {
+                 "alias": "Tea",
+                 "description": "Pleasant tasting caffeinated drink",
+                 "nutrients": {"water", "minerals"},
+            },
+            "coffee": {
+                 "alias": "Coffee",
+                 "description": "Pleasant tasting caffeinated drink",
+                 "nutrients": {"water", "minerals"},
+            },
+            "cookedartichoke": {
+                 "alias": "Cooked Artichoke",
+                 "description": "Large edible flower-bud",
+                 "nutrients": {"vitamins", "minerals"},
+            },
+            "strawberry": {
+                 "alias": "Strawberry",
+                 "description": "Small red berries covered in seeds",
+                 "nutrients": {"carbohydrates", "vitamins", "minerals"},
+            },
+            "edamame": {
+                 "alias": "Edamame",
+                 "description": "Soybeans harvested while still green",
+                 "nutrients": {"protein", "fattyacid", "vitamins", "minerals"},
+            },
+            "soybeans": {
+                 "alias": "Soybeans",
+                 "description": "Harvested once yellow",
+                 "nutrients": {"protein", "fattyacid", "vitamins", "minerals"},
+            },
+            "cottonseedmeal": {
+                 "alias": "Cotton-seed Meal",
+                 "description": "Byproduct from purifying cotton bolls",
+                 "nutrients": {"protein", "fattyacid", "vitamins", "minerals"},
+            },
+            "rice": {
+                 "alias": "Rice",
+                 "description": "Staple grain, delicious once boiled",
+                 "nutrients": {"carbohydrates",},
+            },
+            "barley": {
+                 "alias": "Barley",
+                 "description": "Staple grain, chewy once boiling",
+                 "nutrients": {"carbohydrates", "minerals"},
+            },
+}
+
 ITEMS = {
             "sharprock": {
                  "alias": "Sharp Rock",
@@ -968,10 +1050,6 @@ ITEMS = {
                  "alias": "Oatmeal",
                  "description": "Rolled oat seeds",
             },
-            "oatbread": {
-                 "alias": "Oatmeal Bread",
-                 "description": "Delicous source of carbs",
-            },
             "coffeecherries": {
                  "alias": "Coffee Cherries",
                  "description": "Used to grow Coffee Tree or roasted into Coffee Beans",
@@ -991,7 +1069,11 @@ ITEMS = {
             "tealeaf": {
                  "alias": "Tea Leaf",
                  "description": "Used to brew Tea",
-            }
+            },
+            "crab": {
+                 "alias": "Crab",
+                 "description": "Sea dwelling arthropod with claws",
+            },
 }
 
 TILES = {

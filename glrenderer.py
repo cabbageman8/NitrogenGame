@@ -199,7 +199,7 @@ class glrenderer():
 
     def set_uniforms(self, mouse_pos, screen_coords, tile_size):
         self.ctx.clear()
-        self.r = 1#min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
+        self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
         self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     self.reflection_prog['tile_size'].value =     self.rain_prog['tile_size'].value =     tile_size
         self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          self.rain_prog['time'].value =     (time.time()*1000)%2**16
         self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =     self.ctx.screen.viewport[2:]

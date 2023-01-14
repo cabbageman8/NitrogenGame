@@ -175,11 +175,13 @@ def draw_text(surface, xy, t, has_bg=0):
 def get_alias(name):
     alias = name if name not in OBJ.keys() or "alias" not in OBJ[name].keys() else OBJ[name]["alias"]
     alias = alias if name not in ITEMS.keys() or "alias" not in ITEMS[name].keys() else ITEMS[name]["alias"]
+    alias = alias if name not in FOODS.keys() or "alias" not in FOODS[name].keys() else FOODS[name]["alias"]
     alias = alias if name not in TILES.keys() or "alias" not in TILES[name].keys() else TILES[name]["alias"]
     return alias
 def get_description(name):
     description = "" if name not in OBJ.keys() or "description" not in OBJ[name].keys() else OBJ[name]["description"]
     description = description if name not in ITEMS.keys() or "description" not in ITEMS[name].keys() else ITEMS[name]["description"]
+    description = description if name not in FOODS.keys() or "description" not in FOODS[name].keys() else FOODS[name]["description"]
     description = description if name not in TILES.keys() or "description" not in TILES[name].keys() else TILES[name]["description"]
     return description
 
@@ -223,11 +225,12 @@ def construct_overlay():
             else:
                 infotext.append(" Collectable")
         else:
-            infotext.append(get_alias(str(info[0])))
+            infotext.append(get_alias(info[0]))
         if len(info) > 3 and info[3]:
-            infotext.append(get_alias(str(info[3])))
-            if info[3] in ITEMS.keys() and "description" in ITEMS[info[3]].keys():
-                infotext.append(" "+ITEMS[info[3]]["description"])
+            infotext.append(get_alias(info[3]))
+            infotext.append(" "+get_description(info[3]))
+            if info[3] in FOODS.keys():
+                infotext.append(" Can be eaten")
         for i, item in enumerate(infotext):
             draw_text(overlay, (mouse_pos[0], mouse_pos[1]+fontsize*i), item, has_bg=True)
     if menu == 1: # title screen / help menu
