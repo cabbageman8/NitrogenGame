@@ -186,13 +186,14 @@ def get_description(name):
     return description
 
 menu = 1
+food_plate = []
 def construct_overlay():
     global text
     global overlay
     global Renderer
     global menu
     overlay.fill((0, 0, 0, 0))
-    if menu == 0 or menu == 0.5 or menu == 2: # game play hud
+    if menu == 0 or menu == 0.5 or menu == 2 or menu == 3: # game play hud
         overlay.blit(icon_img[texd["selection"][0]], (0, ico_size * selected_item_slot - ico_size * 4.5 + overlay.get_size()[1] / 2))
         for i in range(9):
             if hotbar[i][0] != None and hotbar[i][2] > 0:
@@ -224,6 +225,8 @@ def construct_overlay():
                     infotext.append(" Drops: "+get_alias(OBJ[info[1]]["drops"][1]))
             else:
                 infotext.append(" Collectable")
+            if info[1] in FOODS.keys():
+                infotext.append(" Can be eaten")
         else:
             infotext.append(get_alias(info[0]))
         if len(info) > 3 and info[3]:
@@ -235,7 +238,7 @@ def construct_overlay():
             draw_text(overlay, (mouse_pos[0], mouse_pos[1]+fontsize*i), item, has_bg=True)
     if menu == 1: # title screen / help menu
         file = Image.open(os.path.join("data", "titlescreen.png")).convert("RGBA")
-        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
+        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.Resampling.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
         for i, t in enumerate(text):
@@ -243,7 +246,7 @@ def construct_overlay():
 
     if menu == 2: # crafting menu
         file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
-        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.NEAREST).tobytes(),
+        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.Resampling.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
         pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((ico_size, ico_size * selected_crafting_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), (280, ico_size)))
@@ -275,6 +278,29 @@ def construct_overlay():
                 draw_text(overlay, (700, (i+9) * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
         for i, t in enumerate(text):
             overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
+    if menu == 3: # health menu
+        file = Image.open(os.path.join("data", "playerheathmenu.png")).convert("RGBA")
+        bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.Resampling.NEAREST).tobytes(),
+                                      overlay.get_size(), "RGBA").convert_alpha()
+        overlay.blit(bgimg, (0, 0))
+        for i, t in enumerate(text):
+            overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0] - silombol.size(t)[0] - 64,
+                                                               silombol.size(t)[1] * i - ico_size * 3 +
+                                                               overlay.get_size()[1] / 2))
+        for i, food in enumerate(food_plate):
+            if food[0] != None and food[2] > 0:
+                x, y = overlay.get_size()[0]/6, overlay.get_size()[1]/3
+                dx, dy = ico_size/2 * ((1 + i * 2)%5) , ico_size * ((1 + i * 2)//5)
+                overlay.blit(icon_img[texd[food[0]][0]], (x+dx, y+dy))
+        for i, t in enumerate(FOODINFO):
+            x, y = overlay.get_size()[0]/2, silombol.size(t)[1] * i * 3.4 - ico_size * 3.7 + overlay.get_size()[1] / 2
+            overlay.blit(silombol.render(t, True, (255,255,255)), (x, y))
+            counter = 0
+            for food in food_plate:
+                if t in FOODS[food[0]]["nutrients"]:
+                    counter += 1
+            value = str(counter)
+            overlay.blit(silombol.render(value, True, (255, 255, 255)), (x + ico_size * 2.5, y))
     Renderer.update_overlay(overlay)
     if len(text)*fontsize > window_size[1]:
         text = []
@@ -305,7 +331,6 @@ next_obs_on_screen = set()
 curtime = time.perf_counter()
 steptime = curtime
 velocity = [0, 0]
-acceleration = 1/300
 
 def set_soundstage(raining, obs_on_screen, char_speed):
     global velocity
@@ -325,7 +350,7 @@ def set_soundstage(raining, obs_on_screen, char_speed):
     if menu == 1:
         if music != "titleloop":
             pygame.mixer.music.load('data/titleloop.wav')
-            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.set_volume(0)
             pygame.mixer.music.play(-1)
             music = "titleloop"
     else:
@@ -364,17 +389,18 @@ def set_soundstage(raining, obs_on_screen, char_speed):
                     # day time
                     if music != "ambience":
                         pygame.mixer.music.load('data/ambience.wav')
-                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.set_volume(1.0)
                         pygame.mixer.music.play(-1)
                         music = "ambience"
                 else:
                     # night time
                     if music != "crickets":
                         pygame.mixer.music.load('data/crickets.wav')
-                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.set_volume(0.8)
                         pygame.mixer.music.play(-1)
                         music = "crickets"
 set_soundstage(0, obs_on_screen, 0)
+
 def seeded_random(a):
     output = (41406202+14874235*a     )%79493069
     output = (43915416+77751829*output)%76741089
@@ -668,7 +694,7 @@ def handle_keys():
                 save_game()
                 running = False
             keydown_set.add(event.key)
-            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c, pygame.K_SPACE)):
+            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c, pygame.K_v, pygame.K_SPACE)):
                 keydown_set.add("press"+str(event.key))
         elif event.type == pygame.KEYUP and event.key not in (pygame.K_F4, ):
             keydown_set.remove(event.key)
@@ -759,6 +785,10 @@ def handle_controls(dt):
     global menu
     global selected_data
     # interpret inputs
+    if pygame.K_LSHIFT in keydown_set:
+        acceleration = 1 / 300
+    else:
+        acceleration = 1 / 600
     if pygame.K_w in keydown_set or "sticky1" in gamepad_set:
         if pygame.K_a in keydown_set or "stickx-1" in gamepad_set:
             velocity[0] -= acceleration * 0.707106781187
@@ -804,6 +834,13 @@ def handle_controls(dt):
             menu = 0
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
+    if "press"+str(pygame.K_v) in keydown_set:
+        if menu == 0:
+            menu = 3
+        else:
+            menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_v))
     if "press"+str(pygame.K_SPACE) in keydown_set:
         if menu == 0:
             menu = 0.5
@@ -1027,6 +1064,27 @@ def handle_controls_help(dt):
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
 
+def handle_controls_player_health(dt):
+    global menu
+    global food_plate
+    if "press"+str(pygame.K_h) in keydown_set:
+        menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_h))
+    if "press"+str(pygame.K_v) in keydown_set:
+        menu = 0
+        construct_overlay()
+        keydown_set.remove("press"+str(pygame.K_v))
+
+    if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
+        if (len(food_plate) < 7 and Rect(0, window_size[1] / 2 - ico_size * 4.5, ico_size, ico_size*9).collidepoint(mouse_pos)):
+            hotbar_slot = int((mouse_pos[1]-(window_size[1] / 2 - ico_size * 4.5))//ico_size)
+            food_plate.append(hotbar[hotbar_slot])
+        construct_overlay()
+        if "click1" in keydown_set:
+            keydown_set.remove("click1")
+
+
 world_tiles = list_tiles_on_screen(10)
 
 def main():
@@ -1061,6 +1119,8 @@ def main():
         handle_controls_help(dt)
     elif menu == 2:
         handle_controls_crafting(dt)
+    elif menu == 3:
+        handle_controls_player_health(dt)
 
     screen_size = floor((window_size[0] / tile_size) / 2), floor((window_size[1] / tile_size) / 2)
 

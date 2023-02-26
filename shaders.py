@@ -125,15 +125,17 @@ float mid_dist_2;
 float mouse_dist_2;
 float seethrough;
 vec3 light_value;
+vec2 packsize;
 void main() {
-    incolour = texture(texpack,v_text);
+    vec2 sinvtext = vec2(v_text.x+sin(time/500.0+v_text.x*screen_size.x+v_text.y*100.0)*sin(time/400.0+v_text.x*screen_size.x/2.0+v_text.x*500.0)/20000.0, v_text.y+sin(time/500.0+v_text.y*screen_size.y)*sin(time/400.0+v_text.y*screen_size.y/2.0)/14000.0);
+    incolour = texture(texpack,sinvtext);
     if (incolour.a < 0.5) { discard; }
     mid_dist_2 = (screenpos.x)*(screenpos.x)*screen_size.x/screen_size.y+(screenpos.y)*(screenpos.y)*screen_size.y/screen_size.x;
     mouse_dist_2 = (mouse_pos.x-screenpos.x)*(mouse_pos.x-screenpos.x)*(screen_size.x/screen_size.y)+(mouse_pos.y-screenpos.y)*(mouse_pos.y-screenpos.y)*(screen_size.y/screen_size.x);
     seethrough = (screenpos.z < -1.0) ? incolour.a*pow(sqrt(mid_dist_2)+sqrt(mouse_dist_2), 2.0) : incolour.a;
 
     light_value = sunlight;
-    f_color = vec4(incolour.r*min(1.0, light_value.r), incolour.g*min(1.0, light_value.g), incolour.b*min(1.0, light_value.b), min(incolour.a,max(0.3*incolour.a, seethrough)));
+    f_color = vec4(incolour.r*min(1.0, light_value.r)*0.9, incolour.g*min(1.0, light_value.g)*0.9, incolour.b*min(1.0, light_value.b)*0.9, min(incolour.a,max(0.3*incolour.a, seethrough)));
 }
 '''
 reflection_vertex_shader=normal_vertex_shader

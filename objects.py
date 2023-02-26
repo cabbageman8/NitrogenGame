@@ -948,14 +948,14 @@ OBJ = {
 
 ANY_TREE = [key for key, value in OBJ.items() if "tree" in value["model"]]
 
-''' FOOD INFO (source https://en.wikipedia.org/wiki/Dietary_Reference_Intake)
-water (hydration) watermelon, lettuce, fruit, vege
-carbohydrates (energy) grain, fruit, vege
-protein (amino acids)  nuts, seeds, legumes, beans, peas, lentils, meats, eggs
-fattyacid (omega-6, omega-3) oils, nuts, seeds, egg yolk, soybean
-vitamins (vitamin C, Niacin, Vitamin E) peppers, yeast, chives, coriander, yeast, hazelnut, peanut, chilli, mushrooms
-minerals (calcium, phosphorus, magnesium) tofu, basil, whey, cottonseed meal, hemp seeds, seaweed, mushrooms, oyster, sesame, cocoa, cashews, sunflower seeds, kelp, nuts, thyme
-'''
+FOODINFO = { #(source https://en.wikipedia.org/wiki/Dietary_Reference_Intake)
+    "water": ["hydration", "watermelon, lettuce, fruit, vege"],
+    "carbohydrates": ["energy", "grain, fruit, vege"],
+    "protein": ["amino acids",  "nuts, seeds, legumes, beans, peas, lentils, meats, eggs"],
+    "fattyacid": ["omega-6, omega-3", "oils, nuts, seeds, egg yolk, soybean"],
+    "vitamins": ["vitamin C, Niacin, Vitamin E", "peppers, yeast, chives, coriander, yeast, hazelnut, peanut, chilli, mushrooms"],
+    "minerals": ["calcium, phosphorus, magnesium", "tofu, basil, whey, cottonseed meal, hemp seeds, seaweed, mushrooms, oyster, sesame, cocoa, cashews, sunflower seeds, kelp, nuts, thyme"],
+}
 FOODS = {
             "porridge": {
                  "alias": "Oat Porridge",
@@ -964,7 +964,7 @@ FOODS = {
             },
             "oatbread": {
                  "alias": "Oatmeal Bread",
-                 "description": "Delicous source of carbs",
+                 "description": "Delicious source of carbs",
                  "nutrients": {"carbohydrates", "protein", "minerals"},
             },
             "chili": {
@@ -974,7 +974,7 @@ FOODS = {
             },
             "mushrooms": {
                  "alias": "Mushrooms",
-                 "description": "Nither plant nor animal, belongs to the fungi kingdom",
+                 "description": "Neither plant nor animal, belongs to the fungi kingdom",
                  "nutrients": {"protein", "vitamins", "minerals"},
             },
             "crabmeat": {
