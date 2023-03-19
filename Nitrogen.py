@@ -418,6 +418,15 @@ def point_to_random(x, y):
         p2r_cache.clear()
     return r
 
+def linear_distance_field(x, y):
+    primes = [881,739,601,547,419,283,179,101]
+    value1 = x + y
+    value2 = x - y
+    for p in (primes):
+        value1 = abs(p / 2 - (value1 % p)) - p / 4
+        value2 = abs(p / 2 - (value2 % p)) - p / 4
+    return sqrt(value1**2 + value2**2)
+
 server_address = (ip, port)
 
 # Create socket for server
