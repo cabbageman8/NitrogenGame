@@ -32,7 +32,7 @@ in vec2 in_text;
 in vec3 pos;
 in vec2 size;
 in float texnum;
-in float sway;
+in float texlen;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
@@ -46,12 +46,18 @@ vec2 packsize;
 float zpos;
 vec2 trans_pos;
 vec2 trans_size;
+float sway;
 float sway_translation;
 vec2 sway_factor;
+float anim_index;
+float anim_frame;
 void main() {
-    sway_translation = texnum+sway;
-    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+sway_translation), 
-                       sway/screen_size.y*7.0*sin(sway*time/700.0+sway_translation));
+    sway = (texlen < 0) ? 1.0 : 0.0;
+    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
+    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
+                       sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
     trans_pos = vec2((pos.x-player_offset.x)/(screen_size.x/tile_size)*2.0-sway_factor.x, 
                      (pos.y-player_offset.y)/(screen_size.y/tile_size)*2.0-sway_factor.y);
     trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
@@ -59,10 +65,9 @@ void main() {
     zpos = (pos.z>1.0) ? mod(pos.z, 1.0) : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
     screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
-    thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(thetexnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(thetexnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 normal_fragment_shader='''
@@ -163,7 +168,7 @@ in vec2 in_text;
 in vec3 pos;
 in vec2 size;
 in float texnum;
-in float sway;
+in float texlen;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
@@ -178,12 +183,18 @@ vec2 packsize;
 float zpos;
 vec2 trans_pos;
 vec2 trans_size;
+float sway;
 float sway_translation;
 vec2 sway_factor;
+float anim_index;
+float anim_frame;
 void main() {
-    sway_translation = texnum+sway;
-    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+sway_translation), 
-                       sway/screen_size.y*7.0*sin(sway*time/700.0+sway_translation));
+    sway = (texlen < 0) ? 1.0 : 0.0;
+    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
+    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
+                       sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
     trans_pos = vec2((pos.x-player_offset.x)/(screen_size.x/tile_size)*2.0-sway_factor.x, 
                      (pos.y-player_offset.y)/(screen_size.y/tile_size)*2.0-sway_factor.y);
     trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
@@ -192,10 +203,9 @@ void main() {
     zpos = (pos.z>1.0) ? pos.z-1.0 : pos.z;
     zpos = (size.x==0.0) ? vert.x*zpos : ((size.y==0.0) ? (1.0-vert.y)*zpos : zpos);
     screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+sunangle*(zpos), (1.0-trans_pos.y-vert.y*trans_size.y)+0.3*(zpos), -pos.z);
-    thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, zpos-0.0001, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(thetexnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(thetexnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 shadow_fragment_shader='''
@@ -220,7 +230,7 @@ in vec2 in_text;
 in vec3 pos;
 in vec2 size;
 in float texnum;
-in float sway;
+in float texlen;
 uniform vec2 screen_size;
 uniform vec2 player_offset;
 uniform float tile_size;
@@ -234,22 +244,27 @@ vec2 packsize;
 float zpos;
 vec2 trans_pos;
 vec2 trans_size;
+float sway;
 float sway_translation;
 vec2 sway_factor;
+float anim_index;
+float anim_frame;
 void main() {
-    sway_translation = texnum+sway;
-    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+sway_translation), 
-                       sway/screen_size.y*7.0*sin(sway*time/700.0+sway_translation));
+    sway = (texlen < 0) ? 1.0 : 0.0;
+    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
+    sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
+                       sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
     trans_pos = vec2((pos.x-player_offset.x)/(screen_size.x/tile_size)*2.0-sway_factor.x, 
                      (pos.y-player_offset.y)/(screen_size.y/tile_size)*2.0-sway_factor.y);
     trans_size = vec2(size.x/screen_size.x*2.0+2.0*sway_factor.x, size.y/screen_size.y*2.0+2.0*sway_factor.y);
     packsize = vec2(textureSize(texpack, 0).xy);
     zpos = mod(pos.z-time/400.0, 1.0);
     screenpos = vec3((trans_pos.x+vert.x*trans_size.x-1.0)+zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.x+vert.x*trans_size.x-1.0)), (1.0-trans_pos.y-vert.y*trans_size.y)-zpos/(max((screen_size.x/tile_size)/25.0-zpos, 1.0)/(trans_pos.y+vert.y*trans_size.y-1.0)), -pos.z);
-    thetexnum = texnum;
 
     gl_Position = vec4(screenpos.x, screenpos.y, -pos.z/4.0, 1.0);
-    v_text = vec2((in_text.x*0.98+0.01+mod(texnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(texnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
+    v_text = vec2((in_text.x*0.98+0.01+mod(thetexnum, (pow(2.0,14.0)/max_tex)))*(max_tex/packsize.x), (in_text.y*0.98+0.01+floor(thetexnum/(pow(2.0,14.0)/max_tex)))*(max_tex/packsize.y));
 }
 '''
 rain_fragment_shader=reflection_fragment_shader

@@ -155,8 +155,11 @@ def load_textures():
         file.close()
         fileb.close()
 load_textures()
-def get_tex(name, index):
-    return texd[name][int(index)%len(texd[name])]
+
+def get_tex(name, index=None):
+    if index != None:
+        return texd[name][int(index) % len(texd[name])], 1
+    return texd[name][0], len(texd[name])
 
 texpack = pygame.Surface((min(2**14, max_tex*(len(textures_img))), max_tex*(1+len(textures_img)//(2**14//max_tex))), flags=pygame.SRCALPHA).convert_alpha()
 for i, m in enumerate(textures_img):
@@ -644,11 +647,11 @@ def geom_light(x, y, z, w, h, hue):
     screen_size = floor((window_size[0]/tile_size)/2), floor((window_size[1]/tile_size)/2)
     return (((x+0.5-screen_size[0]) % 2 ** 16, (y-screen_size[1]) % 2 ** 16, 1), hue)
 
-def screen_transform(x, y, z, w, h, tex, sway):
+def screen_transform(x, y, z, w, h, texnum, texlen):
     # convert pixel coords to shader coords
-    return struct.pack('7f', x,y,z,w,h,tex,sway)
+    return struct.pack('7f', x,y,z,w,h,texnum, texlen)
 
-def geom_tile(x, y, z, tex, sway):
+def geom_tile(x, y, z, texnum, texlen):
     # return element for rendering a tile using int tile coords relitive to the screen
     global screen_coords
     return screen_transform((1/tile_size + x)%2**16,
@@ -656,9 +659,8 @@ def geom_tile(x, y, z, tex, sway):
                             z,
                             tile_size,
                             tile_size,
-                            tex, sway)
-
-def geom_object(x, y, z, w, h, tex, sway):
+                            texnum, texlen)
+def geom_object(x, y, z, w, h, texnum, texlen):
     # return element for rendering a texture using int tile coords relitive to the world
     global screen_coords
     return screen_transform((1 / tile_size + (x - w / 2 + 0.5)) % 2 ** 16,
@@ -666,22 +668,23 @@ def geom_object(x, y, z, w, h, tex, sway):
                             z,
                             w * tile_size,
                             h * tile_size,
-                            tex, sway)
-def draw_object(tex, x, y, z, w, h, sway):
-    Renderer.vert_list.add(geom_object(x, y, z, w, h, tex, sway))
+                            texnum, texlen)
+
+def draw_object(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.vert_list.add(geom_object(x, y, z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
     if w == 0 or h == 0:
-        Renderer.reflection_list.add(geom_object(x, y, -z, w, h, tex, sway))
-def draw_object_foreground(tex, x, y, z, w, h, sway):
-    Renderer.foreground_list.add(geom_object(x, y, 1+z, w, h, tex, sway))
-    Renderer.reflection_list.add(geom_object(x, y, -z, w, h, tex, sway))
-def draw_shadow(tex, x, y, z, w, h, sway):
-    Renderer.shadow_list.add(geom_object(x, y, -z, w, h, tex, sway))
-def draw_weather(tex, x, y, z, w, h, sway):
-    Renderer.weather_list.add(geom_object(x, y, 1+z, w, h, tex, sway))
-def draw_rain(tex, x, y, z, w, h, sway):
-    Renderer.rain_list.add(geom_object(x, y, z, w, h, tex, sway))
-def ontop_object(tex, x, y, z, w, h, sway):
-    Renderer.ontop_list.add(geom_object(x, y, z, w, h, tex, sway))
+        Renderer.reflection_list.add(geom_object(x, y, -z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+def draw_object_foreground(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.foreground_list.add(geom_object(x, y, 1+z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+    Renderer.reflection_list.add(geom_object(x, y, -z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+def draw_shadow(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.shadow_list.add(geom_object(x, y, -z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+def draw_weather(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.weather_list.add(geom_object(x, y, 1+z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+def draw_rain(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.rain_list.add(geom_object(x, y, z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
+def ontop_object(x, y, z, w, h, texnum, texlen, animated=False, sway=False):
+    Renderer.ontop_list.add(geom_object(x, y, z, w, h, (-1 if animated else 1) * texnum, (-1 if sway else 1) * texlen))
 
 keydown_set = set()
 gamepad_set = set()
@@ -1195,42 +1198,42 @@ def main():
                 dx, dy = dt*speed*cos(-direc*tau/8), dt*speed*sin(-direc*tau/8)
             else:
                 dx, dy = dt*speed*cos(direc*tau/8+tau/4), dt*speed*sin(direc*tau/8-tau/4)
-            draw_object(get_tex("charlegs"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.05, 2, 2, 1)
-            draw_object(get_tex("charhands"+str(direc), anim), coords[0]+dx, coords[1]+dy, 0.07, 2, 2, 1)
-            draw_object(get_tex("charhead"+str(look), number), coords[0]+dx, coords[1]+dy, 0.08, 2, 2, 1)
+            draw_object(coords[0]+dx, coords[1]+dy, 0.05, 2, 2, get_tex("charlegs"+str(direc), anim)[0], 1, sway=True)
+            draw_object(coords[0]+dx, coords[1]+dy, 0.07, 2, 2, get_tex("charhands"+str(direc), anim)[0], 1, sway=True)
+            draw_object(coords[0]+dx, coords[1]+dy, 0.08, 2, 2, get_tex("charhead"+str(look), number)[0], 1, sway=True)
     # add player textures to vertex list
     mat = player_tile_info[0]
     player_offset = (screen_coords[0]/tile_size%2**16, screen_coords[1]/tile_size%2**16)
     if "water" not in mat:
-        ontop_object(get_tex("charlegs" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, 1)
-    ontop_object(get_tex("charhands" + str(char_direction), char_anim), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, 1)
-    ontop_object(get_tex("charhead" + str(looking_direction), player_number), (screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, 1)
+        ontop_object((screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.05, 2, 2, get_tex("charlegs" + str(char_direction), char_anim)[0], 1)
+    ontop_object((screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.07, 2, 2, get_tex("charhands" + str(char_direction), char_anim)[0], 1)
+    ontop_object((screen_coords[0]+window_size[0]/2)/tile_size-0.5, (screen_coords[1]+window_size[1]/2)/tile_size-0.5, 0.08, 2, 2, get_tex("charhead" + str(looking_direction), player_number)[0], 1)
     tile_data = get_tile_info(*selected_tile)
     if tile_data[1] in OBJ.keys() and "height" in OBJ[tile_data[1]].keys():
         height = OBJ[tile_data[1]]["height"](*selected_tile) if "tree" in OBJ[tile_data[1]]["model"] else OBJ[tile_data[1]]["height"]
-        ontop_object(get_tex("selection", 0), selected_tile[0], selected_tile[1], height, 1, 1, 0)
-    ontop_object(get_tex("selectionbot", 0), selected_tile[0], selected_tile[1], 0, 1, 1, 0)
+        ontop_object(selected_tile[0], selected_tile[1], height, 1, 1, *get_tex("selection", 0), animated=True)
+    ontop_object(selected_tile[0], selected_tile[1], 0, 1, 1, *get_tex("selectionbot", 0), animated=True)
     for c in range(10):
-        draw_shadow(get_tex("cloud", c),
-                    screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
+        draw_shadow(screen_coords[0] / tile_size + (time.time()*2+5647*c-screen_coords[0] / tile_size)%(400+c)-100,
                     screen_coords[1] / tile_size + (time.time()/5+4674*c-screen_coords[1] / tile_size)%(300+c)-100,
                     0.9,
                     100*(int(c)%2*2-1),
-                    100*(int(c//2)%2*2-1), raining)
+                    100*(int(c//2)%2*2-1),
+                    *get_tex("cloud"), sway=True)
     for c in range(3):
-        draw_shadow(get_tex("birds", c),
-                    screen_coords[0] / tile_size + (time.time()*2+48615*c-screen_coords[0] / tile_size)%(400+c)-100,
+        draw_shadow(screen_coords[0] / tile_size + (time.time()*2+48615*c-screen_coords[0] / tile_size)%(400+c)-100,
                     screen_coords[1] / tile_size + (time.time()*10+35678*c-screen_coords[1] / tile_size)%(300+c)-100,
                     0.5,
                     10*(int(c)%2*2-1),
-                    10*(int(c//2)%2*2-1), 2)
+                    10*(int(c//2)%2*2-1),
+                    *get_tex("birds"), animated=True, sway=True)
     for c in range(3):
-        draw_weather(get_tex("cloud", c),
-                     screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
+        draw_weather(screen_coords[0] / tile_size + (time.time()/10+48634*c-screen_coords[0] / tile_size)%(400+c)-100,
                      screen_coords[1] / tile_size + (time.time()/40+87356*c-screen_coords[1] / tile_size)%(300+c)-100,
                      0.9,
                      100*(int(c)%2*2-1),
-                     100*(int(c//2)%2*2-1), raining)
+                     100*(int(c//2)%2*2-1),
+                     *get_tex("cloud"), sway=True)
     set_soundstage(raining, obs_on_screen, char_speed)
 
     Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
@@ -1255,15 +1258,8 @@ def main():
         tile_data = get_tile_info(*tile_coords)
         mat = tile_data[0]
         next_obs_on_screen.add(mat)
-        index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
         height = 0.0
-        if (mat in animated):
-            matindex = int((((curtime % 1000) * 6 + index) + (tile_coords[0] * tile_coords[0] + tile_coords[1]) % 1000))
-        elif (mat == "hexpavers"):
-            matindex = int(tile_coords[0] * 13 + tile_coords[1] * tile_coords[1] * 7) * 2 + tile_coords[0]
-        else:
-            matindex = index
-        Renderer.tile_list.add(geom_tile(*tile_coords, height, get_tex(mat, matindex), 0))
+        Renderer.tile_list.add(geom_tile(*tile_coords, height, (-1 if (mat in animated) else 1) * get_tex(mat)[0], get_tex(mat)[1]))
 
         decor = tile_data[1]
         next_obs_on_screen.add(decor)
@@ -1275,33 +1271,34 @@ def main():
                     log = "treelog"
                     if "log" in OBJ[decor].keys():
                         log = OBJ[decor]["log"]
-                    draw_object(get_tex(log, index), tile_coords[0], tile_coords[1], 0.01, 1, 1, 0)
+                    draw_object(tile_coords[0], tile_coords[1], 0.01, 1, 1, *get_tex(log))
                 height = OBJ[decor]["height"](tile_coords[0], tile_coords[1])
                 trunk = "treetrunk"
                 if "trunk" in OBJ[decor].keys():
                     trunk = OBJ[decor]["trunk"]
-                draw_object(get_tex(trunk, 1), tile_coords[0], tile_coords[1], height - 0.02, 0, 1, 0)
-                draw_object(get_tex(trunk, 0), tile_coords[0], tile_coords[1], height - 0.02, 1, 0, 0)
+                draw_object(tile_coords[0], tile_coords[1], height - 0.02, 0, 1, *get_tex(trunk, 1))
+                draw_object(tile_coords[0], tile_coords[1], height - 0.02, 1, 0, *get_tex(trunk, 0))
                 if "solid" in OBJ[decor]["flags"]:
                     stump = "treestump"
                     if "stump" in OBJ[decor].keys():
                         stump = OBJ[decor]["stump"]
-                    draw_object(get_tex(stump, 0), tile_coords[0], tile_coords[1], height - 0.01, 1, 1, 0)
+                    draw_object(tile_coords[0], tile_coords[1], height - 0.01, 1, 1, *get_tex(stump, 0))
                 if model == "doubletree":
-                    draw_object_foreground(get_tex(decor, tile_coords[0] + 10 * tile_coords[1]), tile_coords[0],
+                    draw_object_foreground(tile_coords[0],
                                            tile_coords[1], height / 2, size * ((1 + tile_coords[0]) % 2 * 2 - 1),
-                                           size * ((1 + tile_coords[1]) % 2 * 2 - 1), 1 * raining)
+                                           size * ((1 + tile_coords[1]) % 2 * 2 - 1), *get_tex(decor), sway=True)
                 if model == "qtree":
-                    draw_object(get_tex(decor, tile_coords[0] + 10 * tile_coords[1]), tile_coords[0], tile_coords[1],
+                    draw_object(tile_coords[0], tile_coords[1],
                                 height, size * (tile_coords[0] % 2 * 2 - 1), size * (tile_coords[1] % 2 * 2 - 1),
-                                1 * raining)
+                                *get_tex(decor), sway=True)
                 else:
-                    draw_object_foreground(get_tex(decor, tile_coords[0] + 10 * tile_coords[1]), tile_coords[0],
+                    draw_object_foreground(tile_coords[0],
                                            tile_coords[1], height, size * (tile_coords[0] % 2 * 2 - 1),
-                                           size * (tile_coords[1] % 2 * 2 - 1), 1 * raining)
+                                           size * (tile_coords[1] % 2 * 2 - 1), *get_tex(decor), sway=True)
             else:
                 height = OBJ[decor]["height"]
                 if "flip" in OBJ[decor]["flags"]:
+                    index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
                     w, h = size * (int(index + tile_coords[0]) % 2 * 2 - 1), size * (
                                 int(index + tile_coords[1]) % 2 * 2 - 1)
                 else:
@@ -1314,37 +1311,39 @@ def main():
                 if "bot" in OBJ[decor].keys():
                     bot = OBJ[decor]["bot"]
                 if model == "singleshrub":
-                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w, h, 1 * raining)
+                    draw_object(tile_coords[0], tile_coords[1], height, w, h, *get_tex(decor), sway=True)
                 elif model == "doubleshrub":
-                    draw_object(get_tex(bot, index), tile_coords[0], tile_coords[1], height / 2, w, h, 1 * raining)
-                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, -w, -h, 1 * raining)
+                    draw_object(tile_coords[0], tile_coords[1], height / 2, w, h, *get_tex(decor), sway=True)
+                    draw_object(tile_coords[0], tile_coords[1], height, -w, -h, *get_tex(decor), sway=True)
                 elif model == "singleobj":
-                    draw_object(get_tex(decor, index), tile_coords[0], tile_coords[1], height, w, h, 0)
+                    draw_object(tile_coords[0], tile_coords[1], height, w, h, *get_tex(decor))
                 elif model == "doubleobj":
-                    draw_object(get_tex(bot, 0), tile_coords[0], tile_coords[1], 0, w, h, 0)
-                    draw_object(get_tex(decor, 0), tile_coords[0], tile_coords[1], height, w, h, 0)
+                    draw_object(tile_coords[0], tile_coords[1], 0, w, h, *get_tex(bot))
+                    draw_object(tile_coords[0], tile_coords[1], height, w, h, *get_tex(decor))
                 elif model == "block":
-                    wall = get_tex(decor, index)
-                    draw_object(wall, tile_coords[0], tile_coords[1] - (
+                    wall = get_tex(decor)
+                    draw_object(tile_coords[0], tile_coords[1] - (
                                 (tile_coords[1] * tile_size > (screen_coords[1] + window_size[1] / 2)) - .5), height, 1,
-                                0, 0)
-                    draw_object(wall, tile_coords[0] - (
+                                0, *wall)
+                    draw_object(tile_coords[0] - (
                                 (tile_coords[0] * tile_size > (screen_coords[0] + window_size[0] / 2)) - .5),
-                                tile_coords[1], height, 0, 1, 0)
-                    draw_object(wall, tile_coords[0], tile_coords[1], height + 0.0001, 1, 1, 0)
+                                tile_coords[1], height, 0, 1, *wall)
+                    draw_object(tile_coords[0], tile_coords[1], height + 0.0001, 1, 1, *wall)
         if len(tile_data) > 4:
+            # render item
+            index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
             item = tile_data[3]
             if item != None and tile_data[4] > 0:
                 w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
-                draw_object(get_tex(item, index), tile_coords[0], tile_coords[1], height + 0.02, w, h, 0)
+                draw_object(tile_coords[0], tile_coords[1], height + 0.02, w, h, *get_tex(item))
         if len(tile_data) > 6 and tile_data[5] != None:
             # render roof
-            w, h = (int(index + tile_coords[0]) % 2 * 2 - 1), (int(index + tile_coords[1]) % 2 * 2 - 1)
-            draw_object_foreground(get_tex(tile_data[5], index), tile_coords[0], tile_coords[1], 0.1, w, h, 0)
+            draw_object_foreground(tile_coords[0], tile_coords[1], 0.1, w, h, *get_tex(tile_data[5]))
         elif raining != 1:
             # render rain
+            index = int(point_to_random(tile_coords[0], tile_coords[1]) * 1000)
             w, h = 3 * (int(index + tile_coords[0]) % 2 * 2 - 1), 3 * (int(index + tile_coords[1]) % 2 * 2 - 1)
-            draw_rain(get_tex("rain", index), tile_coords[0], tile_coords[1], index / 1000, w, h, 1)
+            draw_rain(tile_coords[0], tile_coords[1], index / 1000, w, h, *get_tex("rain"), sway=True)
 
     pygame.display.flip()
     clock.tick(FPS)
@@ -1354,5 +1353,9 @@ while i>0 and running:
     i-=1
     main()
 cProfile.run('main()', sort=2)
+
+fps_log = []
+last_time = time.perf_counter_ns()
 while running:
     main()
+    fps_log.append(-last_time + (last_time := time.perf_counter_ns()))

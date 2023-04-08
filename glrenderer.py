@@ -34,7 +34,7 @@ class glrenderer():
             (vao_instance_data[0], '3f/i', 'pos'),
             (vao_instance_data[1], '2f/i', 'size'),
             (vao_instance_data[2], 'f/i', 'texnum'),
-            (vao_instance_data[3], 'f/i', 'sway')], self.ibo)
+            (vao_instance_data[3], 'f/i', 'texlen')], self.ibo)
         vao.extra = [vao_instance_data, {}, set(), set()]
         return vao
 
@@ -130,28 +130,29 @@ class glrenderer():
         texture_data = overlay.get_view('1')
         self.overlay_texture.write(texture_data)
 
+                                                                            # cabbageman's Quick Memory Management (CMQMM)
     def find_free_mem(self, vert_list, vao):
-        for key, value in tuple(vao.extra[1].items()):
-            if value >= len(vert_list):
-                del vao.extra[1][key]
-            elif key not in vert_list:
-                vao.extra[3].add(value)
+        for byt, location in tuple(vao.extra[1].items()):                   # Check every item in the initial GPU buffer
+            if location >= len(vert_list):
+                del vao.extra[1][byt]                                       # If initial item is past the end of new data, delete its location
+            elif byt not in vert_list:
+                vao.extra[3].add(location)                                  # If initial item is not in new data, record its location as a free hole
 
     def find_changed_mem(self, vert_list, vao):
         tail = 0
         update_mem = []
         new_locations = {}
-        for byt in vert_list:
+        for byt in vert_list:                                               # Every input item needs a location
             try:
-                new_locations[byt] = vao.extra[1][byt]
+                new_locations[byt] = vao.extra[1][byt]                      # If item hasn't changed then don't change it
             except KeyError:
-                if vao.extra[3]:
+                if vao.extra[3]:                                            # else if there are free holes in memory, fill them in any order
                     location = vao.extra[3].pop()
-                else:
+                else:                                                       # if we have a new item and there are no free holes in memory, simply append it to the tail
                     location = len(vao.extra[1]) + tail
                     tail += 1
-                update_mem.append((location, byt))
-                new_locations[byt] = location
+                update_mem.append((location, byt))                          # Add the memory change to list of changes
+                new_locations[byt] = location                               # Keep track of current GPU buffer as we will need it next time
         return update_mem, new_locations
 
     def set_memory(self, buffer, update_mem):
@@ -163,9 +164,9 @@ class glrenderer():
             buffer[3].write(byt[6*u:7*u], offset=location * u)
 
     def write_vert_data(self, vert_list, vao):
-        self.find_free_mem(vert_list, vao)
-        update_mem, vao.extra[1] = self.find_changed_mem(vert_list, vao)
-        self.set_memory(vao.extra[0], update_mem)
+        self.find_free_mem(vert_list, vao)                                  # Find memory locations which are no longer used
+        update_mem, vao.extra[1] = self.find_changed_mem(vert_list, vao)    # Assign each item to a location, without affecting unchanged items
+        self.set_memory(vao.extra[0], update_mem)                           # Execute memory changes
 
     def set_vert_buffers(self, vert_list, vao, is_reset=0):
         vao.extra[2] = vert_list.copy()
@@ -183,7 +184,7 @@ class glrenderer():
                     (vao.extra[0][0], '3f/i', 'pos'),
                     (vao.extra[0][1], '2f/i', 'size'),
                     (vao.extra[0][2], 'f/i', 'texnum'),
-                    (vao.extra[0][3], 'f/i', 'sway')], self.ibo)
+                    (vao.extra[0][3], 'f/i', 'texlen')], self.ibo)
                 shadowvao.render(instances=len(vao.extra[2]))
                 shadowvao.release()
         if is_depth_test:
