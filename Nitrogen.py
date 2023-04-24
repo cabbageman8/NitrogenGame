@@ -13,7 +13,7 @@ import pygame
 from pygame.locals import *
 from PIL import Image
 import pickle
-from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log
+from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, log, copysign
 import cProfile
 from quadtree import root_node
 from glrenderer import glrenderer
@@ -415,7 +415,7 @@ p2r_cache = {}
 def point_to_random(x, y):
     if (x,y) in p2r_cache:
         return p2r_cache[(x,y)]
-    r = seeded_random(seeded_random(x) + seeded_random(y*y))
+    r = seeded_random(seeded_random(x*x) + seeded_random(x*y) + seeded_random(y*y))
     p2r_cache.update({(x,y) :r})
     if len(p2r_cache) > 2**16:
         p2r_cache.clear()
@@ -489,9 +489,9 @@ except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
 
-hotbar[8] = ["candle", 1, 999]
-#hotbar[3] = ["axe", 2, 1]
-#hotbar[1] = ["teabush", 1, 2]
+hotbar[8] = ["candle", 1, 1]
+hotbar[3] = ["silkyoakdirt", 0, 999]
+hotbar[1] = ["silkyoakseeds", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]
 print("hotbar:", hotbar)
@@ -524,6 +524,68 @@ def get_climate(x, y):
         temp, moisture, altitude = max(0.001, min(0.999, temp))*35+10, max(0.001, min(0.999, moisture))*75, max(0.001, min(0.999, altitude))*100
         last_climate = (x, y, (temp, moisture, altitude))
         return temp, moisture, altitude
+
+def plant_can_grow_here(obj, x, y, mat):
+    temp, moisture, altitude = get_climate(x, y)
+    salinity = max(0, 100 / (altitude / 30) - moisture)
+    return ((mat in OBJ[obj]["substrate"] and ("native" in OBJ[obj]["flags"] or mat == "farmland")) and
+            int(temp) in range(*OBJ[obj]["temperature"]) and
+            int(moisture) in range(*OBJ[obj]["moisture"]) and
+            int(salinity) in range(*OBJ[obj]["salinity"]))
+
+def obj_can_go_here(obj, x, y, mat):
+    temp, moisture, altitude = get_climate(x, y)
+    salinity = max(0, 100 / (altitude / 30) - moisture)
+    return ("substrate" in OBJ[obj].keys() and mat in OBJ[obj]["substrate"] and
+            ("salinity" not in OBJ[obj].keys() or
+             (salinity > OBJ[obj]["salinity"][0] and salinity < OBJ[obj]["salinity"][1]) ) )
+
+def do_tick(x, y, cache_only = False):
+    RT_coords = x, y
+    RT_data = get_tile_info(*RT_coords)
+    if RT_data[1] in OBJ.keys():
+        if "becomes" in OBJ[RT_data[1]].keys():
+            data = (*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()) + RT_data[3:])
+            if cache_only:
+                map.cache_data(*data)
+            else:
+                map.set_data(*data)
+        if "creates" in OBJ[RT_data[1]].keys():
+            if len(RT_data) < 4 or RT_data[3] == None or RT_data[4] == 0:
+                age = None if len(RT_data) < 3 else RT_data[2]
+                data = (*RT_coords, (RT_data[0], RT_data[1], age) + (OBJ[RT_data[1]]["creates"][1], OBJ[RT_data[1]]["creates"][0]) + RT_data[5:])
+                if cache_only:
+                    map.cache_data(*data)
+                else:
+                    map.set_data(*data)
+        if "sheds" in OBJ[RT_data[1]].keys():
+            shed_data = OBJ[RT_data[1]]["sheds"]
+            if len(shed_data) > 0 and shed_data[0] != None: # sheds tiles
+                obj_size = 1 if not ("size" in OBJ[RT_data[1]]) else OBJ[RT_data[1]]["size"]
+                rand_num = point_to_random(*RT_coords) * tau + 766.852
+                random_coords = (RT_coords[0] + round(cos(rand_num) * ceil(obj_size / 2)),
+                                 RT_coords[1] + round(sin(rand_num) * ceil(obj_size / 2)))
+                random_data = get_tile_info(*random_coords)
+                if random_data[1:] == (None,) * 6:
+                    data = (*random_coords, (shed_data[0],))
+                    if cache_only:
+                        map.cache_data(*data)
+                    else:
+                        map.set_data(*data)
+            if len(shed_data) > 1 and shed_data[1] != None: # sheds objects
+                obj_size = 1 if not ("size" in OBJ[RT_data[1]]) else OBJ[RT_data[1]]["size"]
+                rand_num = point_to_random(*RT_coords) * tau + 878.910
+                random_coords = (RT_coords[0] + round(cos(rand_num) * ceil(obj_size / 2)),
+                                 RT_coords[1] + round(sin(rand_num) * ceil(obj_size / 2)))
+                random_data = get_tile_info(*random_coords)
+                if random_data[1:] == (None,) * 6 and ("plant" not in OBJ[shed_data[1]]["flags"] or plant_can_grow_here(shed_data[1], *random_coords, random_data[0])):
+                    data = (*random_coords, (random_data[0], shed_data[1], time.time()))
+                    if cache_only:
+                        map.cache_data(*data)
+                    else:
+                        map.set_data(*data)
+                    do_tick(*random_coords, cache_only = True)
+
 last_biome = (None, None, None)
 def get_biome(x, y):
     global last_biome
@@ -564,7 +626,7 @@ def get_mat(x, y):
 def decorate(x, y, mat):
     dec = None
     counter = 0
-    while dec == None and counter < 2:
+    while dec == None and counter < 1:
         counter += 1
         r = point_to_random(x+2**counter, y-2**counter)
         r2 = seeded_random(r)
@@ -572,25 +634,12 @@ def decorate(x, y, mat):
             if r < 0.4:
                 dec = "hexpavers"
         else:
-            if r > 0.0:
-                dec = list(OBJ)[int(r2*len(OBJ))]
-                temp, moisture, altitude = get_climate(x, y)
-                salinity = max(0, 100 / (altitude / 30) - moisture)
-                if "plant" in OBJ[dec]["flags"]:
-                    if "native" in OBJ[dec]["flags"]:
-                        if mat not in OBJ[dec]["substrate"] or \
-                                int(temp) not in range(*OBJ[dec]["temperature"]) or \
-                                int(moisture) not in range(*OBJ[dec]["moisture"]) or \
-                                int(salinity) not in range(*OBJ[dec]["salinity"]):
-                            dec = None
-                    elif mat == "farmland":
-                        if r < 0.4:
-                            dec = None
-                    else:
-                        dec = None
-                elif r < 0.4 or "substrate" not in OBJ[dec].keys() or mat not in OBJ[dec]["substrate"] or\
-                        "salinity" in OBJ[dec].keys() and (salinity > OBJ[dec]["salinity"][1] or salinity < OBJ[dec]["salinity"][0]):
-                    dec = None
+            obj = list(OBJ)[int(r2*len(OBJ))]
+            if "plant" in OBJ[obj]["flags"]:
+                if plant_can_grow_here(obj, x, y, mat):
+                    dec = obj
+            elif r < 0.4 and obj_can_go_here(obj, x, y, mat):
+                dec = obj
     if dec == None:
         map.cache_data(int(x), int(y), (mat, ))
     else:
@@ -604,6 +653,7 @@ def get_tile_info(x, y):
     mat = get_mat(x, y)
     dec = decorate(x, y, mat)
     tile_data = (mat, dec)
+    do_tick(x, y, cache_only = True)
     return tuple(tile_data+(None,)*7)[:7]
 
 def list_tiles_on_screen(dist):
@@ -927,11 +977,14 @@ def handle_controls(dt):
                         shovel_sfx.play()
                         if drops != None:
                             hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
-                        leaves = None if "leaves" not in OBJ[selected_data[1]] else OBJ[selected_data[1]]["leaves"]
-                        map.set_data(*selected_tile, (selected_data[0], leaves, int(time.time()))+selected_data[3:])
+                        if "leaves" not in OBJ[selected_data[1]]:
+                            map.set_data(*selected_tile, (selected_data[0], None, None)+selected_data[3:])
+                        else:
+                            map.set_data(*selected_tile, (selected_data[0], OBJ[selected_data[1]]["leaves"], int(time.time()))+selected_data[3:])
+
             elif "water" not in selected_data[0]:
                 if hotbar[int(selected_item_slot)][0] == "spade":
-                    if selected_data[0] == "dirt" or selected_data[0] == "wetdirt" or selected_data[0] == "sand":
+                    if selected_data[0] in ("dirt", "wetdirt", "sand", "redsand"):
                         r1 = random.choice((0, 1))
                         r2 = random.choice((1, -1))
                         neighbour_mat = get_tile_info(selected_tile[0]+(r1*r2), selected_tile[1]+((1-r1)*r2))[0]
@@ -1151,14 +1204,7 @@ def main():
             x, y = random.randint(-95, 95), random.randint(-95, 95)
             RT_coords = [int(ceil(screen_coords[0] / tile_size) + x - 1),
                          int(ceil(screen_coords[1] / tile_size) + y - 1)]
-            RT_data = get_tile_info(*RT_coords)
-            if RT_data[1] in OBJ.keys():
-                if "becomes" in OBJ[RT_data[1]].keys():
-                    map.set_data(*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()) + RT_data[3:])
-                if "creates" in OBJ[RT_data[1]].keys():
-                    if len(RT_data) < 4 or RT_data[3] == None or RT_data[4] == 0:
-                        age = None if len(RT_data) < 3 else RT_data[2]
-                        map.set_data(*RT_coords, (RT_data[0], RT_data[1], age) + (OBJ[RT_data[1]]["creates"][1], OBJ[RT_data[1]]["creates"][0]) + RT_data[5:])
+            do_tick(*RT_coords)
         last_random_tick = time.perf_counter()
     if last_server_update+0.1 < time.perf_counter():
         if len(map.save_buffer) > 0:

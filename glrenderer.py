@@ -199,19 +199,33 @@ class glrenderer():
             vao.render(instances=len(vao.extra[2]))
 
     def set_uniforms(self, mouse_pos, screen_coords, tile_size):
+        print("set_uniforms 1")
         self.ctx.clear()
+        print("set_uniforms 2")
         self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
+        print("set_uniforms 3")
         self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     self.reflection_prog['tile_size'].value =     self.rain_prog['tile_size'].value =     tile_size
-        self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          self.rain_prog['time'].value =     (time.time()*1000)%2**16
-        self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =     self.ctx.screen.viewport[2:]
-        self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = self.reflection_prog['player_offset'].value = self.rain_prog['player_offset'].value =     screen_coords
-        self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      self.reflection_prog['sunlight'].value =      self.rain_prog['sunlight'].value =     (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
-        self.normal_prog['max_tex'].value =       self.foreground_prog['max_tex'].value =       self.shadow_prog['max_tex'].value =       self.reflection_prog['max_tex'].value =       self.rain_prog['max_tex'].value =      self.max_tex
+        print("set_uniforms 4")
+        self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          self.rain_prog['time'].value =          (time.time()*1000)%2**16
+        print("set_uniforms 5")
+        self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =   self.ctx.screen.viewport[2:]
+        print("set_uniforms 6")
+        self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = self.reflection_prog['player_offset'].value = self.rain_prog['player_offset'].value = screen_coords
+        print("set_uniforms 7")
+        self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      self.reflection_prog['sunlight'].value =      self.rain_prog['sunlight'].value =      (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
+        print("set_uniforms 8")
+        self.normal_prog['max_tex'].value =       self.foreground_prog['max_tex'].value =       self.shadow_prog['max_tex'].value =       self.reflection_prog['max_tex'].value =       self.rain_prog['max_tex'].value =       self.max_tex
+        print("set_uniforms 9")
         self.foreground_prog['mouse_pos'].value = mouse_pos
+        print("set_uniforms 10")
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
+        print("set_uniforms 11")
         self.normal_prog['lightnum'].value = min(len(self.light_buffer), 128)
+        print("set_uniforms 12")
         self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
+        print("set_uniforms 13")
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
+        print("set_uniforms 14")
 
     def set_verts(self):
         self.set_vert_buffers(vert_list=self.reflection_list, vao=self.reflectvao)
@@ -235,24 +249,32 @@ class glrenderer():
 
         self.texpack_texture.use()
 
+# background
         self.set_vert_buffers(vert_list=self.shadow_list, vao=self.cloudvao, is_reset=1)
-        self.render_vert_list(vao=self.cloudvao, is_ln=1, is_tex=1, is_shadow=0)
+        self.render_vert_list(vao=self.cloudvao, is_ln=1, is_tex=1, is_shadow=0) # screen
+        self.render_vert_list(vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0) # lighting
 
-        self.render_vert_list(vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0)
-        #self.render_vert_list(vao=self.reflectvao, is_ln=1)
-        self.render_vert_list(vao=self.tilevao)
-        self.render_vert_list(vao=self.objectvao, is_shadow=1, is_depth_test=1)
+# playspace
+        self.render_vert_list(vao=self.tilevao) # lighting
+        self.render_vert_list(vao=self.objectvao, is_shadow=1, is_depth_test=1) # lighting
+
+# foreground
         self.set_vert_buffers(vert_list=sorted(self.ontop_list, key= lambda n: struct.unpack("f", n[4*2:4*3])), vao=self.ontopvao, is_reset=1)
-        self.render_vert_list(vao=self.ontopvao, is_ln=1)
-        self.render_vert_list(vao=self.foregroundvao, is_shadow=1, is_depth_test=1)
-        self.render_vert_list(vao=self.rainvao, is_ln=1)
+        self.render_vert_list(vao=self.ontopvao, is_ln=1)  # foreground
+        self.render_vert_list(vao=self.foregroundvao, is_shadow=1, is_depth_test=1) # foreground
 
+# weather
         self.set_vert_buffers(vert_list=self.weather_list, vao=self.weathervao, is_reset=1)
-        # self.set_vert_buffers(vert_list=self.shadow_list, vao=self.reflectvao, is_reset=1)
-        self.set_vert_buffers(vert_list=self.shadow_list, vao=self.shadowvao, is_reset=1)
+        self.render_vert_list(vao=self.weathervao, is_ln=1, is_shadow=1) # foreground
 
-        self.render_vert_list(vao=self.weathervao, is_ln=1, is_shadow=1)
-        self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1)
+        # make lighting buffer using shadow buffer
+        # apply lighting buffer to screen
+        # apply 1/^2 law to foreground
+        # apply foreground to screen
+
+        self.render_vert_list(vao=self.rainvao, is_ln=1) # screen
+        self.set_vert_buffers(vert_list=self.shadow_list, vao=self.shadowvao, is_reset=1)
+        self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1) # screen
 
         self.shadow_list.clear()
         self.weather_list.clear()

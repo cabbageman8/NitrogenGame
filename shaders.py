@@ -53,8 +53,8 @@ float anim_index;
 float anim_frame;
 void main() {
     sway = (texlen < 0) ? 1.0 : 0.0;
-    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
-    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    anim_index = floor(mod(mod(mod(pos.x, 9804.0)*mod(pos.x, 3879.0)+mod(pos.y*pos.x, 8526.0), 105)+mod(mod(pos.y, 2247.0)*mod(pos.y, 9048.0), 107)+size.x+size.y+texnum+texlen+sway, 101.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((mod(pos.x, 5752.0) * mod(pos.x, 1765.0) + mod(pos.y, 7101.0)), 1259.0) , 9599.0));
     thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
     sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
                        sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
@@ -190,8 +190,8 @@ float anim_index;
 float anim_frame;
 void main() {
     sway = (texlen < 0) ? 1.0 : 0.0;
-    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
-    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    anim_index = floor(mod(mod(mod(pos.x, 9804.0)*mod(pos.x, 3879.0)+mod(pos.y*pos.x, 8526.0), 105)+mod(mod(pos.y, 2247.0)*mod(pos.y, 9048.0), 107)+size.x+size.y+texnum+texlen+sway, 101.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((mod(pos.x, 5752.0) * mod(pos.x, 1765.0) + mod(pos.y, 7101.0)), 1259.0) , 9599.0));
     thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
     sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
                        sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
@@ -251,8 +251,8 @@ float anim_index;
 float anim_frame;
 void main() {
     sway = (texlen < 0) ? 1.0 : 0.0;
-    anim_index = floor(mod(mod(pos.x+pos.x, 101)*pos.x+mod(pos.y+pos.y, 107)+size.x+size.y+texnum+texlen+sway, 105.0));
-    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((pos.x * pos.x + pos.y), 1000.0) , 1000.0));
+    anim_index = floor(mod(mod(mod(pos.x, 9804.0)*mod(pos.x, 3879.0)+mod(pos.y*pos.x, 8526.0), 105)+mod(mod(pos.y, 2247.0)*mod(pos.y, 9048.0), 107)+size.x+size.y+texnum+texlen+sway, 101.0));
+    anim_frame = floor(mod((mod(time/1000.0 , 1000.0) * 6.0 + anim_index) + mod((mod(pos.x, 5752.0) * mod(pos.x, 1765.0) + mod(pos.y, 7101.0)), 1259.0) , 9599.0));
     thetexnum =  (texnum < 0) ? abs(texnum)+floor(mod(abs(anim_index+anim_frame+0.5), abs(texlen))) : abs(texnum)+floor(mod(abs(anim_index)+0.5, abs(texlen)));
     sway_factor = vec2(sway/screen_size.x*7.0*cos(sway*time/700.0+anim_index), 
                        sway/screen_size.y*7.0*sin(sway*time/700.0+anim_index));
