@@ -2,19 +2,33 @@ from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, l
 
 textures = [
             #special
-            "None", "selection", "selectionbot", "cloud", "sky", "moon", "birds", "rain",
+            "None", "selection", "selectionbot", "cloud", "sky", "moon", "birds", "rain", "light"
             #materials
             "seawater", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "redsand", "freshwater",
             "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt", "mossdirt", "ancientseabed",
             #objects
-            "spinifex", "spinifexdry", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "crab",
-            "fern", "silkyoak", "silkyoaksapling", "silkyoakseeds", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine",
-            "whitetreelog", "whitetreetrunk", "whitetreestump", "lillypad", "candle",
-            "greymangrove", "silverwattle", "silverwattlesapling", "birdsnestfern", "horsetailcasuarina", "horsetailcasuarinatrunk",
-            "greymangrovetrunk", "greymangrovepropagules", "greymangrovesapling", "blacktreefern", "blacktreeferntrunk", "breadpalm", "tasmaniantreefern",
-            "bluegumeucalyptus", "bluegumeucalyptussapling", "mulgabush", "mulgatree", "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
+            "spinifex", "spinifexdry", "mushrooms", "rock", "crab",
+            "fern", "lillypad", "candle",
+            "birdsnestfern", "breadpalm",
+
+            #trees
+            "treelog", "treestump", "treetrunk",
+            "whitetreelog", "whitetreestump", "whitetreetrunk",
+
+            "silkyoak", "silkyoaksapling", "silkyoakseeds",
+            "weepingbottlebrush", "weepingbottlebrushsapling",
+            "norfolkislandpine",
+            "greymangrove", "greymangrovetrunk", "greymangrovesapling", "greymangrovepropagules",
+            "silverwattle", "silverwattlesapling",
+            "bluegumeucalyptus", "bluegumeucalyptussapling",
             "sawtoothbanksiasapling", "sawtoothbanksia",
+
+            "horsetailcasuarina", "horsetailcasuarinatrunk",
+            "blacktreefern", "blacktreeferntrunk", "tasmaniantreefern",
+            "mulgabush", "mulgatree",
+            "australiangrasstree", "australiangrasstreetrunk", "australiangrasstreelog",
+
             #crops
             "oatgrassseedling", "oatgrassfilling", "oatgrassmature", "oats", "oatmeal", "oatbread",
             "teabush", "teatree", "tealeaf",
@@ -47,7 +61,7 @@ biomes = (("alpinetundra", (("sheoakdirt", "mossdirt", "stones"),)),
           ("dryforest", (("silkyoakdirt", "roughseedgrass"), ("wattledirt", "roughseedgrass"), ("bottlebrushdirt", "roughseedgrass"), ("banksiadirt", "roughseedgrass"), ("norfolkislandpinedirt","norfolkislandpinedirt", "dirt", "roughseedgrass"), ("eucalyptusdirt", "roughseedgrass"))),
           ("thornwoodland", (("roughseedgrass", "dirt", "roughseedgrass"),)),
           ("desert", (("sand", "dirt"), ("redsand", "ancientseabed"),)),
-          ("sea", (("seawater", "stones"),("seawater", "sand"),)))
+          ("sea", (("seawater", "stones"), ("seawater", "sand"),)))
 
 #            temp over humidity
 biome_map = ((4, 3, 2, 1, 2, 0),# cold

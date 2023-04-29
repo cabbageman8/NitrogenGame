@@ -169,6 +169,7 @@ overlay = pygame.Surface(hud_size).convert_alpha()
 
 Renderer = glrenderer(texpack, overlay, max_tex)
 Renderer.ctx.screen.viewport = (0, 0, *window_size)
+Renderer.update_buffers()
 
 def draw_text(surface, xy, t, has_bg=0):
     if has_bg:
@@ -914,6 +915,7 @@ def handle_controls(dt):
         pygame.display.toggle_fullscreen()
         window_size = pygame.display.get_window_size()
         Renderer.ctx.screen.viewport = (0, 0, *window_size)
+        Renderer.update_buffers()
         overlay = pygame.Surface(hud_size).convert_alpha()
         construct_overlay()
         keydown_set.remove(pygame.K_F4)

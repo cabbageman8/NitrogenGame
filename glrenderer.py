@@ -55,7 +55,7 @@ class glrenderer():
         self.ctx.enable(moderngl.DEPTH_TEST)
         #                       amount from SRC,     amount from DST
         self.ctx.blend_func = (self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA, # colour
-                               self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA) # alpha
+                               self.ctx.ONE, self.ctx.ONE_MINUS_SRC_ALPHA) # alpha
         #                          operation between SRC and DST
         self.ctx.blend_equation = (self.ctx.FUNC_ADD, # colour
                                    self.ctx.FUNC_ADD) # alpha
@@ -97,15 +97,19 @@ class glrenderer():
         self.overlay_texture.write(texture_data)
 
         self.vbo = self.ctx.buffer(struct.pack('8f', 0, 0, 1, 0,
-                                          0, 1, 1, 1))
+                                                     0, 1, 1, 1))
 
         self.uvmap = self.ctx.buffer(struct.pack('8f', 0, 0, 1, 0,
-                                            0, 1, 1, 1))
+                                                       0, 1, 1, 1))
+
+        self.uvmapFlip = self.ctx.buffer(struct.pack('8f', 0, 1, 1, 1,
+                                                           0, 0, 1, 0))
 
         self.ibo = self.ctx.buffer(struct.pack('6I', 0, 1, 2,
                                           1, 2, 3))
 
         self.vao_content = [(self.vbo, '2f', 'vert'), (self.uvmap, '2f', 'in_text')]
+        self.vao_contentFlip = [(self.vbo, '2f', 'vert'), (self.uvmapFlip, '2f', 'in_text')]
 
         self.cloudvao = self.vao_factory(self.reflection_prog)
         self.reflectvao = self.vao_factory(self.reflection_prog)
@@ -117,6 +121,37 @@ class glrenderer():
         self.ontopvao = self.vao_factory(self.normal_prog)
         self.shadowvao = self.vao_factory(self.shadow_prog)
         self.quad_fs = self.ctx.vertex_array(self.simple_prog, self.vao_content, self.ibo)
+        self.quad_fs_flip = self.ctx.vertex_array(self.simple_prog, self.vao_contentFlip, self.ibo)
+
+        wnd_size = self.ctx.screen.viewport[2:]
+        self.texture_lighting = self.ctx.texture(wnd_size, 4)
+        self.texture_shadow = self.ctx.texture(wnd_size, 4)
+        self.texture_foreground = self.ctx.texture(wnd_size, 4)
+        lighting_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        shadow_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        foreground_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        self.lighting_fbo = self.ctx.framebuffer(self.texture_lighting, lighting_depth_attachment)
+        self.shadow_fbo = self.ctx.framebuffer(self.texture_shadow, shadow_depth_attachment)
+        self.foreground_fbo = self.ctx.framebuffer(self.texture_foreground, foreground_depth_attachment)
+
+    def update_buffers(self):
+        self.texture_lighting.release()
+        self.texture_shadow.release()
+        self.texture_foreground.release()
+        self.lighting_fbo.release()
+        self.shadow_fbo.release()
+        self.foreground_fbo.release()
+
+        wnd_size = self.ctx.screen.viewport[2:]
+        self.texture_lighting = self.ctx.texture(wnd_size, 4)
+        self.texture_shadow = self.ctx.texture(wnd_size, 4)
+        self.texture_foreground = self.ctx.texture(wnd_size, 4)
+        lighting_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        shadow_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        foreground_depth_attachment = self.ctx.depth_renderbuffer(wnd_size)
+        self.lighting_fbo = self.ctx.framebuffer(self.texture_lighting, lighting_depth_attachment)
+        self.shadow_fbo = self.ctx.framebuffer(self.texture_shadow, shadow_depth_attachment)
+        self.foreground_fbo = self.ctx.framebuffer(self.texture_foreground, foreground_depth_attachment)
 
     def update_overlay(self, overlay):
         self.overlay_texture.release()
@@ -175,8 +210,12 @@ class glrenderer():
         else:
             self.write_vert_data(vert_list, vao)
 
-    def render_vert_list(self, vao, is_ln=0, is_tex=1, is_shadow=0, is_depth_test=0):
+    def render_vert_list(self, vao, fbo, shadow_fbo=None, is_ln=0, is_tex=1, is_shadow=0, is_depth_test=0):
+        if shadow_fbo == None:
+            shadow_fbo = self.ctx.screen
         if is_shadow:
+            shadow_fbo.use()
+            #self.ctx.screen.use()
             self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
             if self.r >= 0.03:
                 self.ctx.disable(moderngl.DEPTH_TEST)
@@ -192,6 +231,8 @@ class glrenderer():
         else:
             self.ctx.disable(moderngl.DEPTH_TEST)
         if is_tex:
+            fbo.use()
+            #self.ctx.screen.use()
             if is_ln:
                 self.texpack_texture.filter = moderngl.LINEAR, moderngl.LINEAR
             else:
@@ -247,34 +288,54 @@ class glrenderer():
             self.moon_texture.use()
         self.quad_fs.render()
 
+        self.lighting_fbo.clear(0, 0, 0, 0, 1)
+        self.shadow_fbo.clear(0, 0, 0, 0, 1)
+        self.foreground_fbo.clear(0, 0, 0, 0, 1)
+
         self.texpack_texture.use()
 
 # background
         self.set_vert_buffers(vert_list=self.shadow_list, vao=self.cloudvao, is_reset=1)
-        self.render_vert_list(vao=self.cloudvao, is_ln=1, is_tex=1, is_shadow=0) # screen
-        self.render_vert_list(vao=self.reflectvao, is_ln=1, is_tex=1, is_shadow=0) # lighting
+        self.render_vert_list(vao=self.cloudvao, fbo=self.ctx.screen, is_ln=1, is_tex=1, is_shadow=0) # screen
+
+        self.lighting_fbo.clear(0, 0, 0, 0, 1)
+
+        self.render_vert_list(vao=self.reflectvao, fbo=self.lighting_fbo, is_ln=1, is_tex=1, is_shadow=0) # lighting
 
 # playspace
-        self.render_vert_list(vao=self.tilevao) # lighting
-        self.render_vert_list(vao=self.objectvao, is_shadow=1, is_depth_test=1) # lighting
+        self.render_vert_list(vao=self.tilevao, fbo=self.lighting_fbo) # lighting
+        self.lighting_fbo.color_mask = False, False, False, False
+        self.lighting_fbo.clear(0, 0, 0, 0, 1)
+        self.lighting_fbo.color_mask = True, True, True, True
+        self.render_vert_list(vao=self.objectvao, fbo=self.lighting_fbo, shadow_fbo=self.lighting_fbo, is_shadow=1, is_depth_test=1) # lighting
 
+        self.ctx.screen.use()
+        # make lighting buffer using shadow buffer
+        self.texture_lighting.use()
+        self.quad_fs_flip.render()
+
+        self.foreground_fbo.clear(0, 0, 0, 0, 1)
+        self.texpack_texture.use()
 # foreground
         self.set_vert_buffers(vert_list=sorted(self.ontop_list, key= lambda n: struct.unpack("f", n[4*2:4*3])), vao=self.ontopvao, is_reset=1)
-        self.render_vert_list(vao=self.ontopvao, is_ln=1)  # foreground
-        self.render_vert_list(vao=self.foregroundvao, is_shadow=1, is_depth_test=1) # foreground
+        self.render_vert_list(vao=self.ontopvao, fbo=self.foreground_fbo, is_ln=1)  # foreground
+        self.render_vert_list(vao=self.foregroundvao, fbo=self.foreground_fbo, shadow_fbo=self.shadow_fbo, is_shadow=1, is_depth_test=1) # foreground
 
 # weather
         self.set_vert_buffers(vert_list=self.weather_list, vao=self.weathervao, is_reset=1)
-        self.render_vert_list(vao=self.weathervao, is_ln=1, is_shadow=1) # foreground
+        self.render_vert_list(vao=self.weathervao, fbo=self.foreground_fbo, is_ln=1, is_shadow=1) # foreground
 
-        # make lighting buffer using shadow buffer
-        # apply lighting buffer to screen
+        self.ctx.screen.use()
+        self.texture_shadow.use()
+        self.quad_fs_flip.render()
         # apply 1/^2 law to foreground
-        # apply foreground to screen
+        self.texture_foreground.use()
+        self.quad_fs_flip.render()
 
-        self.render_vert_list(vao=self.rainvao, is_ln=1) # screen
-        self.set_vert_buffers(vert_list=self.shadow_list, vao=self.shadowvao, is_reset=1)
-        self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1) # screen
+        self.texpack_texture.use()
+        self.render_vert_list(vao=self.rainvao, fbo=self.ctx.screen, is_ln=1) # screen
+        #self.set_vert_buffers(vert_list=self.shadow_list, vao=self.shadowvao, is_reset=1)
+        #self.render_vert_list(vao=self.shadowvao, is_tex=0, is_shadow=1) # screen
 
         self.shadow_list.clear()
         self.weather_list.clear()
