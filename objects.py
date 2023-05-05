@@ -2,7 +2,7 @@ from math import pi, tau, sin, cos, tan, asin, acos, atan2, ceil, floor, sqrt, l
 
 textures = [
             #special
-            "None", "selection", "selectionbot", "cloud", "sky", "moon", "birds", "rain", "light"
+            "None", "selection", "selectionbot", "cloud", "sky", "moon", "birds", "rain", "light",
             #materials
             "seawater", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "redsand", "freshwater",
