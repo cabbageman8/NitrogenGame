@@ -6,7 +6,7 @@ textures = [
             #materials
             "seawater", "planks", "dirt", "farmland", "tiles", "weeds", "hexpavers", "roughseedgrass",
             "stones", "lushundergrowth", "silkyoakdirt", "bottlebrushdirt", "wattledirt", "lawn", "sand", "redsand", "freshwater",
-            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt", "mossdirt", "ancientseabed",
+            "glass", "eucalyptusdirt", "norfolkislandpinedirt", "wetdirt", "banksiadirt", "mossdirt", "ancientseabed", "brick",
             #objects
             "spinifex", "spinifexdry", "treelog", "treestump", "treetrunk", "mushrooms", "rock", "crab",
             "fern", "silkyoak", "silkyoaksapling", "silkyoakseeds", "weepingbottlebrush", "weepingbottlebrushsapling", "norfolkislandpine",
@@ -892,6 +892,12 @@ OBJ = {
                  "height": 0.1
              },
             "hexpavers": {
+                 "flags": {"solid",},
+                 "model": "block",
+                 "size": 1,
+                 "height": 0.1
+             },
+            "brick": {
                  "flags": {"solid",},
                  "model": "block",
                  "size": 1,

@@ -490,7 +490,7 @@ except pickle.UnpicklingError:
     text.append('progress will not be saved')
 
 hotbar[8] = ["candle", 1, 1]
-hotbar[3] = ["silkyoakdirt", 0, 999]
+hotbar[3] = ["brick", 1, 999]
 hotbar[1] = ["silkyoakseeds", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]
