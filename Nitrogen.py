@@ -248,37 +248,39 @@ def construct_overlay():
             overlay.blit(silombol.render(t, True, (0, 0, 0)), (ico_size, ico_size+silombol.size(t)[1] * i))
 
     if menu == 2: # crafting menu
-        file = Image.open(os.path.join("data", "craftingmenu.png")).convert("RGBA")
+        file = Image.open(os.path.join("data", "treestumpcraftingmenu.png")).convert("RGBA")
         bgimg = pygame.image.fromstring(file.resize(overlay.get_size(), resample=Image.Resampling.NEAREST).tobytes(),
                                       overlay.get_size(), "RGBA").convert_alpha()
         overlay.blit(bgimg, (0, 0))
-        pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((ico_size, ico_size * selected_crafting_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), (280, ico_size)))
-        for i, product in enumerate(crafting.keys()):
-            overlay.blit(icon_img[texd[product[1]][0]], (ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (2*ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(product[1]), has_bg=True)
-        selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
-        draw_text(overlay, (650, 0-ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe[1]), has_bg=True)
-        draw_text(overlay, (650+ico_size, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), item_type_map[selected_recipe[2]], has_bg=True)
-        draw_text(overlay, (650+ico_size, 2*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe[1]), has_bg=True)
+        craftable = {key: value for key, value in CRAFTING.items() if find_items(key) != None}
+        if craftable:
+            pygame.draw.rect(overlay, (255, 255, 255, 128), pygame.Rect((ico_size, ico_size * selected_crafting_slot - ico_size * 4.5 + overlay.get_size()[1] / 2), (280, ico_size)))
+            for i, product in enumerate(craftable.keys()):
+                overlay.blit(icon_img[texd[product[1]][0]], (ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
+                draw_text(overlay, (2*ico_size, ico_size * i - ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(product[1]), has_bg=True)
+            selected_recipe = tuple(craftable.keys())[selected_crafting_slot%len(craftable)]
+            draw_text(overlay, (650, 0-ico_size * 4.5 + overlay.get_size()[1] / 2), get_alias(selected_recipe[1]), has_bg=True)
+            draw_text(overlay, (650+ico_size, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), item_type_map[selected_recipe[2]], has_bg=True)
+            draw_text(overlay, (650+ico_size, 2*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), get_description(selected_recipe[1]), has_bg=True)
 
-        overlay.blit(icon_img[texd[selected_recipe[1]][0]], (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
-        draw_text(overlay, (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(selected_recipe[0]), has_bg=True)
-        draw_text(overlay, (650, 4*fontsize-ico_size * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
-        for i, item in enumerate(crafting[selected_recipe]["materials"]):
-            overlay.blit(icon_img[texd[item[1]][0]], (650+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
-            draw_text(overlay, (660+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
-        if "workstation" in crafting[selected_recipe].keys():
-            draw_text(overlay, (650, 8 * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), "Workstation:", has_bg=True)
-            for i, wrk in enumerate(crafting[selected_recipe]["workstation"]):
-                phrase = ""
-                for j, item in enumerate(wrk):
-                    if j == 0:
-                        if i > 0:
-                            phrase += "or "
-                    else:
-                        phrase += " and "
-                    phrase += item
-                draw_text(overlay, (700, (i+9) * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
+            overlay.blit(icon_img[texd[selected_recipe[1]][0]], (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
+            draw_text(overlay, (650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(selected_recipe[0]), has_bg=True)
+            draw_text(overlay, (650, 4*fontsize-ico_size * 4.5 + overlay.get_size()[1] / 2), "Requires:", has_bg=True)
+            for i, item in enumerate(craftable[selected_recipe]["materials"]):
+                overlay.blit(icon_img[texd[item[1]][0]], (650+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2))
+                draw_text(overlay, (660+ico_size*i, 5*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), str(item[0]), has_bg=True)
+            if "workstation" in craftable[selected_recipe].keys():
+                draw_text(overlay, (650, 8 * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), "Workstation:", has_bg=True)
+                for i, wrk in enumerate(craftable[selected_recipe]["workstation"]):
+                    phrase = ""
+                    for j, item in enumerate(wrk):
+                        if j == 0:
+                            if i > 0:
+                                phrase += "or "
+                        else:
+                            phrase += " and "
+                        phrase += item
+                    draw_text(overlay, (700, (i+9) * fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2), phrase, has_bg=True)
         for i, t in enumerate(text):
             overlay.blit(silombol.render(t, True, (0, 0, 0)), (overlay.get_size()[0]-silombol.size(t)[0]-64, silombol.size(t)[1] * i - ico_size * 4.5 + overlay.get_size()[1] / 2))
     if menu == 3: # health menu
@@ -436,7 +438,7 @@ server_address = (ip, port)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 sock.setblocking(False)
 
-text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "ESC for save and quit", "F4 for fullscreen", "Scroll to select item", "LM destroy selected", "RM place from hotbar", "Press C to craft", "Press H to exit help menu"]
+text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "F4 for fullscreen", "Scroll to select item", "LM destroy selected", "RM place from hotbar", "Press C to craft", "Press ESC to exit help menu"]
 # get local data
 try:
     sav = open(os.path.join("save", "savedata.pickle"), 'r')
@@ -489,9 +491,9 @@ except pickle.UnpicklingError:
     text.append('data received is not valid, the server or client is likely out of date')
     text.append('progress will not be saved')
 
-hotbar[8] = ["candle", 1, 1]
-hotbar[3] = ["brick", 1, 999]
-hotbar[1] = ["silkyoakseeds", 1, 2]
+#hotbar[8] = ["candle", 1, 1]
+#hotbar[3] = ["brick", 1, 999]
+#hotbar[1] = ["silkyoakseeds", 1, 2]
 #hotbar[2] = ["chiliseeds", 1, 999]
 #hotbar[3] = ["soybeans", 1, 999]
 print("hotbar:", hotbar)
@@ -516,8 +518,8 @@ def get_climate(x, y):
     if last_climate[0] == x and last_climate[1] == y:
         return last_climate[2]
     else:
-        x /= biome_size
-        y /= biome_size
+        x = float(x)/biome_size
+        y = float(y)/biome_size
         temp     = ((sin(0.70688 * y) * sin(0.08321 * y) * sin(1.20191 * y + 1.07952 * x) + cos(1.83391 * x / 5 - 1.00643 * y / 5) * cos(0.27705 * x / 5))/2+0.5)
         moisture = ((sin(0.56554 * y) * sin(0.49491 * y) * sin(1.63167 * y + 1.36682 * x) + cos(1.19063 * x / 7 - 1.52815 * y / 7) * cos(0.13701 * x / 7))/2+0.5)
         altitude = ((sin(0.48967 * y/2) * sin(0.32156 * y/2) * sin(1.78655 * y/2 + 1.68442 * x/2) + cos(1.18567 * x / 9 - 1.36988 * y / 9) * cos(0.15346 * x / 9))/2+0.5)
@@ -540,9 +542,9 @@ def obj_can_go_here(obj, x, y, mat):
             ("salinity" not in OBJ[obj].keys() or
              (salinity > OBJ[obj]["salinity"][0] and salinity < OBJ[obj]["salinity"][1]) ) )
 
-def do_tick(x, y, cache_only = False):
+def do_tick(x, y, cache_only = False, tile_data = None):
     RT_coords = x, y
-    RT_data = get_tile_info(*RT_coords)
+    RT_data = tile_data if tile_data else get_tile_info(*RT_coords)
     if RT_data[1] in OBJ.keys():
         if "becomes" in OBJ[RT_data[1]].keys():
             data = (*RT_coords, (RT_data[0], OBJ[RT_data[1]]["becomes"], time.time()) + RT_data[3:])
@@ -628,7 +630,7 @@ def decorate(x, y, mat):
     counter = 0
     while dec == None and counter < 1:
         counter += 1
-        r = point_to_random(x+2**counter, y-2**counter)
+        r = point_to_random(int(x)+2**counter, int(y)-2**counter)
         r2 = seeded_random(r)
         if mat == "hexpavers":
             if r < 0.4:
@@ -636,9 +638,9 @@ def decorate(x, y, mat):
         else:
             obj = list(OBJ)[int(r2*len(OBJ))]
             if "plant" in OBJ[obj]["flags"]:
-                if plant_can_grow_here(obj, x, y, mat):
+                if plant_can_grow_here(obj, int(x), int(y), mat):
                     dec = obj
-            elif r < 0.4 and obj_can_go_here(obj, x, y, mat):
+            elif r < 0.4 and obj_can_go_here(obj, int(x), int(y), mat):
                 dec = obj
     if dec == None:
         map.cache_data(int(x), int(y), (mat, ))
@@ -653,7 +655,7 @@ def get_tile_info(x, y):
     mat = get_mat(x, y)
     dec = decorate(x, y, mat)
     tile_data = (mat, dec)
-    do_tick(x, y, cache_only = True)
+    do_tick(x, y, cache_only = True, tile_data = tile_data)
     return tuple(tile_data+(None,)*7)[:7]
 
 def list_tiles_on_screen(dist):
@@ -752,11 +754,8 @@ def handle_keys():
             save_game()
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                save_game()
-                running = False
             keydown_set.add(event.key)
-            if (event.key in (pygame.K_F2, pygame.K_h, pygame.K_c, pygame.K_v, pygame.K_SPACE)):
+            if (event.key in (pygame.K_F2, pygame.K_ESCAPE, pygame.K_c, pygame.K_v, pygame.K_SPACE)):
                 keydown_set.add("press"+str(event.key))
         elif event.type == pygame.KEYUP and event.key not in (pygame.K_F4, ):
             keydown_set.remove(event.key)
@@ -882,13 +881,13 @@ def handle_controls(dt):
         elif pygame.K_d in keydown_set or "stickx1" in gamepad_set:
             velocity[0] += acceleration
             char_direction = 6
-    if "press"+str(pygame.K_h) in keydown_set:
+    if "press"+str(pygame.K_ESCAPE) in keydown_set:
         if menu == 0:
             menu = 1
         else:
             menu = 0
         construct_overlay()
-        keydown_set.remove("press"+str(pygame.K_h))
+        keydown_set.remove("press"+str(pygame.K_ESCAPE))
     if "press"+str(pygame.K_c) in keydown_set:
         if menu == 0:
             menu = 2
@@ -920,7 +919,7 @@ def handle_controls(dt):
     if pygame.K_F9 in keydown_set:
         pos = [10**14-seeded_random(pos[0])*10**14*2+pi, 10**14-seeded_random(pos[1])*10**14*2+tau]
 
-    #player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
+    player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
     new_player_tile_info = get_tile_info(ceil(pos[0] - 1 + dt * velocity[0]), ceil(pos[1] - 1 + dt * velocity[1]))
     if (player_tile_info[1] in OBJ.keys() and "solid" in OBJ[player_tile_info[1]]["flags"]):
         pos[1] += 1
@@ -944,10 +943,9 @@ def handle_controls(dt):
     screen_coords = [pos[0] * tile_size - window_size[0] // 2, pos[1] * tile_size - window_size[1] // 2]
     selected_tile = [floor(pos[0]+(mouse_pos[0]-window_size[0]/2)/tile_size),
                      floor(pos[1]+(mouse_pos[1]-window_size[1]/2)/tile_size)]
-    if get_tile_info(*selected_tile) != selected_data:
-        if menu == 0.5:
-            menu = 0
-            construct_overlay()
+    if menu == 0.5 and get_tile_info(*selected_tile) != selected_data:
+        menu = 0
+        construct_overlay()
     selected_data = get_tile_info(*selected_tile)
     if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
         if Rect(0, window_size[1] / 2 - ico_size * 4.5, ico_size, ico_size*9).collidepoint(mouse_pos):
@@ -1064,78 +1062,101 @@ def handle_controls(dt):
         if "unclick5" in keydown_set:
             keydown_set.remove("unclick5")
 
+def find_items(selected_recipe):
+    global hotbar
+    hotbar_items = [item for item, type, count in hotbar]
+    item_locations = []
+    for count, item in CRAFTING[selected_recipe]["materials"]:
+        if item in hotbar_items and hotbar[hotbar_items.index(item)][2] >= count:
+            item_locations.append((count, hotbar_items.index(item)))
+        else:
+            return None
+    return item_locations # [ (count, index), ]*N
+
+def craft_attempt(craftable):
+    global hotbar
+    global selected_crafting_slot
+    old_hotbar = [slot.copy() for slot in hotbar]
+    selected_recipe = tuple(craftable.keys())[selected_crafting_slot%len(craftable)]
+    try:
+        item_locations = find_items(selected_recipe)
+        if item_locations:
+            for count, index in item_locations:
+                hotbar[index][2] -= count
+        else:
+            raise Exception("insufficent items")
+        destination_item_slot = find_destination_slot(selected_recipe[1], selected_recipe[2])
+        if destination_item_slot != None:
+            crumple_sfx.play()
+            hotbar[destination_item_slot] = [selected_recipe[1], selected_recipe[2],
+                                             hotbar[destination_item_slot][2] + selected_recipe[0]]
+        else:
+            raise Exception("no free slots in hotbar")
+    except Exception as e:
+        hotbar = old_hotbar
+        if text[-1] == str(e):
+            del text[-1]
+        else:
+            text.append(str(e))
 def handle_controls_crafting(dt):
     global selected_crafting_slot
     global menu
-    global hotbar
     global text
-    if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
-        if Rect(ico_size, window_size[1] / 2 - ico_size * 4.5, 280, ico_size*9).collidepoint(mouse_pos):
-            selected_crafting_slot = int((mouse_pos[1]-(window_size[1] / 2 - ico_size * 4.5))//ico_size)%len(crafting)
-        construct_overlay()
-        if "click1" in keydown_set:
-            keydown_set.remove("click1")
-    if "press"+str(pygame.K_h) in keydown_set:
+    craftable = {key: value for key, value in CRAFTING.items() if find_items(key) != None}
+    if craftable:
+        if "click1" in keydown_set or "button8" in gamepad_set and not "button8" in old_gamepad_set:
+            if Rect(ico_size, window_size[1] / 2 - ico_size * 4.5, 280, ico_size*9).collidepoint(mouse_pos):
+                selected_crafting_slot = int((mouse_pos[1]-(window_size[1] / 2 - ico_size * 4.5))//ico_size)%len(craftable)
+            elif Rect(650, 1*fontsize - ico_size * 4.5 + overlay.get_size()[1] / 2, ico_size, ico_size).collidepoint(mouse_pos):
+                craft_attempt(craftable)
+            construct_overlay()
+            if "click1" in keydown_set:
+                keydown_set.remove("click1")
+        if pygame.K_SPACE in keydown_set:
+            craft_attempt(craftable)
+            construct_overlay()
+        if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
+            selected_crafting_slot = 0 if not len(craftable) else int(selected_crafting_slot-1)%len(craftable)
+            construct_overlay()
+            if "unclick4" in keydown_set:
+                keydown_set.remove("unclick4")
+        if "unclick5" in keydown_set or "d-pady-1" in gamepad_set and not "d-pady-1" in old_gamepad_set:
+            selected_crafting_slot = 0 if not len(craftable) else int(selected_crafting_slot+1)%len(craftable)
+            construct_overlay()
+            if "unclick5" in keydown_set:
+                keydown_set.remove("unclick5")
+    if "press" + str(pygame.K_ESCAPE) in keydown_set:
         menu = 0
         construct_overlay()
-        keydown_set.remove("press"+str(pygame.K_h))
-    if "press"+str(pygame.K_c) in keydown_set:
+        keydown_set.remove("press" + str(pygame.K_ESCAPE))
+    if "press" + str(pygame.K_c) in keydown_set:
         menu = 0
         construct_overlay()
-        keydown_set.remove("press"+str(pygame.K_c))
-
-    if pygame.K_SPACE in keydown_set:
-        old_hotbar = [slot.copy() for slot in hotbar]
-        hotbar_items = [item for item, type, count in hotbar]
-        selected_recipe = tuple(crafting.keys())[selected_crafting_slot]
-        try:
-            for count, item in crafting[selected_recipe]["materials"]:
-                if item in hotbar_items and hotbar[hotbar_items.index(item)][2] >= count:
-                    hotbar[hotbar_items.index(item)][2] -= count
-                else:
-                    raise Exception("insufficent items")
-            destination_item_slot = find_destination_slot(selected_recipe[1], selected_recipe[2])
-            if destination_item_slot != None:
-                crumple_sfx.play()
-                hotbar[destination_item_slot] = [selected_recipe[1], selected_recipe[2], hotbar[destination_item_slot][2] + selected_recipe[0]]
-            else:
-                raise Exception("no free slots in hotbar")
-        except Exception as e:
-            hotbar = old_hotbar
-            if text[-1] == str(e):
-                del text[-1]
-            else:
-                text.append(str(e))
-        construct_overlay()
-    if "unclick4" in keydown_set or "d-pady1" in gamepad_set and not "d-pady1" in old_gamepad_set:
-        selected_crafting_slot = int(selected_crafting_slot-1)%len(crafting)
-        construct_overlay()
-        if "unclick4" in keydown_set:
-            keydown_set.remove("unclick4")
-    if "unclick5" in keydown_set or "d-pady-1" in gamepad_set and not "d-pady-1" in old_gamepad_set:
-        selected_crafting_slot = int(selected_crafting_slot+1)%len(crafting)
-        construct_overlay()
-        if "unclick5" in keydown_set:
-            keydown_set.remove("unclick5")
+        keydown_set.remove("press" + str(pygame.K_c))
 
 def handle_controls_help(dt):
     global menu
-    if "press"+str(pygame.K_h) in keydown_set:
+    global running
+    if "press"+str(pygame.K_ESCAPE) in keydown_set:
         menu = 0
         construct_overlay()
-        keydown_set.remove("press"+str(pygame.K_h))
+        keydown_set.remove("press"+str(pygame.K_ESCAPE))
     if "press"+str(pygame.K_c) in keydown_set:
         menu = 0
         construct_overlay()
         keydown_set.remove("press"+str(pygame.K_c))
+    if "click1" in keydown_set:
+        if Rect(window_size[0]-ico_size, 0, ico_size, ico_size).collidepoint(mouse_pos):
+            save_game()
+            running = False
 
 def handle_controls_player_health(dt):
     global menu
     global food_plate
-    if "press"+str(pygame.K_h) in keydown_set:
+    if "press"+str(pygame.K_ESCAPE) in keydown_set:
         menu = 0
         construct_overlay()
-        keydown_set.remove("press"+str(pygame.K_h))
+        keydown_set.remove("press"+str(pygame.K_ESCAPE))
     if "press"+str(pygame.K_v) in keydown_set:
         menu = 0
         construct_overlay()
@@ -1305,7 +1326,8 @@ def main():
         mat = tile_data[0]
         next_obs_on_screen.add(mat)
         height = 0.0
-        Renderer.tile_list.add(geom_tile(*tile_coords, height, (-1 if (mat in animated) else 1) * get_tex(mat)[0], get_tex(mat)[1]))
+
+        Renderer.tile_list.add( geom_tile(*tile_coords, 0, (-1 if (mat in animated) else 1) * get_tex(mat)[0], get_tex(mat)[1]))
 
         decor = tile_data[1]
         next_obs_on_screen.add(decor)

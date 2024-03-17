@@ -1091,7 +1091,7 @@ TILES = {
             },
 }
 
-crafting = {
+CRAFTING = {
     (2, "sharprock", 2): {
         "materials": ((2, "rock", ),)},
     (1, "candle", 1): {

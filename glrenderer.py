@@ -199,33 +199,19 @@ class glrenderer():
             vao.render(instances=len(vao.extra[2]))
 
     def set_uniforms(self, mouse_pos, screen_coords, tile_size):
-        print("set_uniforms 1")
         self.ctx.clear()
-        print("set_uniforms 2")
         self.r = min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4
-        print("set_uniforms 3")
         self.normal_prog['tile_size'].value =     self.foreground_prog['tile_size'].value =     self.shadow_prog['tile_size'].value =     self.reflection_prog['tile_size'].value =     self.rain_prog['tile_size'].value =     tile_size
-        print("set_uniforms 4")
         self.normal_prog['time'].value =          self.foreground_prog['time'].value =          self.shadow_prog['time'].value =          self.reflection_prog['time'].value =          self.rain_prog['time'].value =          (time.time()*1000)%2**16
-        print("set_uniforms 5")
         self.normal_prog['screen_size'].value =   self.foreground_prog['screen_size'].value =   self.shadow_prog['screen_size'].value =   self.reflection_prog['screen_size'].value =   self.rain_prog['screen_size'].value =   self.ctx.screen.viewport[2:]
-        print("set_uniforms 6")
         self.normal_prog['player_offset'].value = self.foreground_prog['player_offset'].value = self.shadow_prog['player_offset'].value = self.reflection_prog['player_offset'].value = self.rain_prog['player_offset'].value = screen_coords
-        print("set_uniforms 7")
         self.normal_prog['sunlight'].value =      self.foreground_prog['sunlight'].value =      self.shadow_prog['sunlight'].value =      self.reflection_prog['sunlight'].value =      self.rain_prog['sunlight'].value =      (max(self.r,0.03), max(self.r**2,0.05), max(self.r**4,0.06))
-        print("set_uniforms 8")
         self.normal_prog['max_tex'].value =       self.foreground_prog['max_tex'].value =       self.shadow_prog['max_tex'].value =       self.reflection_prog['max_tex'].value =       self.rain_prog['max_tex'].value =       self.max_tex
-        print("set_uniforms 9")
         self.foreground_prog['mouse_pos'].value = mouse_pos
-        print("set_uniforms 10")
         self.shadow_prog['sunangle'].value = tan((time.time() * pi) / 60 / 10 - pi/4)/2
-        print("set_uniforms 11")
         self.normal_prog['lightnum'].value = min(len(self.light_buffer), 128)
-        print("set_uniforms 12")
         self.normal_prog['lightpos'].value = (list(l[0] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
-        print("set_uniforms 13")
         self.normal_prog['lighthue'].value = (list(l[1] for l in self.light_buffer)+[(0, 0, 0),]*128)[:128]
-        print("set_uniforms 14")
 
     def set_verts(self):
         self.set_vert_buffers(vert_list=self.reflection_list, vao=self.reflectvao)
