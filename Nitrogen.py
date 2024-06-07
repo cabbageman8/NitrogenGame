@@ -1,7 +1,7 @@
 # Nitrogen Alpha 0.1
-
+import io
 # to compile; run
-# py -m nuitka --onefile --remove-output --include-data-dir=data=data --include-data-dir=save=save Nitrogen.py
+# py -m nuitka --onefile --remove-output --include-data-dir=data=data --include-data-dir=save=save --include-data-dir=music-ogg=music-ogg Nitrogen.py
 
 # to build Docker image of server; run
 # docker login
@@ -40,7 +40,6 @@ for i in range(pygame.joystick.get_count()):
     joystick.init()
     gamepads.append(joystick)
 
-clock = pygame.time.Clock()
 text = ["Connecting to server"]
 
 try: os.mkdir("save")
@@ -314,28 +313,53 @@ Renderer.render((0, 0), (0, 0), tile_size)
 pygame.display.flip()
 
 music = None
-shovel_sfx = pygame.mixer.Sound('data/shovel.wav')
-shovel_sfx.set_volume(0.5)
-grass_step_sfx = pygame.mixer.Sound('data/grass-step.wav')
-grass_step_sfx.set_volume(0.1)
-hit_sfx = pygame.mixer.Sound('data/hit.wav')
-hit_sfx.set_volume(0.5)
-fish_sfx = pygame.mixer.Sound('data/fish.wav')
-fish_sfx.set_volume(0.2)
-seasplash_sfx = pygame.mixer.Sound('data/seasplash.wav')
-seasplash_sfx.set_volume(0.2)
-crumple_sfx = pygame.mixer.Sound('data/crumple.wav')
-crumple_sfx.set_volume(0.5)
-jump_into_water_sfx = pygame.mixer.Sound('data/jump-into-water.wav')
-jump_into_water_sfx.set_volume(0.2)
-sea_sfx = pygame.mixer.Sound('data/sea-waves.wav')
-sea_sfx.set_volume(0.2)
+with open(os.path.join("music-ogg", "music.pickle"), 'rb') as fd:
+    music_library = pickle.loads(fd.read())
+
+sound_library = {
+    "shovel_sfx" : pygame.mixer.Sound('data/shovel.wav'),
+    "grass_step_sfx" : pygame.mixer.Sound('data/grass-step.wav'),
+    "hit_sfx" : pygame.mixer.Sound('data/hit.wav'),
+    "fish_sfx" : pygame.mixer.Sound('data/fish.wav'),
+    "seasplash_sfx" : pygame.mixer.Sound('data/seasplash.wav'),
+    "crumple_sfx" : pygame.mixer.Sound('data/crumple.wav'),
+    "jump_into_water_sfx" : pygame.mixer.Sound('data/jump-into-water.wav'),
+    "sea_sfx" : pygame.mixer.Sound('data/sea-waves.wav'),
+
+    "stormy-sea-waves" : pygame.mixer.Sound('data/stormy-sea-waves.wav'),
+    "sea-waves" : pygame.mixer.Sound('data/sea-waves.wav'),
+    "rain" : pygame.mixer.Sound('data/storm.wav'),
+    "flowing-water" : pygame.mixer.Sound('data/flowing-water.wav'),
+    "ambience" : pygame.mixer.Sound('data/ambience.wav'),
+    "crickets" : pygame.mixer.Sound('data/crickets.wav'),
+}
+sound_library["shovel_sfx"].set_volume(0.5)
+sound_library["grass_step_sfx"].set_volume(0.1)
+sound_library["hit_sfx"].set_volume(0.5)
+sound_library["fish_sfx"].set_volume(0.2)
+sound_library["seasplash_sfx"].set_volume(0.2)
+sound_library["crumple_sfx"].set_volume(0.5)
+sound_library["jump_into_water_sfx"].set_volume(0.2)
+sound_library["sea_sfx"].set_volume(0.2)
+sound_library["stormy-sea-waves"].set_volume(0.5)
+sound_library["sea-waves"].set_volume(0.2)
+sound_library["rain"].set_volume(1)
+sound_library["flowing-water"].set_volume(0.2)
+sound_library["ambience"].set_volume(1)
+sound_library["crickets"].set_volume(0.8)
+
+pygame.mixer.set_reserved(1)
+sound_ambient_channel = pygame.mixer.Channel(0)
 
 obs_on_screen = set()
 next_obs_on_screen = set()
 curtime = time.perf_counter()
 steptime = curtime
 velocity = [0, 0]
+
+def play_ambient_sound(sound):
+    if sound_ambient_channel.get_sound() != sound_library[sound]:
+        sound_ambient_channel.play(sound_library[sound], -1)
 
 def set_soundstage(raining, obs_on_screen, char_speed):
     global velocity
@@ -346,64 +370,38 @@ def set_soundstage(raining, obs_on_screen, char_speed):
         steptime = curtime
         mat = player_tile_info[0]
         if mat == "seawater":
-            seasplash_sfx.play()
+            sound_library["seasplash_sfx"].play()
         elif mat == "freshwater":
-            fish_sfx.play()
+            sound_library["fish_sfx"].play()
         else:
-            grass_step_sfx.play()
-    global music
+            sound_library["grass_step_sfx"].play()
     if menu == 1:
-        if music != "titleloop":
-            pygame.mixer.music.load('data/titleloop.wav')
-            pygame.mixer.music.set_volume(0)
-            pygame.mixer.music.play(-1)
-            music = "titleloop"
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.load(io.BytesIO( random.choice(music_library)[3]) )
+            pygame.mixer.music.set_volume(1)
+            pygame.mixer.music.play()
     else:
         if (raining > 1):
             if "seawater" in obs_on_screen:
                 # at the beach
-                if music != "stormy-sea-waves":
-                    pygame.mixer.music.load('data/stormy-sea-waves.wav')
-                    pygame.mixer.music.set_volume(0.5)
-                    pygame.mixer.music.play(-1)
-                    music = "stormy-sea-waves"
+                play_ambient_sound("stormy-sea-waves")
             else:
-                if music != "rain":
-                    # is raining
-                    pygame.mixer.music.load('data/storm.wav')
-                    pygame.mixer.music.set_volume(1)
-                    pygame.mixer.music.play(-1)
-                    music = "rain"
+                # is raining
+                play_ambient_sound("rain")
         else:
             if "seawater" in obs_on_screen:
                 # at the beach
-                if music != "sea-waves":
-                    pygame.mixer.music.load('data/sea-waves.wav')
-                    pygame.mixer.music.set_volume(0.2)
-                    pygame.mixer.music.play(-1)
-                    music = "sea-waves"
+                play_ambient_sound("sea-waves")
             elif "freshwater" in obs_on_screen:
                 # in water biome
-                if music != "flowing-water":
-                    pygame.mixer.music.load('data/flowing-water.wav')
-                    pygame.mixer.music.set_volume(0.2)
-                    pygame.mixer.music.play(-1)
-                    music = "flowing-water"
+                play_ambient_sound("flowing-water")
             elif len(set(ANY_TREE).intersection(obs_on_screen)) > 0:
                 if min(max(sin((time.time() * tau) / 60 / 10) + 1.32, 0), 1)**4 > 0.03:
-                    # day time
-                    if music != "ambience":
-                        pygame.mixer.music.load('data/ambience.wav')
-                        pygame.mixer.music.set_volume(1.0)
-                        pygame.mixer.music.play(-1)
-                        music = "ambience"
+                    # daytime
+                    play_ambient_sound("ambience")
                 else:
-                    # night time
-                    if music != "crickets":
-                        pygame.mixer.music.load('data/crickets.wav')
-                        pygame.mixer.music.set_volume(0.8)
-                        pygame.mixer.music.play(-1)
-                        music = "crickets"
+                    # nighttime
+                    play_ambient_sound("crickets")
 set_soundstage(0, obs_on_screen, 0)
 
 def seeded_random(a):
@@ -435,10 +433,10 @@ def linear_distance_field(x, y):
 server_address = (ip, port)
 
 # Create socket for server
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, 0)
 sock.setblocking(False)
 
-text = ["Visit cabbage.moe", "Nitrogen Alpha", "WASD for movement", "F4 for fullscreen", "Scroll to select item", "LM destroy selected", "RM place from hotbar", "Press C to craft", "Press ESC to exit help menu"]
+text = ["Visit cabbage.moe", "Nitrogen created and owned by cabbageman", "Music created and owned by tottomori.", "WASD for movement", "F4 for fullscreen", "Scroll to select item", "LM destroy selected", "RM place from hotbar", "Press C to craft", "Press ESC to exit help menu"]
 # get local data
 try:
     sav = open(os.path.join("save", "savedata.pickle"), 'r')
@@ -692,6 +690,7 @@ def list_tiles_on_screen(dist):
             Renderer.light_list.append(((player_offset[0], player_offset[1], 1), OBJ[item[0]]["lightemit"](curtime, 1, 1)))
         obs_on_screen = next_obs_on_screen.copy()
         Renderer.set_verts()
+        print("reached end of list_tiles_on_screen", time.perf_counter())
 
 def geom_light(x, y, z, w, h, hue):
     # return element for lighting using tile coords
@@ -827,7 +826,6 @@ player_tile_info = get_tile_info(ceil(pos[0] - 1), ceil(pos[1] - 1))
 
 def handle_controls(dt):
     global velocity
-    global curtime
     global tile_size
     global screen_coords
     global selected_tile
@@ -926,8 +924,8 @@ def handle_controls(dt):
         velocity = [0, 0]
     else:
         if (not "water" in player_tile_info[0]) and "water" in new_player_tile_info[0]:
-            jump_into_water_sfx.stop()
-            jump_into_water_sfx.play()
+            sound_library["jump_into_water_sfx"].stop()
+            sound_library["jump_into_water_sfx"].play()
         if (new_player_tile_info[1] in OBJ.keys() and "solid" in OBJ[new_player_tile_info[1]]["flags"]):
             velocity = [0, 0]
         else:
@@ -956,7 +954,7 @@ def handle_controls(dt):
                 item_num = 1 if len(selected_data) <= 4 else selected_data[4]
                 destination_item_slot = find_destination_slot(selected_data[3], 2)
                 if destination_item_slot != None:
-                    crumple_sfx.play()
+                    sound_library["crumple_sfx"].play()
                     hotbar[destination_item_slot] = [selected_data[3], 2, hotbar[destination_item_slot][2] + item_num]
                     print("picked up item such that:", hotbar[destination_item_slot])
                     map.set_data(*selected_tile, selected_data[:3] + (None, None) + selected_data[5:])
@@ -972,7 +970,7 @@ def handle_controls(dt):
                     if drops == None or (destination_item_slot != None and (hotbar[destination_item_slot][2] == 0 or (dropped_item == hotbar[destination_item_slot][0] and hotbar[destination_item_slot][1] == dropped_item_type))):
                         if "tree" in OBJ[selected_data[1]]["model"] and hotbar[int(selected_item_slot)][0] == "sharprock":
                             hotbar[int(selected_item_slot)][2] -= 1
-                        shovel_sfx.play()
+                        sound_library["shovel_sfx"].play()
                         if drops != None:
                             hotbar[destination_item_slot] = [dropped_item, dropped_item_type, hotbar[destination_item_slot][2] + drop_num]
                         if "leaves" not in OBJ[selected_data[1]]:
@@ -987,7 +985,7 @@ def handle_controls(dt):
                         r2 = random.choice((1, -1))
                         neighbour_mat = get_tile_info(selected_tile[0]+(r1*r2), selected_tile[1]+((1-r1)*r2))[0]
                         if "water" in neighbour_mat:
-                            hit_sfx.play()
+                            sound_library["hit_sfx"].play()
                             map.set_data(*selected_tile, (neighbour_mat,) + selected_data[1:])
                 elif hotbar[int(selected_item_slot)][0] == "hoe":
                     if selected_data[0] == "dirt":
@@ -995,17 +993,17 @@ def handle_controls(dt):
                         r2 = random.choice((1, -1))
                         neighbour_mat = get_tile_info(selected_tile[0]+(r1*r2), selected_tile[1]+((1-r1)*r2))[0]
                         if neighbour_mat == "freshwater" or neighbour_mat == "farmland":
-                            hit_sfx.play()
+                            sound_library["hit_sfx"].play()
                             map.set_data(*selected_tile, ("farmland",) + selected_data[1:])
                 elif hotbar[int(selected_item_slot)][0] == "leafrake":
                     if selected_data[0] != "dirt" and selected_data[0] in any_dirt:
-                        hit_sfx.play()
+                        sound_library["hit_sfx"].play()
                         map.set_data(*selected_tile, ("dirt",) + selected_data[1:])
                 else:
                     destination_item_slot = find_destination_slot(selected_data[0], 0)
                     if destination_item_slot != None:
                         # grab material from selected tile
-                        shovel_sfx.play()
+                        sound_library["shovel_sfx"].play()
                         hotbar[destination_item_slot] = [selected_data[0], 0, hotbar[destination_item_slot][2] + 1]
                         biome = get_biome(*selected_tile)
                         temp, moisture, altitude = get_climate(*selected_tile)
@@ -1026,7 +1024,7 @@ def handle_controls(dt):
         if hotbar[int(selected_item_slot)][2] > 0:
             if hotbar[int(selected_item_slot)][1] == 2 and selected_data[3] == None:
                 # place item in selected tile
-                crumple_sfx.play()
+                sound_library["crumple_sfx"].play()
                 age = None if len(selected_data) < 3 else selected_data[2]
                 map.set_data(*selected_tile, (selected_data[0], selected_data[1], age) + (hotbar[int(selected_item_slot)][0], hotbar[int(selected_item_slot)][2]) + selected_data[5:])
                 hotbar[int(selected_item_slot)][2] = 0
@@ -1035,19 +1033,19 @@ def handle_controls(dt):
                     ("plant" not in OBJ[hotbar[int(selected_item_slot)][0]]["flags"] or
                       selected_data[0] in OBJ[hotbar[int(selected_item_slot)][0]]["substrate"] )):
                 # place decoration in selected tile
-                crumple_sfx.play()
+                sound_library["crumple_sfx"].play()
                 map.set_data(*selected_tile, (selected_data[0], hotbar[int(selected_item_slot)][0], int(time.time())) + selected_data[3:])
                 hotbar[int(selected_item_slot)][2] -= 1
                 construct_overlay()
             elif hotbar[int(selected_item_slot)][1] == 0 and selected_data[0] != hotbar[int(selected_item_slot)][0]:
                 # place material in selected tile
-                hit_sfx.play()
+                sound_library["hit_sfx"].play()
                 map.set_data(*selected_tile, (hotbar[int(selected_item_slot)][0],) + selected_data[1:])
                 hotbar[int(selected_item_slot)][2] -= 1
                 construct_overlay()
             elif hotbar[int(selected_item_slot)][1] == 3 and selected_data[5] != hotbar[int(selected_item_slot)][0]:
                 # place roof in selected tile
-                hit_sfx.play()
+                sound_library["hit_sfx"].play()
                 map.set_data(*selected_tile, selected_data[:5] + (hotbar[int(selected_item_slot)][0], 1))
                 hotbar[int(selected_item_slot)][2] -= 1
                 construct_overlay()
@@ -1087,7 +1085,7 @@ def craft_attempt(craftable):
             raise Exception("insufficent items")
         destination_item_slot = find_destination_slot(selected_recipe[1], selected_recipe[2])
         if destination_item_slot != None:
-            crumple_sfx.play()
+            sound_library["crumple_sfx"].play()
             hotbar[destination_item_slot] = [selected_recipe[1], selected_recipe[2],
                                              hotbar[destination_item_slot][2] + selected_recipe[0]]
         else:
@@ -1303,9 +1301,6 @@ def main():
                      *get_tex("cloud"), sway=True)
     set_soundstage(raining, obs_on_screen, char_speed)
 
-    Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), player_offset, tile_size)
-    #cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
-
     if "press"+str(pygame.K_F2) in keydown_set:
         try: os.mkdir("screenshots")
         except: pass
@@ -1318,7 +1313,6 @@ def main():
     radius = ceil(screen_size[0] + screen_size[1] + 8)
     num_tiles = 0
     # update tiles for 10ms or until all tiles have been updated (overwrites render buffers automatically once full)
-
     while time.perf_counter() - curtime < 0.010 and num_tiles < ((radius * 2) ** 2):
         num_tiles += 1
         tile_coords = next(world_tiles)
@@ -1413,8 +1407,10 @@ def main():
             w, h = 3 * (int(index + tile_coords[0]) % 2 * 2 - 1), 3 * (int(index + tile_coords[1]) % 2 * 2 - 1)
             draw_rain(tile_coords[0], tile_coords[1], index / 1000, w, h, *get_tex("rain"), sway=True)
 
+    Renderer.render((mouse_pos[0] / window_size[0] * 2 - 1, 1 - mouse_pos[1] / window_size[1] * 2), player_offset, tile_size)
+    # cProfile.run('Renderer.render((mouse_pos[0]/window_size[0]*2-1, 1-mouse_pos[1]/window_size[1]*2), screen_coords, tile_size)', sort=2)
     pygame.display.flip()
-    clock.tick(FPS)
+    print("end of main loop")
 
 i = 60
 while i>0 and running:
@@ -1422,8 +1418,8 @@ while i>0 and running:
     main()
 cProfile.run('main()', sort=2)
 
-fps_log = []
+#fps_log = []
 last_time = time.perf_counter_ns()
 while running:
     main()
-    fps_log.append(-last_time + (last_time := time.perf_counter_ns()))
+    #fps_log.append(-last_time + (last_time := time.perf_counter_ns()))
